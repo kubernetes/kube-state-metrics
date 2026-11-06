@@ -63,6 +63,16 @@ var negotiableFormats = func() []expfmt.Format {
 
 // MetricsHandler is a http.Handler that exposes the main kube-state-metrics
 // /metrics endpoint. It allows concurrent reconfiguration at runtime.
+//
+// Synchronous rebuild contract (BuildWriters, ConfigureStore, ConfigureSharding):
+// each call waits for one attempt on its revision—success, discard (incl. sync
+// failure), supersession, or caller cancellation—not for automatic retries after
+// a warm sync timeout. Publication/install for that attempt completes before the
+// synchronous wait returns; a timed-out warm attempt keeps prior writers while
+// retries run asynchronously. Startup may return before any generation is ready;
+// /metrics and readiness stay 503 until writers install. Ready() means some
+// generation is installed, not that it matches the latest config. Discovery and
+// autosharding use the asynchronous entry points.
 type MetricsHandler struct {
 	kubeClient   kubernetes.Interface
 	storeBuilder ksmtypes.BuilderInterface
@@ -85,24 +95,20 @@ type MetricsHandler struct {
 	rebuildMu          sync.Mutex
 	configRevision     atomic.Uint64
 	lastHandledRev     atomic.Uint64
-	lastPublishedRev   atomic.Uint64
 	activeCandidateGen uint64
 	// requestOwnerByRev maps a pending config revision to the caller context that registered it
 	// (sync or async). Removed when the worker finishes that revision (publish, discard, or supersede).
-	// requestOwnerByRev is a merged context that completes when any registered caller for this revision is done.
 	requestOwnerByRev map[uint64]context.Context
-	// ownerMergeCancel stops the merge goroutine for requestOwnerByRev.
-	ownerMergeCancel map[uint64]context.CancelFunc
-	syncWaiters      []*syncWaiter
-	activeCancel     context.CancelFunc
-	workerWake       chan struct{}
-	workerStop       chan struct{}
-	workerStopped    sync.Once
-	workerParentCtx  context.Context
-	workerWG         sync.WaitGroup
-	candidateActive  atomic.Bool
-	cooldownActive   atomic.Bool
-	runCtxMu         sync.Mutex
+	syncWaiters       []*syncWaiter
+	activeCancel      context.CancelFunc
+	workerWake        chan struct{}
+	workerStop        chan struct{}
+	workerStopped     sync.Once
+	workerParentCtx   context.Context
+	workerWG          sync.WaitGroup
+	candidateActive   atomic.Bool
+	cooldownActive    atomic.Bool
+	runCtxMu          sync.Mutex
 
 	// beforeSwap runs after the sync wait and before install. Tests use it to inject another rebuild.
 	beforeSwap func()
@@ -113,30 +119,35 @@ type MetricsHandler struct {
 }
 
 // New creates and returns a new MetricsHandler with the given options.
-// It panics when options is nil or store_sync_timeout is negative; use NewValidated for an error return.
+// opts may be nil, in which case a fresh [options.NewOptions] is used (handlers do not share that instance).
+// A zero-valued *options.Options is not treated as nil; explicit zero fields (including store_sync_timeout 0) are kept.
+// It panics when store_sync_timeout is negative; use NewValidated for an error return.
 func New(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ksmtypes.BuilderInterface, enableGZIPEncoding bool) *MetricsHandler {
-	if err := validateNewHandlerOpts(opts); err != nil {
+	effective, err := effectiveHandlerOpts(opts)
+	if err != nil {
 		panic(err)
 	}
-	return mustNewHandler(opts, kubeClient, storeBuilder, enableGZIPEncoding)
+	return mustNewHandler(effective, kubeClient, storeBuilder, enableGZIPEncoding)
 }
 
-// NewValidated is like New but rejects invalid store_sync_timeout values.
+// NewValidated is like New but returns an error instead of panicking on invalid store_sync_timeout.
 func NewValidated(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ksmtypes.BuilderInterface, enableGZIPEncoding bool) (*MetricsHandler, error) {
-	if err := validateNewHandlerOpts(opts); err != nil {
+	effective, err := effectiveHandlerOpts(opts)
+	if err != nil {
 		return nil, err
 	}
-	return mustNewHandler(opts, kubeClient, storeBuilder, enableGZIPEncoding), nil
+	return mustNewHandler(effective, kubeClient, storeBuilder, enableGZIPEncoding), nil
 }
 
-func validateNewHandlerOpts(opts *options.Options) error {
+func effectiveHandlerOpts(opts *options.Options) (*options.Options, error) {
 	if opts == nil {
-		return fmt.Errorf("options must not be nil")
+		def := options.NewOptions()
+		return def, nil
 	}
 	if opts.StoreSyncTimeout < 0 {
-		return fmt.Errorf("%w: %s", errInvalidStoreSyncTimeout, opts.StoreSyncTimeout)
+		return nil, fmt.Errorf("%w: %s", errInvalidStoreSyncTimeout, opts.StoreSyncTimeout)
 	}
-	return nil
+	return opts, nil
 }
 
 func mustNewHandler(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ksmtypes.BuilderInterface, enableGZIPEncoding bool) *MetricsHandler {
@@ -149,7 +160,6 @@ func mustNewHandler(opts *options.Options, kubeClient kubernetes.Interface, stor
 		enableGZIPEncoding: enableGZIPEncoding,
 		mtx:                &sync.RWMutex{},
 		requestOwnerByRev:  make(map[uint64]context.Context),
-		ownerMergeCancel:   make(map[uint64]context.CancelFunc),
 		workerWake:         make(chan struct{}, 1),
 		workerStop:         make(chan struct{}),
 		workerParentCtx:    parentCtx,
@@ -238,7 +248,6 @@ func (m *MetricsHandler) installWriters(genCtx context.Context, attemptRevision 
 	}
 	m.mtx.Unlock()
 	m.rebuildMu.Unlock()
-	m.lastPublishedRev.Store(attemptRevision)
 	if oldCancel != nil {
 		oldCancel()
 	}

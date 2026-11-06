@@ -89,9 +89,6 @@ type Options struct {
 	ServerIdleTimeout       time.Duration `yaml:"server_idle_timeout"`
 	ServerReadHeaderTimeout time.Duration `yaml:"server_read_header_timeout"`
 	StoreSyncTimeout        time.Duration `yaml:"store_sync_timeout"`
-	// storeSyncTimeoutBaseline is the CLI or flag default, captured before the first YAML merge.
-	storeSyncTimeoutBaseline    time.Duration
-	storeSyncTimeoutBaselineSet bool
 
 	Shard                int32 `yaml:"shard"`
 	AutoGoMemlimit       bool  `yaml:"auto-gomemlimit"`
@@ -105,27 +102,6 @@ type Options struct {
 
 	// Prepared holds immutable inputs captured at prepare time (reload path). Not loaded from YAML.
 	Prepared *runconfig.Prepared `yaml:"-"`
-}
-
-// CaptureStoreSyncTimeoutBaseline records the CLI or flag default once.
-// Later YAML merges do not overwrite it.
-func (o *Options) CaptureStoreSyncTimeoutBaseline() {
-	if o.storeSyncTimeoutBaselineSet {
-		return
-	}
-	o.storeSyncTimeoutBaseline = o.StoreSyncTimeout
-	o.storeSyncTimeoutBaselineSet = true
-}
-
-// ResolveStoreSyncTimeout sets the effective timeout from the saved baseline.
-// fromFile is set only when the current file contains store_sync_timeout.
-func (o *Options) ResolveStoreSyncTimeout(fromFile *time.Duration) {
-	o.CaptureStoreSyncTimeoutBaseline()
-	if fromFile != nil {
-		o.StoreSyncTimeout = *fromFile
-		return
-	}
-	o.StoreSyncTimeout = o.storeSyncTimeoutBaseline
 }
 
 // GetConfigFile is the getter for --config value.
@@ -148,8 +124,8 @@ func NewOptions() *Options {
 	}
 }
 
-// Clone returns a deep copy of the Options, so that a config reload can start
-// again from the command line values instead of the previously merged config.
+// Clone returns a deep copy so each prepare/reload starts from CLI values, not prior YAML merge.
+// Pass a new clone each run when you need removed YAML keys to fall back to CLI again.
 func (o *Options) Clone() *Options {
 	c := *o
 	c.AnnotationsAllowList = cloneLabelsAllowList(o.AnnotationsAllowList)
@@ -286,12 +262,6 @@ func (o *Options) Validate() error {
 	if err := o.validateStoreSyncTimeout(); err != nil {
 		return err
 	}
-	return o.validateExceptStoreSyncTimeout()
-}
-
-// ValidateExceptStoreSyncTimeout validates arguments other than store_sync_timeout.
-// Used when a negative file value waits for correction instead of failing startup.
-func (o *Options) ValidateExceptStoreSyncTimeout() error {
 	return o.validateExceptStoreSyncTimeout()
 }
 

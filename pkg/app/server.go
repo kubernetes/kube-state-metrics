@@ -569,17 +569,6 @@ func handleClusterDelegationForProber(client kubernetes.Interface, probeType str
 	}
 }
 
-// storeSyncTimeoutFromFile reports the file's store_sync_timeout when the key is present.
-func storeSyncTimeoutFromFile(content []byte) (*time.Duration, error) {
-	var parsed struct {
-		StoreSyncTimeout *time.Duration `yaml:"store_sync_timeout"`
-	}
-	if err := yaml.Unmarshal(content, &parsed); err != nil {
-		return nil, err
-	}
-	return parsed.StoreSyncTimeout, nil
-}
-
 func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prometheus.ObserverVec, client kubernetes.Interface, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {
 	mux := http.NewServeMux()
 

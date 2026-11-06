@@ -24,7 +24,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
@@ -41,8 +40,8 @@ const (
 	prepareReload
 )
 
-// PrepareRunOptionsForReload merges and validates the configuration for a wrapper reload.
-// When validation fails after merge, opts is still returned so pending input watches can follow corrected files.
+// PrepareRunOptionsForReload merges and validates on a clone of base; base is unchanged.
+// On validation failure the returned opts may still be set so watches can retry after file correction.
 func PrepareRunOptionsForReload(base *options.Options) (*options.Options, error) {
 	opts, prepared, err := prepareRun(base, prepareReload)
 	if err != nil {
@@ -67,14 +66,12 @@ func prepareRun(base *options.Options, mode prepareMode) (*options.Options, *run
 	default:
 		opts = base
 	}
-	opts.CaptureStoreSyncTimeoutBaseline()
 
 	prepared := &runconfig.Prepared{
 		Apiserver: opts.Apiserver,
 	}
 
 	configPath := options.GetConfigFile(*opts)
-	var fileTimeout *time.Duration
 	var configFile []byte
 
 	if configPath != "" {
@@ -92,11 +89,6 @@ func prepareRun(base *options.Options, mode prepareMode) (*options.Options, *run
 			if err := yaml.Unmarshal(configFile, opts); err != nil {
 				return returnPrepareErrMode(opts, mode, fmt.Errorf("unmarshal options config file: %w", err))
 			}
-			parsed, err := storeSyncTimeoutFromFile(configFile)
-			if err != nil {
-				return returnPrepareErrMode(opts, mode, err)
-			}
-			fileTimeout = parsed
 			opts = configureResourcesAndMetrics(opts, configFile)
 			prepared.OptionsConfigPath = configPath
 			prepared.OptionsConfig = append([]byte(nil), configFile...)
@@ -106,7 +98,6 @@ func prepareRun(base *options.Options, mode prepareMode) (*options.Options, *run
 	if opts.CustomResourceConfigFile == "" {
 		opts.CustomResourceConfigFile = opts.CustomResourceConfigFileDeprecated
 	}
-	opts.ResolveStoreSyncTimeout(fileTimeout)
 	if opts.StoreSyncTimeout < 0 {
 		return returnPrepareErrMode(opts, mode, fmt.Errorf("value for --store-sync-timeout=%s must be equal to or greater than 0", opts.StoreSyncTimeout))
 	}

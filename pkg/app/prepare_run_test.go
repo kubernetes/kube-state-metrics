@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
@@ -135,5 +136,171 @@ spec:
 `
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestPrepareRunOptionsForReload_StoreSyncTimeoutNoYAMLKeyPreservesCLI(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+	kubePath := filepath.Join(dir, "kube.yaml")
+	writeMinimalKubeconfig(t, kubePath)
+	if err := os.WriteFile(configPath, []byte("kubeconfig: "+kubePath+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	base := options.NewOptions()
+	base.Config = configPath
+	base.Kubeconfig = kubePath
+	base.StoreSyncTimeout = 7 * time.Second
+
+	got, err := PrepareRunOptionsForReload(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.StoreSyncTimeout != 7*time.Second {
+		t.Fatalf("expected CLI timeout when the key is omitted, got %s", got.StoreSyncTimeout)
+	}
+	if base.StoreSyncTimeout != 7*time.Second {
+		t.Fatalf("base options must stay immutable, got %s", base.StoreSyncTimeout)
+	}
+}
+
+func TestPrepareRunOptionsForReload_StoreSyncTimeoutYAMLOverridesCLI(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+	kubePath := filepath.Join(dir, "kube.yaml")
+	writeMinimalKubeconfig(t, kubePath)
+	if err := os.WriteFile(configPath, []byte("store_sync_timeout: 4s\nkubeconfig: "+kubePath+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	base := options.NewOptions()
+	base.Config = configPath
+	base.Kubeconfig = kubePath
+	base.StoreSyncTimeout = 2 * time.Second
+
+	got, err := PrepareRunOptionsForReload(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.StoreSyncTimeout != 4*time.Second {
+		t.Fatalf("expected YAML to override CLI, got %s", got.StoreSyncTimeout)
+	}
+}
+
+func TestPrepareRunOptionsForReload_StoreSyncTimeoutExplicitZero(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+	kubePath := filepath.Join(dir, "kube.yaml")
+	writeMinimalKubeconfig(t, kubePath)
+	if err := os.WriteFile(configPath, []byte("store_sync_timeout: 0s\nkubeconfig: "+kubePath+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	base := options.NewOptions()
+	base.Config = configPath
+	base.Kubeconfig = kubePath
+	base.StoreSyncTimeout = 9 * time.Second
+
+	got, err := PrepareRunOptionsForReload(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.StoreSyncTimeout != 0 {
+		t.Fatalf("expected explicit 0 from YAML, got %s", got.StoreSyncTimeout)
+	}
+}
+
+func TestPrepareRunOptionsForReload_RemovingYAMLKeyRestoresCLI(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+	kubePath := filepath.Join(dir, "kube.yaml")
+	writeMinimalKubeconfig(t, kubePath)
+
+	write := func(body string) {
+		t.Helper()
+		if err := os.WriteFile(configPath, []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("store_sync_timeout: 12s\nkubeconfig: " + kubePath + "\n")
+
+	base := options.NewOptions()
+	base.Config = configPath
+	base.Kubeconfig = kubePath
+	base.StoreSyncTimeout = 5 * time.Second
+
+	got, err := PrepareRunOptionsForReload(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.StoreSyncTimeout != 12*time.Second {
+		t.Fatalf("expected YAML override first, got %s", got.StoreSyncTimeout)
+	}
+
+	write("kubeconfig: " + kubePath + "\n")
+	got2, err := PrepareRunOptionsForReload(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got2.StoreSyncTimeout != 5*time.Second {
+		t.Fatalf("expected CLI after removing key, got %s", got2.StoreSyncTimeout)
+	}
+}
+
+func TestPrepareRunOptionsForReload_DefaultBaseRemovingYAMLKeyRestores30s(t *testing.T) {
+	base := options.NewOptions()
+	if base.StoreSyncTimeout != options.DefaultStoreSyncTimeout {
+		t.Fatalf("precondition: default store sync timeout, got %s", base.StoreSyncTimeout)
+	}
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+	kubePath := filepath.Join(dir, "kube.yaml")
+	writeMinimalKubeconfig(t, kubePath)
+	base.Config = configPath
+	base.Kubeconfig = kubePath
+
+	if err := os.WriteFile(configPath, []byte("store_sync_timeout: 3s\nkubeconfig: "+kubePath+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := PrepareRunOptionsForReload(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.StoreSyncTimeout != 3*time.Second {
+		t.Fatalf("first prepare: expected YAML override 3s, got %s", got.StoreSyncTimeout)
+	}
+	if base.StoreSyncTimeout != options.DefaultStoreSyncTimeout {
+		t.Fatalf("base must stay at default %s, got %s", options.DefaultStoreSyncTimeout, base.StoreSyncTimeout)
+	}
+
+	if err := os.WriteFile(configPath, []byte("kubeconfig: "+kubePath+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got2, err := PrepareRunOptionsForReload(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got2.StoreSyncTimeout != options.DefaultStoreSyncTimeout {
+		t.Fatalf("second prepare: expected default %s after key removed, got %s", options.DefaultStoreSyncTimeout, got2.StoreSyncTimeout)
+	}
+}
+
+func TestPrepareRunOptionsForReload_InvalidStoreSyncTimeoutSyntax(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+	kubePath := filepath.Join(dir, "kube.yaml")
+	writeMinimalKubeconfig(t, kubePath)
+	if err := os.WriteFile(configPath, []byte("store_sync_timeout: not-a-duration\nkubeconfig: "+kubePath+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	base := options.NewOptions()
+	base.Config = configPath
+	base.Kubeconfig = kubePath
+
+	_, err := PrepareRunOptionsForReload(base)
+	if err == nil {
+		t.Fatal("expected invalid duration to fail preparation")
 	}
 }

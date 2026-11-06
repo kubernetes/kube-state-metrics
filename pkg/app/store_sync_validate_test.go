@@ -63,13 +63,13 @@ func TestRunKubeStateMetricsNegativeFileTimeoutFailsAtStartup(t *testing.T) {
 }
 
 func TestRunKubeStateMetricsNegativeFileThenRemovedKeyRestoresCLI(t *testing.T) {
-	opts := options.NewOptions()
-	opts.StoreSyncTimeout = time.Second
-	opts.Kubeconfig = writeStoreSyncKubeconfig(t)
+	base := options.NewOptions()
+	base.StoreSyncTimeout = time.Second
+	base.Kubeconfig = writeStoreSyncKubeconfig(t)
 	path := writeStoreSyncConfig(t, "store_sync_timeout: -5s\n")
-	opts.Config = path
+	base.Config = path
 
-	err := RunKubeStateMetrics(context.Background(), opts)
+	err := RunKubeStateMetrics(context.Background(), base.Clone())
 	if err == nil || !strings.Contains(err.Error(), "store-sync-timeout") {
 		t.Fatalf("expected a negative file timeout to fail at startup, got %v", err)
 	}
@@ -77,12 +77,12 @@ func TestRunKubeStateMetricsNegativeFileThenRemovedKeyRestoresCLI(t *testing.T) 
 		t.Fatal(err)
 	}
 
-	err = RunKubeStateMetrics(t.Context(), opts)
+	err = RunKubeStateMetrics(t.Context(), base.Clone())
 	if err == nil || strings.Contains(err.Error(), "store-sync-timeout") {
 		t.Fatalf("expected the restored CLI timeout to pass validation, got %v", err)
 	}
-	if opts.StoreSyncTimeout != time.Second {
-		t.Fatalf("expected removing the file key to restore the CLI timeout, got %s", opts.StoreSyncTimeout)
+	if base.StoreSyncTimeout != time.Second {
+		t.Fatalf("expected the unchanged base to still hold the CLI timeout, got %s", base.StoreSyncTimeout)
 	}
 }
 
@@ -123,6 +123,67 @@ func TestRunKubeStateMetricsKeepsValidStoreSyncTimeoutWithoutConfig(t *testing.T
 	}
 	if opts.StoreSyncTimeout != time.Second {
 		t.Fatalf("expected the CLI timeout to be kept, got %s", opts.StoreSyncTimeout)
+	}
+}
+
+func TestRunKubeStateMetricsNoYAMLKeyPreservesCLI(t *testing.T) {
+	base := options.NewOptions()
+	base.StoreSyncTimeout = 11 * time.Second
+	base.Kubeconfig = writeStoreSyncKubeconfig(t)
+	base.Config = writeStoreSyncConfig(t, "port: 8080\n")
+
+	err := RunKubeStateMetrics(t.Context(), base.Clone())
+	if err == nil || strings.Contains(err.Error(), "store-sync-timeout") {
+		t.Fatalf("expected a valid run, got %v", err)
+	}
+	if base.StoreSyncTimeout != 11*time.Second {
+		t.Fatalf("expected base CLI timeout unchanged, got %s", base.StoreSyncTimeout)
+	}
+}
+
+func TestRunKubeStateMetricsYAMLExplicitZero(t *testing.T) {
+	base := options.NewOptions()
+	base.StoreSyncTimeout = time.Minute
+	base.Kubeconfig = writeStoreSyncKubeconfig(t)
+	base.Config = writeStoreSyncConfig(t, "store_sync_timeout: 0s\n")
+
+	err := RunKubeStateMetrics(t.Context(), base.Clone())
+	if err == nil || strings.Contains(err.Error(), "store-sync-timeout") {
+		t.Fatalf("expected explicit 0 in YAML to be valid, got %v", err)
+	}
+}
+
+func TestRunKubeStateMetricsInvalidStoreSyncDurationInFile(t *testing.T) {
+	base := options.NewOptions()
+	base.Kubeconfig = writeStoreSyncKubeconfig(t)
+	base.Config = writeStoreSyncConfig(t, "store_sync_timeout: not-a-duration\n")
+
+	err := RunKubeStateMetrics(context.Background(), base.Clone())
+	if err == nil {
+		t.Fatal("expected unmarshal or validation to fail")
+	}
+}
+
+func TestRunKubeStateMetricsCorrectedFileAfterFailedPrepSameBase(t *testing.T) {
+	base := options.NewOptions()
+	base.StoreSyncTimeout = time.Second
+	base.Kubeconfig = writeStoreSyncKubeconfig(t)
+	path := writeStoreSyncConfig(t, "store_sync_timeout: -5s\n")
+	base.Config = path
+
+	err := RunKubeStateMetrics(context.Background(), base.Clone())
+	if err == nil || !strings.Contains(err.Error(), "store-sync-timeout") {
+		t.Fatalf("expected negative file to fail preparation, got %v", err)
+	}
+	if err := os.WriteFile(path, []byte("store_sync_timeout: 2s\nkubeconfig: "+base.Kubeconfig+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err = RunKubeStateMetrics(t.Context(), base.Clone())
+	if err == nil || strings.Contains(err.Error(), "store-sync-timeout") {
+		t.Fatalf("expected corrected file to succeed, got %v", err)
+	}
+	if base.StoreSyncTimeout != time.Second {
+		t.Fatalf("base CLI timeout should stay 1s for fresh clones, got %s", base.StoreSyncTimeout)
 	}
 }
 

@@ -22,7 +22,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/klog/v2"
@@ -37,18 +36,8 @@ func applyPreparedRunConfig(opts *options.Options, configHash, configSuccess, co
 	if p == nil {
 		return fmt.Errorf("prepared configuration missing")
 	}
-	opts.CaptureStoreSyncTimeoutBaseline()
-	var fileTimeout *time.Duration
-	if len(p.OptionsConfig) > 0 {
-		parsed, err := storeSyncTimeoutFromFile(p.OptionsConfig)
-		if err != nil {
-			return err
-		}
-		fileTimeout = parsed
-	}
-	opts.ResolveStoreSyncTimeout(fileTimeout)
-	if opts.StoreSyncTimeout < 0 {
-		return fmt.Errorf("value for --store-sync-timeout=%s must be equal to or greater than 0", opts.StoreSyncTimeout)
+	if err := opts.Validate(); err != nil {
+		return err
 	}
 	if p.OptionsConfigPath != "" && len(p.OptionsConfig) > 0 {
 		clean := filepath.Clean(p.OptionsConfigPath)

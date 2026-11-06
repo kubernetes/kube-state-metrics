@@ -288,6 +288,44 @@ func TestNew_PanicsOnNegativeStoreSyncTimeout(t *testing.T) {
 	_ = New(opts, nil, &stubStoreBuilder{}, false)
 }
 
+func TestNew_NilOptionsUsesIndependentDefaults(t *testing.T) {
+	stub := &stubStoreBuilder{buildWriters: writerList("w")}
+	h1 := New(nil, nil, stub, false)
+	h2 := New(nil, nil, stub, false)
+	if h1.opts == h2.opts {
+		t.Fatal("expected separate options instances for nil args")
+	}
+	if h1.storeSyncTimeout != options.DefaultStoreSyncTimeout || h2.storeSyncTimeout != options.DefaultStoreSyncTimeout {
+		t.Fatalf("expected default store sync timeout %s, got %s and %s", options.DefaultStoreSyncTimeout, h1.storeSyncTimeout, h2.storeSyncTimeout)
+	}
+}
+
+func TestNewValidated_NilOptionsOK(t *testing.T) {
+	stub := &stubStoreBuilder{buildWriters: writerList("w")}
+	h, err := NewValidated(nil, nil, stub, false)
+	if err != nil {
+		t.Fatalf("NewValidated(nil): %v", err)
+	}
+	if h.opts == nil || h.storeSyncTimeout != options.DefaultStoreSyncTimeout {
+		t.Fatalf("unexpected handler: opts=%v timeout=%s", h.opts, h.storeSyncTimeout)
+	}
+}
+
+func TestNew_ZeroOptionsStructKeepsExplicitZeroTimeout(t *testing.T) {
+	opts := &options.Options{}
+	if opts.StoreSyncTimeout != 0 {
+		t.Fatalf("precondition: zero timeout, got %s", opts.StoreSyncTimeout)
+	}
+	stub := &stubStoreBuilder{buildWriters: writerList("w")}
+	h := New(opts, nil, stub, false)
+	if h.opts != opts {
+		t.Fatal("expected handler to keep caller-supplied options pointer")
+	}
+	if h.storeSyncTimeout != 0 {
+		t.Fatalf("expected explicit 0 timeout, got %s", h.storeSyncTimeout)
+	}
+}
+
 func TestBuildWriters_SwapsWritersWhenSyncSucceeds(t *testing.T) {
 	stub := &stubStoreBuilder{buildWriters: writerList("next")}
 	h := newTestHandler(t, rebuildOptions(), stub)
@@ -1119,18 +1157,17 @@ func TestBuildWritersAsync_OwnerCancelDiscardsCandidate(t *testing.T) {
 }
 
 func TestInstallWriters_RejectsSupersededRevisionAtCommit(t *testing.T) {
-	stub := &stubStoreBuilder{buildWriters: writerList("stale")}
-	h := newTestHandler(t, rebuildOptions(), stub)
+	h := newTestHandler(t, rebuildOptions(), &stubStoreBuilder{})
 	seedServingWriters(h, writerList("stable"))
 
-	h.beforeInstallWriters = func() {
-		// Simulate revision advancing between successful sync and mtx acquisition.
-		h.configRevision.Add(1)
+	genCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	h.configRevision.Store(2)
+
+	ok := h.installWriters(genCtx, 1, writerList("stale"), cancel, func() {})
+	if ok {
+		t.Fatal("expected installWriters to reject when configRevision != attemptRevision")
 	}
-
-	h.BuildWriters(context.Background())
-	waitForRebuildIdle(t, h)
-
 	if got := installedNames(h); len(got) != 1 || got[0] != "stable" {
 		t.Fatalf("expected superseded revision not to install, got %v", got)
 	}

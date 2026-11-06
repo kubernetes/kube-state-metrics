@@ -19,7 +19,6 @@ package metricshandler
 import (
 	"context"
 	"errors"
-	"sync"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -74,42 +73,9 @@ func (m *MetricsHandler) runContext() context.Context {
 	return m.workerParentCtx
 }
 
-// mergeFirstDone returns a child of parent canceled when either a or b is done.
-func mergeFirstDone(parent, a, b context.Context) (context.Context, context.CancelFunc) {
-	if a == nil {
-		a = context.Background()
-	}
-	if b == nil {
-		b = context.Background()
-	}
-	ctx, cancel := context.WithCancel(parent)
-	var once sync.Once
-	stop := func() { once.Do(cancel) }
-	go func() {
-		select {
-		case <-a.Done():
-			stop()
-		case <-b.Done():
-			stop()
-		case <-ctx.Done():
-		}
-	}()
-	return ctx, cancel
-}
-
 func (m *MetricsHandler) registerRequestOwnerLocked(revision uint64, callerCtx context.Context) {
 	if callerCtx == nil {
 		callerCtx = context.Background()
-	}
-	if prevCancel, ok := m.ownerMergeCancel[revision]; ok {
-		prevCancel()
-		delete(m.ownerMergeCancel, revision)
-	}
-	if prev, ok := m.requestOwnerByRev[revision]; ok {
-		merged, cancel := mergeFirstDone(context.Background(), prev, callerCtx)
-		m.requestOwnerByRev[revision] = merged
-		m.ownerMergeCancel[revision] = cancel
-		return
 	}
 	m.requestOwnerByRev[revision] = callerCtx
 }
@@ -149,10 +115,6 @@ func (m *MetricsHandler) prepareCandidateGenerationLocked(attemptRevision uint64
 
 func (m *MetricsHandler) removeRequestOwner(revision uint64) {
 	m.rebuildMu.Lock()
-	if c, ok := m.ownerMergeCancel[revision]; ok {
-		c()
-		delete(m.ownerMergeCancel, revision)
-	}
 	delete(m.requestOwnerByRev, revision)
 	m.rebuildMu.Unlock()
 }
@@ -251,27 +213,6 @@ func (m *MetricsHandler) rebuildWorker() {
 			}
 			next := lh + 1
 
-			// A revision only exists after enqueueRebuild registered an owner (and optional waiter).
-			// External bumps to configRevision without enqueue (e.g. tests) must not strand the worker.
-			m.rebuildMu.Lock()
-			orphan := true
-			if _, ok := m.requestOwnerByRev[next]; ok {
-				orphan = false
-			} else {
-				for _, w := range m.syncWaiters {
-					if w.revision == next {
-						orphan = false
-						break
-					}
-				}
-			}
-			m.rebuildMu.Unlock()
-			if orphan {
-				m.releaseSyncWaitersThrough(next)
-				m.lastHandledRev.Store(next)
-				continue
-			}
-
 			// Coalesce: newer revision(s) may have registered after head was read — reload and
 			// skip sync/build for stale work (no WaitForStoresSync for superseded revisions).
 			head = m.configRevision.Load()
@@ -282,7 +223,7 @@ func (m *MetricsHandler) rebuildWorker() {
 				continue
 			}
 
-			published, timedOut, advance := m.runOneCandidate(next)
+			_, timedOut, advance := m.runOneCandidate(next)
 			// Unblock synchronous BuildWriters/ConfigureStore waiters after each candidate
 			// attempt (success, discard, or sync timeout); mirrors prior worker behavior.
 			m.releaseSyncWaitersThrough(next)
@@ -312,7 +253,6 @@ func (m *MetricsHandler) rebuildWorker() {
 			if advance {
 				m.removeRequestOwner(next)
 				m.lastHandledRev.Store(next)
-				_ = published
 			}
 		}
 	}

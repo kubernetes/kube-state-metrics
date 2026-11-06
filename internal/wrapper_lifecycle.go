@@ -41,7 +41,7 @@ type wrapperLifecycleHooks struct {
 	holdingReloadMuBeforeFirstLaunch func(restart func(fsnotify.Event), proceedWithFirstLaunch func())
 	// afterFirstLaunchScheduled runs after the initial go run(...) is scheduled and before reloadMu unlocks.
 	afterFirstLaunchScheduled func()
-	restartPortReleaseDelay          time.Duration
+	restartPortReleaseDelay   time.Duration
 	// done, when non-nil, causes runWrapperLifecycle to shut down once closed.
 	done chan struct{}
 }

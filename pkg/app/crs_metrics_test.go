@@ -43,7 +43,7 @@ spec:
 		CRSFilePath: crcPath,
 	}
 
-	if err := os.Mkdir(crcPath, 0o755); err != nil {
+	if err := os.Mkdir(crcPath, 0o750); err != nil {
 		t.Fatal(err)
 	}
 

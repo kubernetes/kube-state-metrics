@@ -331,7 +331,7 @@ func TestCRResourceListContextCancelsWithCapturedGeneration(t *testing.T) {
 	_ = b.crResourceListContext("example.com/v1, Kind=Foo")
 
 	cancel1()
-	waitUntilContextDone(t, crCtx1, "first CR list context should follow its generation")
+	waitUntilContextDone(crCtx1, t, "first CR list context should follow its generation")
 
 	select {
 	case <-gen2.Done():
@@ -341,7 +341,7 @@ func TestCRResourceListContextCancelsWithCapturedGeneration(t *testing.T) {
 	cancel2()
 }
 
-func waitUntilContextDone(t *testing.T, ctx context.Context, message string) {
+func waitUntilContextDone(ctx context.Context, t *testing.T, message string) {
 	t.Helper()
 	select {
 	case <-ctx.Done():

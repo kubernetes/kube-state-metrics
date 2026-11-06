@@ -68,10 +68,10 @@ func TestRealBuilder_ForbiddenSecretInstallsPodMetrics(t *testing.T) {
 		t.Fatal("expected secrets to be listed when pods and secrets are enabled")
 	}
 
-	body := scrape(t, handler)
-	if !strings.Contains(body, "kube_pod_info") || !strings.Contains(body, "original") {
-		t.Fatalf("expected pod metrics after sync, got:\n%s", body)
-	}
+	waitUntil(t, 3*time.Second, func() bool {
+		body := scrape(t, handler)
+		return strings.Contains(body, "kube_pod_info") && strings.Contains(body, "original")
+	}, "expected kube_pod_info for original pod in scrape output")
 }
 
 func TestRealBuilder_SlowReplacementKeepsServingUntilList(t *testing.T) {
@@ -104,7 +104,7 @@ func TestRealBuilder_SlowReplacementKeepsServingUntilList(t *testing.T) {
 	}
 
 	block.Store(true)
-	handler.BuildWriters(t.Context())
+	goBuildWriters(handler, t.Context())
 	select {
 	case <-entered:
 	case <-time.After(5 * time.Second):
@@ -152,7 +152,7 @@ func TestRealBuilder_CanceledSyncKeepsServing(t *testing.T) {
 
 	block.Store(true)
 	ctx, cancel := context.WithCancel(t.Context())
-	handler.BuildWriters(ctx)
+	goBuildWriters(handler, ctx)
 	select {
 	case <-entered:
 	case <-time.After(5 * time.Second):
@@ -191,13 +191,13 @@ func TestRealBuilder_StalledWarmGenerationInstallsBeforePendingRebuild(t *testin
 	installed := writerIdentity(handler)
 
 	block.Store(true)
-	handler.BuildWriters(t.Context())
+	goBuildWriters(handler, t.Context())
 	select {
 	case <-entered:
 	case <-time.After(5 * time.Second):
 		t.Fatal("first warm rebuild did not block on list")
 	}
-	handler.BuildWriters(t.Context())
+	goBuildWriters(handler, t.Context())
 	if got := writerIdentity(handler); got != installed {
 		t.Fatalf("stalled warm generation was discarded before sync finished: %s", got)
 	}

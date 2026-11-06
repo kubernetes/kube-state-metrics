@@ -19,10 +19,7 @@ package runconfig
 import "testing"
 
 func TestPreparedClone_PreservesNonNilEmptyKubeconfigContent(t *testing.T) {
-	empty := make([]byte, 0)
-	if empty == nil {
-		t.Fatal("test setup: empty slice must be non-nil")
-	}
+	empty := []byte{}
 	original := &Prepared{
 		KubeconfigPath:    "/tmp/kube",
 		KubeconfigContent: empty,

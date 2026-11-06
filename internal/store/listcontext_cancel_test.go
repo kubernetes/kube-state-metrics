@@ -90,7 +90,7 @@ func newDynamicClientWithTransport(t *testing.T, rt http.RoundTripper) dynamic.I
 	return client
 }
 
-func newIntegrationBuilder(t *testing.T, client kubernetes.Interface, genCtx context.Context) *Builder {
+func newIntegrationBuilder(ctx context.Context, t *testing.T, client kubernetes.Interface) *Builder {
 	t.Helper()
 	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
 	if err != nil {
@@ -99,7 +99,7 @@ func newIntegrationBuilder(t *testing.T, client kubernetes.Interface, genCtx con
 	b := NewBuilder()
 	b.WithMetrics(prometheus.NewRegistry())
 	b.WithKubeClient(client)
-	b.WithContext(genCtx)
+	b.WithContext(ctx)
 	b.WithNamespaces(options.DefaultNamespaces)
 	b.WithFamilyGeneratorFilter(l)
 	b.WithGenerateStoresFunc(b.DefaultGenerateStoresFunc())
@@ -130,7 +130,7 @@ func TestBuilderBuildConfigMapsInFlightListObservesGenerationCancel(t *testing.T
 	genCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	b := newIntegrationBuilder(t, client, genCtx)
+	b := newIntegrationBuilder(genCtx, t, client)
 	if err := b.WithEnabledResources([]string{"configmaps"}); err != nil {
 		t.Fatal(err)
 	}
@@ -194,7 +194,7 @@ func TestBuilderBuildCustomResourceInFlightListObservesGenerationCancel(t *testi
 	genCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	b := newIntegrationBuilder(t, fake.NewSimpleClientset(), genCtx)
+	b := newIntegrationBuilder(genCtx, t, fake.NewSimpleClientset())
 	factory := integrationCRFactory{client: dynClient.Resource(integrationCRGVR)}
 	b.WithCustomResourceStoreFactories(factory)
 	b.WithCustomResourceClients(map[string]any{
@@ -218,7 +218,7 @@ func TestBuilderBuildCustomResourceInFlightListObservesGVKStop(t *testing.T) {
 	genCtx, genCancel := context.WithCancel(context.Background())
 	defer genCancel()
 
-	b := newIntegrationBuilder(t, fake.NewSimpleClientset(), genCtx)
+	b := newIntegrationBuilder(genCtx, t, fake.NewSimpleClientset())
 	factory := integrationCRFactory{client: dynClient.Resource(integrationCRGVR)}
 	b.WithCustomResourceStoreFactories(factory)
 	b.WithCustomResourceClients(map[string]any{

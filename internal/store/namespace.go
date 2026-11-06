@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+
 	basemetrics "k8s.io/component-base/metrics"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"

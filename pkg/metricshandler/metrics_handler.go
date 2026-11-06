@@ -70,25 +70,40 @@ type MetricsHandler struct {
 	// storeSyncTimeout is copied in New. A reload decodes YAML into opts while an old rebuild may still run.
 	storeSyncTimeout time.Duration
 
-	cancel func()
+	cancel                 func()
+	stopInstalledGenBridge func()
 
 	// mtx protects metricsWriters, curShard, curTotalShards, and storeBuilder config.
-	mtx              *sync.RWMutex
-	metricsWriters   metricsstore.MetricsWriterList
-	writersInstalled bool
-	// writersServing is set with writersInstalled and read without mtx during rebuild.
-	writersServing     atomic.Bool
+	mtx            *sync.RWMutex
+	metricsWriters metricsstore.MetricsWriterList
+	// writersReady is set when a generation is installed (including an intentionally empty list).
+	writersReady       atomic.Bool
 	curTotalShards     int
 	curShard           int32
 	enableGZIPEncoding bool
 
-	rebuildMu        sync.Mutex
-	rebuildRunning   bool
-	pendingRebuild   bool
-	rebuildParentCtx context.Context
+	rebuildMu          sync.Mutex
+	configRevision     atomic.Uint64
+	lastHandledRev     atomic.Uint64
+	lastPublishedRev   atomic.Uint64
+	activeCandidateGen uint64
+	// requestOwnerByRev maps a pending config revision to the caller context that registered it
+	// (sync or async). Removed when the worker finishes that revision (publish, discard, or supersede).
+	// requestOwnerByRev is a merged context that completes when any registered caller for this revision is done.
+	requestOwnerByRev map[uint64]context.Context
+	// ownerMergeCancel stops the merge goroutine for requestOwnerByRev.
+	ownerMergeCancel map[uint64]context.CancelFunc
+	syncWaiters      []*syncWaiter
 	activeCancel     context.CancelFunc
-	// syncDeadline is the shared end of the startup rebuild burst. Warm generations use a full timeout after Build().
-	syncDeadline time.Time
+	workerWake       chan struct{}
+	workerStop       chan struct{}
+	workerStopped    sync.Once
+	workerParentCtx  context.Context
+	workerWG         sync.WaitGroup
+	candidateActive  atomic.Bool
+	cooldownActive   atomic.Bool
+	runCtxMu         sync.Mutex
+
 	// beforeSwap runs after the sync wait and before install. Tests use it to inject another rebuild.
 	beforeSwap func()
 	// beforeInstallWriters runs at the start of installWriters, before mtx is acquired. Tests only.
@@ -125,99 +140,39 @@ func validateNewHandlerOpts(opts *options.Options) error {
 }
 
 func mustNewHandler(opts *options.Options, kubeClient kubernetes.Interface, storeBuilder ksmtypes.BuilderInterface, enableGZIPEncoding bool) *MetricsHandler {
-	return &MetricsHandler{
+	parentCtx := context.Background()
+	h := &MetricsHandler{
 		opts:               opts,
 		storeSyncTimeout:   opts.StoreSyncTimeout,
 		kubeClient:         kubeClient,
 		storeBuilder:       storeBuilder,
 		enableGZIPEncoding: enableGZIPEncoding,
 		mtx:                &sync.RWMutex{},
+		requestOwnerByRev:  make(map[uint64]context.Context),
+		ownerMergeCancel:   make(map[uint64]context.CancelFunc),
+		workerWake:         make(chan struct{}, 1),
+		workerStop:         make(chan struct{}),
+		workerParentCtx:    parentCtx,
 	}
+	h.startRebuildWorker()
+	return h
 }
 
-// BuildWriters returns before the rebuild finishes. Ready stays true after the first install.
+// BuildWriters waits for one rebuild attempt to finish, be superseded, or be canceled by ctx.
 // Writers install only after successful store sync; store_sync_timeout 0 skips the wait.
+// Automatic retries after a timed-out attempt continue asynchronously without blocking the caller.
 func (m *MetricsHandler) BuildWriters(ctx context.Context) {
-	m.rebuildMu.Lock()
-	m.rebuildParentCtx = ctx
-	if m.rebuildRunning {
-		m.pendingRebuild = true
-		if m.activeCancel != nil && m.cancelActiveGeneration() {
-			m.activeCancel()
-		}
-		m.rebuildMu.Unlock()
-		return
-	}
-	if m.storeSyncTimeout > 0 && !m.writersServing.Load() {
-		m.syncDeadline = time.Now().Add(m.storeSyncTimeout)
-	}
-	// Publish cancel before the goroutine starts, so a later request can cancel this generation.
-	genCtx, genCancel := context.WithCancel(ctx)
-	m.activeCancel = genCancel
-	m.rebuildRunning = true
-	m.rebuildMu.Unlock()
-
-	go m.rebuildLoop(genCtx, genCancel)
+	m.enqueueRebuild(ctx, true)
 }
 
-// cancelActiveGeneration reports whether a newer request may cancel the in-flight generation.
+// BuildWritersAsync schedules a rebuild without waiting for the attempt to finish.
+func (m *MetricsHandler) BuildWritersAsync(ctx context.Context) {
+	m.enqueueRebuild(ctx, false)
+}
+
+// cancelActiveGeneration reports whether a newer request may cancel the in-flight candidate.
 func (m *MetricsHandler) cancelActiveGeneration() bool {
-	if m.storeSyncTimeout == 0 {
-		return false
-	}
-	return true
-}
-
-func (m *MetricsHandler) rebuildLoop(genCtx context.Context, genCancel context.CancelFunc) {
-	for {
-		writers, waitErr := m.doRebuild(genCtx)
-		if m.beforeSwap != nil {
-			m.beforeSwap()
-		}
-
-		m.rebuildMu.Lock()
-		canceled := genCtx.Err() != nil
-		serving := m.writersServing.Load()
-		// Supersession for timeout > 0 is handled via cancelActiveGeneration; do not
-		// discard install candidates for store_sync_timeout 0 (overlapped builds are not canceled).
-		superseded := false
-		// Clear the handle while this generation still owns it. The next one is created below.
-		m.activeCancel = nil
-		if !canceled && !superseded && installableSync(waitErr, serving) {
-			if m.installWriters(genCtx, writers, genCancel) {
-				if waitErr != nil {
-					klog.InfoS("Installed metrics writers after bounded store sync; live reflectors continue filling stores",
-						"writerCount", len(writers),
-						"reason", waitErr,
-					)
-				} else {
-					klog.InfoS("Installed metrics writers after store sync", "writerCount", len(writers))
-				}
-			} else {
-				genCancel()
-				if m.onCandidateCancel != nil {
-					m.onCandidateCancel()
-				}
-			}
-		} else {
-			// Log first. genCancel cancels genCtx and would hide waitErr.
-			if !m.pendingRebuild {
-				m.logSkippedInstall(genCtx, waitErr, len(writers))
-			}
-			genCancel()
-		}
-		if m.pendingRebuild {
-			m.pendingRebuild = false
-			genCtx, genCancel = context.WithCancel(m.rebuildParentCtx)
-			m.activeCancel = genCancel
-			m.rebuildMu.Unlock()
-			continue
-		}
-		m.syncDeadline = time.Time{}
-		m.rebuildRunning = false
-		m.rebuildMu.Unlock()
-		return
-	}
+	return m.storeSyncTimeout != 0
 }
 
 func (m *MetricsHandler) logSkippedInstall(genCtx context.Context, waitErr error, writerCount int) {
@@ -237,29 +192,58 @@ func (m *MetricsHandler) logSkippedInstall(genCtx context.Context, waitErr error
 	)
 }
 
-// installableSync reports whether err allows installing the generation.
-// Only a successful sync (nil error) may publish writers; store_sync_timeout 0 skips the wait in doRebuild.
-func installableSync(err error, _ bool) bool {
+func installableSync(err error) bool {
 	return err == nil
 }
 
-func (m *MetricsHandler) installWriters(genCtx context.Context, writers metricsstore.MetricsWriterList, cancel context.CancelFunc) bool {
+func (m *MetricsHandler) installWriters(genCtx context.Context, attemptRevision uint64, writers metricsstore.MetricsWriterList, cancel context.CancelFunc, stopGenOwnerBridge func()) bool {
 	if m.beforeInstallWriters != nil {
 		m.beforeInstallWriters()
+	}
+	if m.requestOwnerCanceled(attemptRevision) {
+		return false
+	}
+	// Lock rebuildMu before mtx so enqueueRebuild cannot call activeCancel while this path is
+	// between publishing checks and clearing activeCancel (P1 handoff race).
+	m.rebuildMu.Lock()
+	if genCtx.Err() != nil {
+		m.rebuildMu.Unlock()
+		return false
+	}
+	if m.configRevision.Load() != attemptRevision {
+		m.rebuildMu.Unlock()
+		return false
 	}
 	m.mtx.Lock()
 	if genCtx.Err() != nil {
 		m.mtx.Unlock()
+		m.rebuildMu.Unlock()
+		return false
+	}
+	if m.configRevision.Load() != attemptRevision {
+		m.mtx.Unlock()
+		m.rebuildMu.Unlock()
 		return false
 	}
 	oldCancel := m.cancel
+	oldStopBridge := m.stopInstalledGenBridge
 	m.metricsWriters = writers
 	m.cancel = cancel
-	m.writersInstalled = true
-	m.writersServing.Store(true)
+	m.stopInstalledGenBridge = stopGenOwnerBridge
+	m.writersReady.Store(true)
+	// Clear candidate slot only after publish; if mtx checks failed we still cancel via runOneCandidate.
+	if m.activeCandidateGen == attemptRevision {
+		m.activeCancel = nil
+		m.activeCandidateGen = 0
+	}
 	m.mtx.Unlock()
+	m.rebuildMu.Unlock()
+	m.lastPublishedRev.Store(attemptRevision)
 	if oldCancel != nil {
 		oldCancel()
+	}
+	if oldStopBridge != nil {
+		oldStopBridge()
 	}
 	return true
 }
@@ -273,61 +257,30 @@ func (m *MetricsHandler) doRebuild(genCtx context.Context) (metricsstore.Metrics
 	if err := genCtx.Err(); err != nil {
 		return writers, err
 	}
-	serving := m.writersServing.Load()
-	configured, remaining := m.syncWaitBudget(serving)
+	configured := m.storeSyncTimeout
 	if configured < 0 {
 		return writers, fmt.Errorf("%w: %s", errInvalidStoreSyncTimeout, configured)
 	}
-	// Zero skips the wait. A canceled generation is still rejected before install.
 	if configured == 0 {
 		return writers, nil
-	}
-	waitFor := configured
-	if !serving {
-		if remaining > 0 {
-			waitFor = remaining
-		}
 	}
 	syncer, ok := m.storeBuilder.(ksmtypes.StoreSyncBuilder)
 	if !ok {
 		return writers, nil
 	}
-	for {
-		err := syncer.WaitForStoresSync(genCtx, waitFor)
-		if ctxErr := genCtx.Err(); ctxErr != nil {
-			return writers, ctxErr
-		}
-		if err == nil {
-			return writers, nil
-		}
-		if errors.Is(err, ksmtypes.ErrStoreSyncTimeout) {
-			waitFor = configured
-			continue
-		}
-		return writers, err
+	err := syncer.WaitForStoresSync(genCtx, configured)
+	if ctxErr := genCtx.Err(); ctxErr != nil {
+		return writers, ctxErr
 	}
-}
-
-// syncWaitBudget returns the configured timeout and the startup burst time left.
-// Warm rebuilds ignore the shared deadline; they pass the full configured timeout after Build().
-func (m *MetricsHandler) syncWaitBudget(ready bool) (configured, remaining time.Duration) {
-	m.rebuildMu.Lock()
-	defer m.rebuildMu.Unlock()
-	configured = m.storeSyncTimeout
-	if configured > 0 && !ready {
-		remaining = time.Until(m.syncDeadline)
-	}
-	return configured, remaining
+	return writers, err
 }
 
 // Ready reports whether a writer generation has been installed.
 func (m *MetricsHandler) Ready() bool {
-	m.mtx.RLock()
-	defer m.mtx.RUnlock()
-	return m.writersInstalled
+	return m.writersReady.Load()
 }
 
-// ConfigureStore applies storeBuilder configuration under mtx, then rebuilds writers.
+// ConfigureStore applies storeBuilder configuration under mtx, then rebuilds writers synchronously.
 func (m *MetricsHandler) ConfigureStore(ctx context.Context, configure func(ksmtypes.BuilderInterface) error) error {
 	if configure == nil {
 		m.BuildWriters(ctx)
@@ -343,8 +296,23 @@ func (m *MetricsHandler) ConfigureStore(ctx context.Context, configure func(ksmt
 	return nil
 }
 
-// ConfigureSharding configures sharding. Configuration can be used multiple times and
-// concurrently.
+// ConfigureStoreAsync applies configuration and schedules a rebuild without blocking on sync.
+func (m *MetricsHandler) ConfigureStoreAsync(ctx context.Context, configure func(ksmtypes.BuilderInterface) error) error {
+	if configure == nil {
+		m.BuildWritersAsync(ctx)
+		return nil
+	}
+	m.mtx.Lock()
+	err := configure(m.storeBuilder)
+	m.mtx.Unlock()
+	if err != nil {
+		return err
+	}
+	m.enqueueRebuild(ctx, false)
+	return nil
+}
+
+// ConfigureSharding configures sharding and waits for one rebuild attempt to finish.
 func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, totalShards int) {
 	if totalShards != 1 {
 		klog.InfoS("Configuring sharding of this instance to be shard index (zero-indexed) out of total shards", "shard", shard, "totalShards", totalShards)
@@ -357,10 +325,28 @@ func (m *MetricsHandler) ConfigureSharding(ctx context.Context, shard int32, tot
 	})
 }
 
+// ConfigureShardingAsync schedules a sharding update without blocking on store sync.
+func (m *MetricsHandler) ConfigureShardingAsync(ctx context.Context, shard int32, totalShards int) {
+	if totalShards != 1 {
+		klog.InfoS("Configuring sharding of this instance to be shard index (zero-indexed) out of total shards", "shard", shard, "totalShards", totalShards)
+	}
+	m.ConfigureStoreAsync(ctx, func(b ksmtypes.BuilderInterface) error {
+		m.curShard = shard
+		m.curTotalShards = totalShards
+		b.WithSharding(shard, totalShards)
+		return nil
+	})
+}
+
 // Run configures the MetricsHandler's sharding and if autosharding is enabled
 // re-configures sharding on re-sharding events. Run should only be called
 // once.
 func (m *MetricsHandler) Run(ctx context.Context) error {
+	m.runCtxMu.Lock()
+	m.workerParentCtx = ctx
+	m.runCtxMu.Unlock()
+	defer m.stopRebuildWorker()
+
 	autoSharding := len(m.opts.Pod) > 0 && len(m.opts.Namespace) > 0
 
 	if !autoSharding {
@@ -408,7 +394,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 				return
 			}
 
-			m.ConfigureSharding(ctx, shard, totalShards)
+			m.ConfigureShardingAsync(ctx, shard, totalShards)
 		},
 		UpdateFunc: func(oldo, curo any) {
 			old := oldo.(*appsv1.StatefulSet)
@@ -435,7 +421,7 @@ func (m *MetricsHandler) Run(ctx context.Context) error {
 				return
 			}
 
-			m.ConfigureSharding(ctx, shard, totalShards)
+			m.ConfigureShardingAsync(ctx, shard, totalShards)
 		},
 	})
 	go i.Run(ctx.Done())
@@ -456,7 +442,7 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// rather than mutated, so a snapshot stays readable and self-consistent even
 	// if it is rebuilt mid-response.
 	m.mtx.RLock()
-	installed := m.writersInstalled
+	installed := m.writersReady.Load()
 	writers := m.metricsWriters
 	m.mtx.RUnlock()
 	if !installed {

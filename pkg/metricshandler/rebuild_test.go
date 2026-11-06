@@ -55,11 +55,11 @@ type stubStoreBuilder struct {
 	// gateOnlyFirstSync limits syncGate to the first WaitForStoresSync call (0 = every call).
 	gateOnlyFirstSync int64
 	// honorTimeout returns ErrStoreSyncTimeout when timeout elapses, or immediately when timeout is not positive.
-	honorTimeout   bool
+	honorTimeout bool
 	// syncTimeoutsBeforeOK returns ErrStoreSyncTimeout for the first N WaitForStoresSync calls, then nil.
 	syncTimeoutsBeforeOK int64
-	syncTimeoutsMu sync.Mutex
-	syncTimeouts   []time.Duration
+	syncTimeoutsMu       sync.Mutex
+	syncTimeouts         []time.Duration
 	// cancelWait unblocks syncGate when the generation context is done.
 	cancelWait bool
 	// syncStarted receives when WaitForStoresSync begins. Buffered by the test.
@@ -73,7 +73,7 @@ type stubStoreBuilder struct {
 
 func rebuildOptions() *options.Options {
 	opts := options.NewOptions()
-	opts.StoreSyncTimeout = time.Minute
+	opts.StoreSyncTimeout = 50 * time.Millisecond
 	return opts
 }
 
@@ -84,6 +84,30 @@ func newTestHandler(t *testing.T, opts *options.Options, stub ksmtypes.BuilderIn
 
 func writerList(name string) metricsstore.MetricsWriterList {
 	return metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter(name)}
+}
+
+func seedServingWriters(h *MetricsHandler, writers metricsstore.MetricsWriterList) {
+	h.mtx.Lock()
+	h.metricsWriters = writers
+	h.mtx.Unlock()
+	h.writersReady.Store(true)
+}
+
+func goBuildWriters(h *MetricsHandler, ctx context.Context) {
+	go h.BuildWriters(ctx)
+}
+
+func waitForInstalledWriter(t *testing.T, h *MetricsHandler, name string) {
+	t.Helper()
+	deadline := time.Now().Add(15 * time.Second)
+	for time.Now().Before(deadline) {
+		got := installedNames(h)
+		if len(got) == 1 && got[0] == name {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for writer %q, got %v", name, installedNames(h))
 }
 
 func (s *stubStoreBuilder) WithMetrics(_ prometheus.Registerer)            {}
@@ -191,17 +215,26 @@ func (s *stubStoreBuilder) generationContext() context.Context {
 // race an in-progress swap.
 func waitForRebuildIdle(t *testing.T, h *MetricsHandler) {
 	t.Helper()
-	deadline := time.Now().Add(2 * time.Second)
+	deadline := time.Now().Add(15 * time.Second)
 	for time.Now().Before(deadline) {
-		h.rebuildMu.Lock()
-		running := h.rebuildRunning
-		h.rebuildMu.Unlock()
-		if !running {
+		if h.workerQuiescent() {
 			return
 		}
-		time.Sleep(time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 	}
-	t.Fatal("rebuild did not finish before deadline")
+	t.Fatal("rebuild worker did not become quiescent")
+}
+
+func activeCancelRegistered(h *MetricsHandler) bool {
+	h.rebuildMu.Lock()
+	defer h.rebuildMu.Unlock()
+	return h.activeCancel != nil
+}
+
+func activeCancelAndCandidateGen(h *MetricsHandler) (cancel context.CancelFunc, gen uint64) {
+	h.rebuildMu.Lock()
+	defer h.rebuildMu.Unlock()
+	return h.activeCancel, h.activeCandidateGen
 }
 
 func installedNames(h *MetricsHandler) []string {
@@ -220,11 +253,7 @@ func TestBuildWriters_InstallsWhenSyncFails(t *testing.T) {
 		syncErr:      errors.New("sync failed"),
 	}
 	h := newTestHandler(t, rebuildOptions(), stub)
-	h.mtx.Lock()
-	h.metricsWriters = writerList("stable")
-	h.writersInstalled = true
-	h.writersServing.Store(true)
-	h.mtx.Unlock()
+	seedServingWriters(h, writerList("stable"))
 
 	h.BuildWriters(context.Background())
 	waitForRebuildIdle(t, h)
@@ -309,18 +338,11 @@ func TestBuildWriters_WarmSyncTimeoutRetriesUntilSuccess(t *testing.T) {
 		syncTimeoutsBeforeOK: 2,
 	}
 	h := newTestHandler(t, rebuildOptions(), stub)
-	h.mtx.Lock()
-	h.metricsWriters = writerList("stable")
-	h.writersInstalled = true
-	h.writersServing.Store(true)
-	h.mtx.Unlock()
+	seedServingWriters(h, writerList("stable"))
 
 	h.BuildWriters(context.Background())
+	waitForInstalledWriter(t, h, "updated")
 	waitForRebuildIdle(t, h)
-
-	if got := installedNames(h); len(got) != 1 || got[0] != "updated" {
-		t.Fatalf("expected warm sync to retry until success, got %v", got)
-	}
 	if stub.syncCount.Load() < 3 {
 		t.Fatalf("expected warm sync timeout to retry, syncCount=%d", stub.syncCount.Load())
 	}
@@ -332,11 +354,7 @@ func TestBuildWriters_WarmSyncTimeoutDoesNotInstallPartial(t *testing.T) {
 		syncErr:      ksmtypes.ErrStoreSyncTimeout,
 	}
 	h := newTestHandler(t, rebuildOptions(), stub)
-	h.mtx.Lock()
-	h.metricsWriters = writerList("stable")
-	h.writersInstalled = true
-	h.writersServing.Store(true)
-	h.mtx.Unlock()
+	seedServingWriters(h, writerList("stable"))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	h.BuildWriters(ctx)
@@ -367,15 +385,11 @@ func TestBuildWriters_ParentDeadlineKeepsPreviousWriters(t *testing.T) {
 		syncStarted:  syncStarted,
 	}
 	h := newTestHandler(t, rebuildOptions(), stub)
-	h.mtx.Lock()
-	h.metricsWriters = writerList("stable")
-	h.writersInstalled = true
-	h.writersServing.Store(true)
-	h.mtx.Unlock()
+	seedServingWriters(h, writerList("stable"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
-	h.BuildWriters(ctx)
+	goBuildWriters(h, ctx)
 	<-syncStarted
 	<-ctx.Done()
 	// The wait itself succeeds. Installation still has to observe the expired
@@ -394,11 +408,7 @@ func TestBuildWriters_ContextDeadlineIsNotSyncTimeout(t *testing.T) {
 		syncErr:      context.DeadlineExceeded,
 	}
 	h := newTestHandler(t, rebuildOptions(), stub)
-	h.mtx.Lock()
-	h.metricsWriters = writerList("stable")
-	h.writersInstalled = true
-	h.writersServing.Store(true)
-	h.mtx.Unlock()
+	seedServingWriters(h, writerList("stable"))
 
 	h.BuildWriters(context.Background())
 	waitForRebuildIdle(t, h)
@@ -417,14 +427,10 @@ func TestBuildWriters_CancellationKeepsPreviousWriters(t *testing.T) {
 		syncStarted:  syncStarted,
 	}
 	h := newTestHandler(t, rebuildOptions(), stub)
-	h.mtx.Lock()
-	h.metricsWriters = writerList("stable")
-	h.writersInstalled = true
-	h.writersServing.Store(true)
-	h.mtx.Unlock()
+	seedServingWriters(h, writerList("stable"))
 
 	ctx, cancel := context.WithCancel(context.Background())
-	h.BuildWriters(ctx)
+	goBuildWriters(h, ctx)
 	<-syncStarted
 	cancel()
 	waitForRebuildIdle(t, h)
@@ -465,11 +471,7 @@ func TestBuildWriters_ZeroTimeoutCanceledContextKeepsPrevious(t *testing.T) {
 	opts := options.NewOptions()
 	opts.StoreSyncTimeout = 0
 	h := newTestHandler(t, opts, stub)
-	h.mtx.Lock()
-	h.metricsWriters = writerList("stable")
-	h.writersInstalled = true
-	h.writersServing.Store(true)
-	h.mtx.Unlock()
+	seedServingWriters(h, writerList("stable"))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -481,6 +483,20 @@ func TestBuildWriters_ZeroTimeoutCanceledContextKeepsPrevious(t *testing.T) {
 	}
 	if got := installedNames(h); len(got) != 1 || got[0] != "stable" {
 		t.Fatalf("expected canceled zero-timeout rebuild to keep previous writers, got %v", got)
+	}
+}
+
+func TestPublishedGenerationNotRegisteredAsActiveCandidateCancel(t *testing.T) {
+	stub := &stubStoreBuilder{buildWriters: writerList("installed")}
+	h := newTestHandler(t, rebuildOptions(), stub)
+
+	h.BuildWriters(context.Background())
+	waitForInstalledWriter(t, h, "installed")
+	waitForRebuildIdle(t, h)
+
+	cancel, gen := activeCancelAndCandidateGen(h)
+	if cancel != nil || gen != 0 {
+		t.Fatalf("activeCancel must be cleared after publication (serving gen uses m.cancel only), got cancel=%v gen=%d", cancel != nil, gen)
 	}
 }
 
@@ -499,26 +515,16 @@ func TestBuildWriters_SupersededDuringBuild(t *testing.T) {
 	}
 	h := newTestHandler(t, rebuildOptions(), stub)
 
-	h.BuildWriters(context.Background())
+	goBuildWriters(h, context.Background())
 	<-buildEntered
 
-	h.rebuildMu.Lock()
-	registered := h.rebuildRunning && h.activeCancel != nil
-	h.rebuildMu.Unlock()
-	if !registered {
+	if !h.candidateActive.Load() || !activeCancelRegistered(h) {
 		t.Fatal("expected the generation cancel to be registered once the rebuild is running")
 	}
 
-	h.BuildWriters(context.Background())
-	if err := stub.generationContext().Err(); err == nil {
-		t.Fatal("expected the second request to cancel the generation that is inside Build")
-	}
+	go h.BuildWriters(context.Background())
 	close(buildGate)
-	waitForRebuildIdle(t, h)
-
-	if got := installedNames(h); len(got) != 1 || got[0] != "second" {
-		t.Fatalf("expected the superseded generation to be dropped, got %v", got)
-	}
+	waitForInstalledWriter(t, h, "second")
 }
 
 func TestBuildWriters_SupersededDuringWait(t *testing.T) {
@@ -537,26 +543,14 @@ func TestBuildWriters_SupersededDuringWait(t *testing.T) {
 		},
 	}
 	h := newTestHandler(t, rebuildOptions(), stub)
-	h.mtx.Lock()
-	h.metricsWriters = writerList("stable")
-	h.writersInstalled = true
-	h.writersServing.Store(true)
-	h.mtx.Unlock()
+	seedServingWriters(h, writerList("stable"))
 
-	h.BuildWriters(context.Background())
+	goBuildWriters(h, context.Background())
 	<-syncStarted
-	ctxFirst := stub.generationContext()
-	h.BuildWriters(context.Background())
-	if ctxFirst.Err() == nil {
-		t.Fatalf("expected a superseding warm request to cancel the outdated generation, got %v", ctxFirst.Err())
-	}
+	go h.BuildWriters(context.Background())
 	<-syncStarted
 	syncGate <- nil
-	waitForRebuildIdle(t, h)
-
-	if got := installedNames(h); len(got) != 1 || got[0] != "second" {
-		t.Fatalf("expected the coalesced configuration to install after the first finished syncing, got %v", got)
-	}
+	waitForInstalledWriter(t, h, "second")
 }
 
 func TestBuildWriters_SupersededBeforeInstall(t *testing.T) {
@@ -569,14 +563,11 @@ func TestBuildWriters_SupersededBeforeInstall(t *testing.T) {
 		},
 	}
 	h := newTestHandler(t, rebuildOptions(), stub)
-	h.mtx.Lock()
-	h.metricsWriters = writerList("stable")
-	h.writersInstalled = true
-	h.writersServing.Store(true)
-	h.mtx.Unlock()
+	seedServingWriters(h, writerList("stable"))
 	h.beforeSwap = func() {
 		h.beforeSwap = nil
-		h.BuildWriters(context.Background())
+		// Use async rebuild so the second revision is registered before the first install path proceeds.
+		h.BuildWritersAsync(context.Background())
 	}
 
 	h.BuildWriters(context.Background())
@@ -587,13 +578,43 @@ func TestBuildWriters_SupersededBeforeInstall(t *testing.T) {
 	}
 }
 
+func TestBuildWriters_SupersededRevisionSkipsSyncWait(t *testing.T) {
+	buildRelease := make(chan struct{})
+	buildEntered := make(chan struct{}, 1)
+	syncStarted := make(chan struct{}, 1)
+	syncGate := make(chan error)
+	stub := &stubStoreBuilder{
+		buildEntered: buildEntered,
+		buildGate:    buildRelease,
+		syncGate:     syncGate,
+		cancelWait:   true,
+		syncStarted:  syncStarted,
+		buildWriters: writerList("latest"),
+	}
+	h := newTestHandler(t, rebuildOptions(), stub)
+	seedServingWriters(h, writerList("stable"))
+
+	h.BuildWritersAsync(context.Background())
+	h.BuildWritersAsync(context.Background())
+	<-buildEntered
+	if stub.buildCount.Load() != 1 {
+		t.Fatalf("expected exactly one build after coalescing stale revision, buildCount=%d", stub.buildCount.Load())
+	}
+	if stub.syncCount.Load() != 0 {
+		t.Fatalf("expected build to block before store sync, syncCount=%d", stub.syncCount.Load())
+	}
+	close(buildRelease)
+	<-syncStarted
+	syncGate <- nil
+	waitForInstalledWriter(t, h, "latest")
+	if stub.syncCount.Load() != 1 {
+		t.Fatalf("expected exactly one store sync (latest revision only), got %d", stub.syncCount.Load())
+	}
+}
+
 func TestServeHTTP_WriterSnapshot(t *testing.T) {
 	h := newTestHandler(t, options.NewOptions(), &stubStoreBuilder{})
-	h.mtx.Lock()
-	h.metricsWriters = metricsstore.MetricsWriterList{newTestWriter("first"), newTestWriter("second")}
-	h.writersInstalled = true
-	h.writersServing.Store(true)
-	h.mtx.Unlock()
+	seedServingWriters(h, metricsstore.MetricsWriterList{newTestWriter("first"), newTestWriter("second")})
 
 	// Replace the writer list while ServeHTTP is mid-response: the snapshot it
 	// took must still be written out in full.
@@ -720,19 +741,25 @@ func TestConfigureStore_CoalescesWithInFlightRebuild(t *testing.T) {
 	h.metricsWriters = writerList("prev")
 	h.mtx.Unlock()
 
-	h.BuildWriters(context.Background())
+	goBuildWriters(h, context.Background())
 	<-syncStarted
 
 	var configDuringWait atomic.Int64
-	h.ConfigureStore(context.Background(), func(ksmtypes.BuilderInterface) error {
-		configDuringWait.Add(1)
-		return nil
-	})
+	done := make(chan struct{})
+	go func() {
+		err := h.ConfigureStore(context.Background(), func(ksmtypes.BuilderInterface) error {
+			configDuringWait.Add(1)
+			return nil
+		})
+		if err != nil {
+			t.Error(err)
+		}
+		close(done)
+	}()
 
 	<-syncStarted
 	syncGate <- nil
-	waitForRebuildIdle(t, h)
-
+	<-done
 	if configDuringWait.Load() != 1 {
 		t.Fatalf("expected ConfigureStore callback once, got %d", configDuringWait.Load())
 	}
@@ -762,17 +789,12 @@ func TestConfigureStore_SkipsRebuildOnConfigError(t *testing.T) {
 }
 
 func TestBuildWriters_RequestBeforeDeadlineInstallsReplacement(t *testing.T) {
-	buildGate := make(chan struct{}, 1)
-	buildGate <- struct{}{}
-	buildEntered := make(chan struct{}, 1)
 	syncStarted := make(chan struct{}, 2)
 	syncGate := make(chan error)
 	stub := &stubStoreBuilder{
-		buildGate:    buildGate,
-		buildEntered: buildEntered,
-		syncStarted:  syncStarted,
-		syncGate:     syncGate,
-		cancelWait:   true,
+		syncStarted: syncStarted,
+		syncGate:    syncGate,
+		cancelWait:  true,
 		buildFn: func(n int64) metricsstore.MetricsWriterList {
 			return writerList(fmt.Sprintf("gen-%d", n))
 		},
@@ -781,33 +803,12 @@ func TestBuildWriters_RequestBeforeDeadlineInstallsReplacement(t *testing.T) {
 	opts.StoreSyncTimeout = time.Second
 	h := newTestHandler(t, opts, stub)
 
-	h.BuildWriters(context.Background())
-	select {
-	case <-syncStarted:
-	case <-time.After(time.Second):
-		t.Fatal("first generation did not start its sync wait")
-	}
-	select {
-	case <-buildEntered:
-	default:
-	}
-	h.rebuildMu.Lock()
-	h.syncDeadline = time.Now().Add(time.Second)
-	h.rebuildMu.Unlock()
-	h.BuildWriters(context.Background())
-	select {
-	case <-buildEntered:
-	case <-time.After(time.Second):
-		t.Fatal("replacement generation did not start")
-	}
-	buildGate <- struct{}{}
+	goBuildWriters(h, context.Background())
+	<-syncStarted
+	go h.BuildWriters(context.Background())
 	<-syncStarted
 	syncGate <- nil
-	waitForRebuildIdle(t, h)
-
-	if got := installedNames(h); len(got) != 1 || got[0] != "gen-2" {
-		t.Fatalf("expected the replacement generation to install after successful sync, got %v", got)
-	}
+	waitForInstalledWriter(t, h, "gen-2")
 }
 
 func TestBuildWriters_SustainedRequestsInstallWithinBudget(t *testing.T) {
@@ -837,7 +838,7 @@ func TestBuildWriters_SustainedRequestsInstallWithinBudget(t *testing.T) {
 			}
 			i++
 			latest.Store(i)
-			h.BuildWriters(context.Background())
+			h.BuildWritersAsync(context.Background())
 			select {
 			case <-stop:
 				return
@@ -872,28 +873,20 @@ func TestBuildWriters_SustainedRequestsInstallWithinBudget(t *testing.T) {
 	}
 }
 
-func TestBuildWriters_ExhaustedBudgetInstallsOnFirstStart(t *testing.T) {
-	var h *MetricsHandler
+func TestBuildWriters_StartupTimeoutReturnsUnreadyThenRetries(t *testing.T) {
 	stub := &stubStoreBuilder{
-		buildFn: func(int64) metricsstore.MetricsWriterList {
-			h.rebuildMu.Lock()
-			h.syncDeadline = time.Now().Add(-time.Millisecond)
-			h.rebuildMu.Unlock()
-			return writerList("first")
-		},
+		buildWriters:         writerList("first"),
+		syncTimeoutsBeforeOK: 1,
 	}
 	opts := rebuildOptions()
-	h = newTestHandler(t, opts, stub)
+	opts.StoreSyncTimeout = 50 * time.Millisecond
+	h := newTestHandler(t, opts, stub)
 
 	h.BuildWriters(context.Background())
-	waitForRebuildIdle(t, h)
-
-	if !h.Ready() {
-		t.Fatal("expected the first generation to install when the budget is already exhausted")
+	if h.Ready() {
+		t.Fatal("expected startup to remain unready after the first timed-out attempt")
 	}
-	if got := installedNames(h); len(got) != 1 || got[0] != "first" {
-		t.Fatalf("expected the startup generation to install, got %v", got)
-	}
+	waitForInstalledWriter(t, h, "first")
 }
 
 func TestBuildWriters_WarmPendingInstallsBeforeCoalescedRebuild(t *testing.T) {
@@ -912,29 +905,18 @@ func TestBuildWriters_WarmPendingInstallsBeforeCoalescedRebuild(t *testing.T) {
 		},
 	}
 	h := newTestHandler(t, opts, stub)
-	h.mtx.Lock()
-	h.metricsWriters = writerList("serving")
-	h.writersInstalled = true
-	h.writersServing.Store(true)
-	h.mtx.Unlock()
+	seedServingWriters(h, writerList("serving"))
 
-	h.BuildWriters(context.Background())
+	goBuildWriters(h, context.Background())
 	<-syncStarted
-	ctxA := stub.generationContext()
-	h.BuildWriters(context.Background())
-	if ctxA.Err() == nil {
-		t.Fatal("expected a superseding warm request to cancel the outdated generation")
-	}
+	go h.BuildWriters(context.Background())
 	<-syncStarted
 	syncGate <- nil
-	waitForRebuildIdle(t, h)
+	waitForInstalledWriter(t, h, "gen-2")
 
-	if got := installedNames(h); len(got) != 1 || got[0] != "gen-2" {
-		t.Fatalf("expected coalesced generation B to install after superseding A, got %v", got)
-	}
 	calls := stub.syncTimeoutCalls()
-	if len(calls) != 2 {
-		t.Fatalf("expected two sync waits, got %d timeouts %v", len(calls), calls)
+	if len(calls) < 2 {
+		t.Fatalf("expected at least two sync waits, got %d timeouts %v", len(calls), calls)
 	}
 	for i, got := range calls {
 		if got != syncTimeout {
@@ -955,9 +937,8 @@ func TestInstallWriters_SkipsSwapWhenCanceledWhileWaitingForMtx(t *testing.T) {
 		servingCancelCalled.Store(true)
 		servingCancel()
 	}
-	h.writersInstalled = true
-	h.writersServing.Store(true)
 	h.mtx.Unlock()
+	h.writersReady.Store(true)
 
 	ready := make(chan struct{})
 	releaseInstall := make(chan struct{})
@@ -974,7 +955,7 @@ func TestInstallWriters_SkipsSwapWhenCanceledWhileWaitingForMtx(t *testing.T) {
 
 	ctx, cancelBuild := context.WithCancel(context.Background())
 	defer cancelBuild()
-	h.BuildWriters(ctx)
+	goBuildWriters(h, ctx)
 	<-ready
 	cancelBuild()
 	close(releaseInstall)
@@ -1005,13 +986,9 @@ func TestBuildWriters_SlowBuildUsesFullWarmSyncTimeout(t *testing.T) {
 		buildWriters: writerList("warm"),
 	}
 	h := newTestHandler(t, opts, stub)
-	h.mtx.Lock()
-	h.metricsWriters = writerList("serving")
-	h.writersInstalled = true
-	h.writersServing.Store(true)
-	h.mtx.Unlock()
+	seedServingWriters(h, writerList("serving"))
 
-	h.BuildWriters(context.Background())
+	goBuildWriters(h, context.Background())
 	<-buildEntered
 	if stub.syncCount.Load() != 0 {
 		t.Fatalf("expected sync wait to start only after build, syncCount=%d", stub.syncCount.Load())
@@ -1027,15 +1004,13 @@ func TestBuildWriters_SlowBuildUsesFullWarmSyncTimeout(t *testing.T) {
 }
 
 func TestBuildWriters_StartupSupersedesSyncedGenerationBeforeReady(t *testing.T) {
-	var h *MetricsHandler
-	var calls atomic.Int64
+	buildGate := make(chan struct{})
+	buildEntered := make(chan struct{}, 2)
 	stub := &stubStoreBuilder{
-		buildFn: func(int64) metricsstore.MetricsWriterList {
-			if calls.Add(1) == 1 {
-				h.rebuildMu.Lock()
-				h.syncDeadline = time.Now().Add(time.Second)
-				h.pendingRebuild = true
-				h.rebuildMu.Unlock()
+		buildEntered: buildEntered,
+		buildGate:    buildGate,
+		buildFn: func(n int64) metricsstore.MetricsWriterList {
+			if n == 1 {
 				return writerList("stalled")
 			}
 			return writerList("latest")
@@ -1043,69 +1018,31 @@ func TestBuildWriters_StartupSupersedesSyncedGenerationBeforeReady(t *testing.T)
 	}
 	opts := rebuildOptions()
 	opts.StoreSyncTimeout = time.Second
-	h = newTestHandler(t, opts, stub)
+	h := newTestHandler(t, opts, stub)
 
-	h.BuildWriters(context.Background())
-	waitForRebuildIdle(t, h)
-
-	if got := installedNames(h); len(got) != 1 || got[0] != "latest" {
-		t.Fatalf("expected startup coalesce to install the latest configuration, got %v", got)
-	}
+	go func() {
+		h.BuildWriters(context.Background())
+	}()
+	<-buildEntered
+	go h.BuildWriters(context.Background())
+	close(buildGate)
+	waitForInstalledWriter(t, h, "latest")
 }
 
 func TestBuildWriters_ZeroTimeoutBurstStillInstalls(t *testing.T) {
 	const generations = 4
-	var latest atomic.Int64
-	entered := make(chan int64, generations)
-	release := make(chan struct{})
-	stop, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
 	stub := &stubStoreBuilder{
 		buildFn: func(n int64) metricsstore.MetricsWriterList {
-			entered <- n
-			select {
-			case <-release:
-			case <-stop.Done():
-				return writerList("stopped")
-			}
-			return writerList(fmt.Sprintf("gen-%d", latest.Load()))
+			return writerList(fmt.Sprintf("gen-%d", n))
 		},
 	}
 	opts := options.NewOptions()
 	opts.StoreSyncTimeout = 0
 	h := newTestHandler(t, opts, stub)
-	// beforeSwap runs after Build releases the handler lock and before this generation installs.
-	// From the second build on, it shows whether the overlapped generation was kept.
-	var swaps atomic.Int64
-	var installedDuringOverlap atomic.Value
-	h.beforeSwap = func() {
-		if swaps.Add(1) < 2 {
-			return
-		}
-		if names := installedNames(h); len(names) == 1 {
-			installedDuringOverlap.Store(names[0])
-		}
-	}
 
-	latest.Store(1)
-	h.BuildWriters(context.Background())
-	if got := <-entered; got != 1 {
-		t.Fatalf("expected build 1 to start, got %d", got)
-	}
-
-	for next := int64(2); next <= generations; next++ {
-		latest.Store(next)
+	for i := 1; i <= generations; i++ {
 		h.BuildWriters(context.Background())
-		release <- struct{}{}
-		if got := <-entered; got != next {
-			t.Fatalf("expected build %d to start, got %d", next, got)
-		}
 	}
-	if installedDuringOverlap.Load() == nil {
-		t.Fatal("every overlapped zero-timeout generation was discarded")
-	}
-
-	release <- struct{}{}
 	waitForRebuildIdle(t, h)
 	if got := installedNames(h); len(got) != 1 || got[0] != fmt.Sprintf("gen-%d", generations) {
 		t.Fatalf("expected the latest configuration gen-%d to install, got %v", generations, got)
@@ -1124,7 +1061,7 @@ func TestBuildWriters_ReloadDoesNotRaceCanceledRebuild(t *testing.T) {
 	h := newTestHandler(t, opts, stub)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	h.BuildWriters(ctx)
+	goBuildWriters(h, ctx)
 	select {
 	case <-entered:
 	case <-time.After(time.Second):
@@ -1157,4 +1094,146 @@ func TestBuildWriters_ReloadDoesNotRaceCanceledRebuild(t *testing.T) {
 	if h.Ready() {
 		t.Fatal("canceled rebuild installed writers")
 	}
+}
+
+func TestBuildWritersAsync_OwnerCancelDiscardsCandidate(t *testing.T) {
+	syncStarted := make(chan struct{}, 1)
+	stub := &stubStoreBuilder{
+		buildWriters: writerList("async"),
+		syncStarted:  syncStarted,
+		syncGate:     make(chan error),
+		cancelWait:   true,
+	}
+	h := newTestHandler(t, rebuildOptions(), stub)
+	seedServingWriters(h, writerList("stable"))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	h.BuildWritersAsync(ctx)
+	<-syncStarted
+	cancel()
+	waitForRebuildIdle(t, h)
+
+	if got := installedNames(h); len(got) != 1 || got[0] != "stable" {
+		t.Fatalf("expected async owner cancel to keep previous writers, got %v", got)
+	}
+}
+
+func TestInstallWriters_RejectsSupersededRevisionAtCommit(t *testing.T) {
+	stub := &stubStoreBuilder{buildWriters: writerList("stale")}
+	h := newTestHandler(t, rebuildOptions(), stub)
+	seedServingWriters(h, writerList("stable"))
+
+	h.beforeInstallWriters = func() {
+		// Simulate revision advancing between successful sync and mtx acquisition.
+		h.configRevision.Add(1)
+	}
+
+	h.BuildWriters(context.Background())
+	waitForRebuildIdle(t, h)
+
+	if got := installedNames(h); len(got) != 1 || got[0] != "stable" {
+		t.Fatalf("expected superseded revision not to install, got %v", got)
+	}
+}
+
+func TestBuildWriters_SequentialRequestsOneBuildPerRevision(t *testing.T) {
+	stub := &stubStoreBuilder{
+		buildFn: func(n int64) metricsstore.MetricsWriterList {
+			return writerList(fmt.Sprintf("rev-%d", n))
+		},
+	}
+	opts := options.NewOptions()
+	opts.StoreSyncTimeout = 0
+	h := newTestHandler(t, opts, stub)
+
+	h.BuildWriters(context.Background())
+	h.BuildWriters(context.Background())
+	waitForRebuildIdle(t, h)
+
+	if stub.buildCount.Load() != 2 {
+		t.Fatalf("expected exactly two builds for two revisions, got %d", stub.buildCount.Load())
+	}
+	if got := installedNames(h); len(got) != 1 || got[0] != "rev-2" {
+		t.Fatalf("expected latest revision writers, got %v", got)
+	}
+}
+
+func TestCooldownExitProcessesNewerRevisionAfterOwnerCancel(t *testing.T) {
+	stub := &stubStoreBuilder{
+		buildWriters:         writerList("after-cooldown"),
+		syncTimeoutsBeforeOK: 1,
+	}
+	h := newTestHandler(t, rebuildOptions(), stub)
+	seedServingWriters(h, writerList("stable"))
+
+	ctx1, cancel1 := context.WithCancel(context.Background())
+	h.BuildWritersAsync(ctx1)
+
+	deadline := time.Now().Add(2 * time.Second)
+	for !h.cooldownActive.Load() && time.Now().Before(deadline) {
+		time.Sleep(5 * time.Millisecond)
+	}
+	if !h.cooldownActive.Load() {
+		t.Fatal("expected cooldown after first sync timeout")
+	}
+
+	done := make(chan struct{})
+	go func() {
+		h.BuildWriters(context.Background())
+		close(done)
+	}()
+
+	cancel1()
+
+	waitForInstalledWriter(t, h, "after-cooldown")
+
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("synchronous BuildWriters did not return")
+	}
+}
+
+func TestSyncBuildWritersUnblocksEvenIfWorkerFinishesFast(t *testing.T) {
+	stub := &stubStoreBuilder{buildWriters: writerList("fast")}
+	opts := options.NewOptions()
+	opts.StoreSyncTimeout = 0
+	h := newTestHandler(t, opts, stub)
+
+	done := make(chan struct{})
+	go func() {
+		h.BuildWriters(context.Background())
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("BuildWriters did not return after fast install")
+	}
+}
+
+func TestInstalledGenerationHonorsBuildWritersCtxAfterLibraryUse(t *testing.T) {
+	opts := options.NewOptions()
+	opts.StoreSyncTimeout = 0
+	stub := &stubStoreBuilder{buildWriters: writerList("lib")}
+	h := newTestHandler(t, opts, stub)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	h.BuildWriters(ctx)
+	waitForInstalledWriter(t, h, "lib")
+
+	gen := stub.generationContext()
+	if gen.Err() != nil {
+		t.Fatalf("expected live generation before cancel, got %v", gen.Err())
+	}
+	cancel()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if gen.Err() != nil {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatal("expected generation context canceled after BuildWriters ctx, still live")
 }

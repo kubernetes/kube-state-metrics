@@ -310,6 +310,8 @@ spec:
               fieldPath: spec.nodeName
 ```
 
+These pods only need to list and watch pods, so the [daemonset sharding example](./examples/daemonsetsharding) runs them, and the deployment for unassigned pods below, under a dedicated `kube-state-metrics-shard` ServiceAccount whose ClusterRole only allows listing and watching pods, plus the token and subject access reviews needed for `--auth-filter`.
+
 To track metrics for unassigned pods, you need to add an additional deployment and set `--track-unscheduled-pods`, as shown in the following example:
 
 ```yaml

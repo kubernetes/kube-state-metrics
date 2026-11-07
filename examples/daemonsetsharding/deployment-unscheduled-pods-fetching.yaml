@@ -55,4 +55,4 @@ spec:
               type: RuntimeDefault
       nodeSelector:
         kubernetes.io/os: linux
-      serviceAccountName: kube-state-metrics
+      serviceAccountName: kube-state-metrics-shard

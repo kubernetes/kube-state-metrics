@@ -36,15 +36,23 @@ import (
 type stubStoreBuilder struct {
 	buildCount   atomic.Int64
 	buildWriters metricsstore.MetricsWriterList
+	onBuild      func()
+
+	// shard and totalShards are set by WithSharding; builtShard and
+	// builtTotalShards record the sharding in effect at the last Build.
+	shard, builtShard             int32
+	totalShards, builtTotalShards int
 }
 
 func (s *stubStoreBuilder) WithMetrics(prometheus.Registerer) {}
 func (s *stubStoreBuilder) WithEnabledResources([]string) error {
 	return nil
 }
-func (s *stubStoreBuilder) WithNamespaces(options.NamespaceList)     {}
-func (s *stubStoreBuilder) WithFieldSelectorFilter(string)           {}
-func (s *stubStoreBuilder) WithSharding(int32, int)                  {}
+func (s *stubStoreBuilder) WithNamespaces(options.NamespaceList) {}
+func (s *stubStoreBuilder) WithFieldSelectorFilter(string)       {}
+func (s *stubStoreBuilder) WithSharding(shard int32, totalShards int) {
+	s.shard, s.totalShards = shard, totalShards
+}
 func (s *stubStoreBuilder) WithContext(context.Context)              {}
 func (s *stubStoreBuilder) WithKubeClient(clientset.Interface)       {}
 func (s *stubStoreBuilder) WithCustomResourceClients(map[string]any) {}
@@ -67,6 +75,10 @@ func (s *stubStoreBuilder) WithGenerateCustomResourceStoresFunc(ksmtypes.BuildCu
 func (s *stubStoreBuilder) BuildStores() [][]cache.Store { return nil }
 func (s *stubStoreBuilder) Build() metricsstore.MetricsWriterList {
 	s.buildCount.Add(1)
+	s.builtShard, s.builtTotalShards = s.shard, s.totalShards
+	if s.onBuild != nil {
+		s.onBuild()
+	}
 	return s.buildWriters
 }
 

@@ -270,7 +270,7 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 		),
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_cronjob_schedule_invalid",
-			"Emitted with value 1 for cronjobs whose schedule, in its configured timezone, cannot be parsed.",
+			"Emitted with value 1 for cronjobs whose schedule, in its configured timezone, cannot be parsed or never fires.",
 			metric.Gauge,
 			basemetrics.ALPHA,
 			"",
@@ -378,8 +378,10 @@ func createCronJobListWatch(kubeClient clientset.Interface, ns string, fieldSele
 
 // cronParser parses schedules like the Kubernetes CronJob controller, which
 // uses robfig/cron/v3, so the reported next schedule time matches the
-// controller's.
-var cronParser = cron.MustNewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor | cron.RobfigCompat)
+// controller's. StrictDays additionally rejects a schedule that never fires,
+// e.g. "0 0 30 2 *" (Feb 30), which robfig/cron accepts but for which Next
+// returns the zero time.
+var cronParser = cron.MustNewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor | cron.RobfigCompat | cron.StrictDays)
 
 func parseSchedule(schedule string, timeZone *string) (cron.Schedule, error) {
 	if timeZone != nil {
@@ -398,11 +400,19 @@ func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, create
 	if err != nil {
 		return time.Time{}, err
 	}
+	from := createdTime.Time
 	if !lastScheduleTime.IsZero() {
-		return sched.Next(lastScheduleTime.Time), nil
+		from = lastScheduleTime.Time
 	}
-	if !createdTime.IsZero() {
-		return sched.Next(createdTime.Time), nil
+	if from.IsZero() {
+		return time.Time{}, errors.New("createdTime and lastScheduleTime are both zero")
 	}
-	return time.Time{}, errors.New("createdTime and lastScheduleTime are both zero")
+	// Next returns the zero time when it finds no occurrence within its bounded
+	// search window, e.g. for a schedule that never fires or a sparse schedule
+	// after an old lastScheduleTime. Skip the metric rather than export year 1.
+	next := sched.Next(from)
+	if next.IsZero() {
+		return time.Time{}, fmt.Errorf("cron job schedule '%s' has no occurrence after %s", schedule, from)
+	}
+	return next, nil
 }

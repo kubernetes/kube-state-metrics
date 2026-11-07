@@ -17,6 +17,7 @@ package discovery
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"sort"
 	"time"
@@ -295,6 +296,34 @@ func (r *CRDiscoverer) ResolveGVKToGVKPs(gvk schema.GroupVersionKind) (resolvedG
 	return resolvedGVKPs, nil
 }
 
+// storeConfigurer applies a configuration to the store builder and rebuilds the
+// metrics writers. *metricshandler.MetricsHandler implements it.
+type storeConfigurer interface {
+	ConfigureStore(ctx context.Context, configure func(ksmtypes.BuilderInterface) error) error
+}
+
+// cacheReconciler rebuilds the custom resource stores when the discovery cache
+// changes in a way that affects them. Only the polling goroutine uses it, so its
+// state needs no lock.
+type cacheReconciler struct {
+	discoverer       *CRDiscoverer
+	store            storeConfigurer
+	factoryGenerator func() ([]customresource.RegistryFactory, error)
+	createClients    func(factories ...customresource.RegistryFactory) (map[string]any, error)
+
+	// The enabled CR set and the stop channels of their GVKs at the last
+	// rebuild, compared on each tick to skip no-op rebuilds.
+	lastAppliedEnabled   []string
+	lastAppliedStopChans map[string]chan struct{}
+
+	// Failed rebuilds are retried with exponential backoff so a persistent error
+	// (e.g. an invalid custom resource state config) does not retry and log on
+	// every tick. A new discovery revision resets the backoff.
+	consecutiveFailures int
+	failedRevision      uint64
+	nextRetry           time.Time
+}
+
 // PollForCacheUpdates polls the cache for updates and updates the stores accordingly.
 func (r *CRDiscoverer) PollForCacheUpdates(
 	ctx context.Context,
@@ -304,85 +333,14 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 ) {
 	// The interval at which we will check the cache for updates.
 	t := time.NewTicker(Interval)
-	// The enabled CR set and cache revision jointly skip no-op rebuilds. The
-	// revision is needed because a CRD can be deleted and re-added between ticks
-	// with the same GVR while its reflector stop channel changes identity.
-	var lastAppliedEnabled []string
-	var lastAppliedRevision uint64
-	generateMetrics := func(observedRevision uint64) (applied bool, err error) {
-		// Get families for discovered factories.
-		customFactories, err := factoryGenerator()
-		if err != nil {
-			// Preserve WasUpdated so a later tick retries.
-			return false, err
-		}
-		// Update the list of enabled custom resources.
-		var enabledCustomResources []string
-		for _, factory := range customFactories {
-			gvr, err := util.GVRFromType(factory.Name(), factory.ExpectedType())
-			if err != nil {
-				klog.ErrorS(err, "failed to update custom resource stores")
-			}
-			var gvrString string
-			if gvr != nil {
-				gvrString = gvr.String()
-			} else {
-				gvrString = factory.Name()
-			}
-			enabledCustomResources = append(enabledCustomResources, gvrString)
-		}
-		sort.Strings(enabledCustomResources)
-		if slices.Equal(enabledCustomResources, lastAppliedEnabled) && observedRevision == lastAppliedRevision {
-			r.SafeWrite(func() {
-				if r.cacheRevision == observedRevision {
-					r.WasUpdated = false
-				}
-			})
-			klog.V(2).InfoS("discovery cache changed but enabled custom resources are unchanged; skipping store rebuild")
-			return false, nil
-		}
-		// Create clients for discovered factories. Keep this outside ConfigureStore:
-		// client construction is slow and must not hold the metrics handler lock.
-		discoveredCustomResourceClients, err := util.CreateCustomResourceClients(opts.Apiserver, opts.Kubeconfig, customFactories...)
-		if err != nil {
-			// Preserve WasUpdated so a later tick retries.
-			return false, err
-		}
-		// Apply builder config under the same lock Build() uses, then rebuild.
-		// Mutating the shared builder directly would race ConfigureSharding / BuildWriters.
-		if err := m.ConfigureStore(ctx, func(b ksmtypes.BuilderInterface) error {
-			replacer, ok := b.(ksmtypes.CustomResourceReplacer)
-			if !ok {
-				return fmt.Errorf("builder does not support replacing custom resources")
-			}
-			b.WithCustomResourceClients(discoveredCustomResourceClients)
-			b.WithCustomResourceStoreFactories(customFactories...)
-			if err := replacer.ReplaceEnabledCustomResources(enabledCustomResources); err != nil {
-				return err
-			}
-			b.WithGenerateCustomResourceStoresFunc(b.DefaultGenerateCustomResourceStoresFunc())
-			return nil
-		}); err != nil {
-			// Preserve WasUpdated so a later tick retries.
-			return false, err
-		}
-		lastAppliedEnabled = slices.Clone(enabledCustomResources)
-		lastAppliedRevision = observedRevision
-		// Clear only the revision we applied. If discovery changed while clients
-		// were being created, leave the flag set for another reconciliation.
-		r.SafeWrite(func() {
-			if r.cacheRevision == observedRevision {
-				r.WasUpdated = false
-			}
-		})
-		return true, nil
+	c := &cacheReconciler{
+		discoverer:       r,
+		store:            m,
+		factoryGenerator: factoryGenerator,
+		createClients: func(factories ...customresource.RegistryFactory) (map[string]any, error) {
+			return util.CreateCustomResourceClients(opts.Apiserver, opts.Kubeconfig, factories...)
+		},
 	}
-	// Failed rebuilds are retried with exponential backoff so a persistent error
-	// (e.g. an invalid custom resource state config) does not retry and log on
-	// every tick. A new discovery revision resets the backoff.
-	var consecutiveFailures int
-	var failedRevision uint64
-	var nextRetry time.Time
 	go func() {
 		for range t.C {
 			select {
@@ -391,36 +349,141 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 				t.Stop()
 				return
 			default:
-				// Check if cache has been updated.
-				shouldGenerateMetrics := false
-				var observedRevision uint64
-				r.SafeRead(func() {
-					shouldGenerateMetrics = r.WasUpdated
-					observedRevision = r.cacheRevision
-				})
-				if !shouldGenerateMetrics {
-					continue
-				}
-				if consecutiveFailures > 0 && observedRevision == failedRevision && time.Now().Before(nextRetry) {
-					continue
-				}
-				if observedRevision != failedRevision {
-					consecutiveFailures = 0
-				}
-				applied, err := generateMetrics(observedRevision)
-				if err != nil {
-					consecutiveFailures++
-					failedRevision = observedRevision
-					backoff := retryBackoff(consecutiveFailures)
-					nextRetry = time.Now().Add(backoff)
-					klog.ErrorS(err, "failed to update custom resource stores", "retryIn", backoff, "consecutiveFailures", consecutiveFailures)
-					continue
-				}
-				consecutiveFailures = 0
-				if applied {
-					klog.InfoS("discovery finished, cache updated")
-				}
+				c.reconcile(ctx)
 			}
 		}
 	}()
+}
+
+// reconcile rebuilds the custom resource stores if the cache was updated, and
+// retries a failed rebuild with backoff.
+func (c *cacheReconciler) reconcile(ctx context.Context) {
+	r := c.discoverer
+	// Check if cache has been updated.
+	shouldGenerateMetrics := false
+	var observedRevision uint64
+	var observedStopChans map[string]chan struct{}
+	r.SafeRead(func() {
+		shouldGenerateMetrics = r.WasUpdated
+		observedRevision = r.cacheRevision
+		// Take the stop channels before the rebuild hands them to the reflectors.
+		// A channel replaced after this point then differs from the applied one
+		// on the next tick, instead of being recorded as applied while the
+		// reflectors still hold the closed one.
+		if shouldGenerateMetrics {
+			observedStopChans = maps.Clone(r.GVKToReflectorStopChanMap)
+		}
+	})
+	if !shouldGenerateMetrics {
+		return
+	}
+	if c.consecutiveFailures > 0 && observedRevision == c.failedRevision && time.Now().Before(c.nextRetry) {
+		return
+	}
+	if observedRevision != c.failedRevision {
+		c.consecutiveFailures = 0
+	}
+	applied, err := c.generateMetrics(ctx, observedRevision, observedStopChans)
+	if err != nil {
+		c.consecutiveFailures++
+		c.failedRevision = observedRevision
+		backoff := retryBackoff(c.consecutiveFailures)
+		c.nextRetry = time.Now().Add(backoff)
+		klog.ErrorS(err, "failed to update custom resource stores", "retryIn", backoff, "consecutiveFailures", c.consecutiveFailures)
+		return
+	}
+	c.consecutiveFailures = 0
+	if applied {
+		klog.InfoS("discovery finished, cache updated")
+	}
+}
+
+// generateMetrics rebuilds the custom resource stores for the factories that
+// the configuration currently resolves to, unless neither the resolved
+// resources nor the stop channels of their GVKs changed since the last rebuild.
+func (c *cacheReconciler) generateMetrics(ctx context.Context, observedRevision uint64, observedStopChans map[string]chan struct{}) (applied bool, err error) {
+	r := c.discoverer
+	// Get families for discovered factories.
+	customFactories, err := c.factoryGenerator()
+	if err != nil {
+		// Preserve WasUpdated so a later tick retries.
+		return false, err
+	}
+	// Update the list of enabled custom resources, and collect the stop channels
+	// that their reflectors will be started with.
+	var enabledCustomResources []string
+	stopChans := make(map[string]chan struct{}, len(customFactories))
+	for _, factory := range customFactories {
+		expectedType := factory.ExpectedType()
+		gvr, err := util.GVRFromType(factory.Name(), expectedType)
+		if err != nil {
+			klog.ErrorS(err, "failed to update custom resource stores")
+		}
+		var gvrString string
+		if gvr != nil {
+			gvrString = gvr.String()
+		} else {
+			gvrString = factory.Name()
+		}
+		enabledCustomResources = append(enabledCustomResources, gvrString)
+		// Key the channels the same way startReflector looks them up.
+		if u, ok := expectedType.(*unstructured.Unstructured); ok {
+			gvk := u.GroupVersionKind().String()
+			stopChans[gvk] = observedStopChans[gvk]
+		}
+	}
+	sort.Strings(enabledCustomResources)
+	// Rebuild only when either changed since the last rebuild:
+	//   - the set of enabled custom resources, or
+	//   - the stop channel of a resolved GVK. A stop channel is closed only when
+	//     its GVK leaves the cache or its plural changes, and a closed channel
+	//     never comes back, so a different channel means that the reflectors of
+	//     that GVK have been stopped, even if the CRD has been re-added with the
+	//     same GVR since.
+	//
+	// Changes to CRDs that the configuration does not resolve to change neither.
+	if slices.Equal(enabledCustomResources, c.lastAppliedEnabled) && maps.Equal(stopChans, c.lastAppliedStopChans) {
+		r.SafeWrite(func() {
+			if r.cacheRevision == observedRevision {
+				r.WasUpdated = false
+			}
+		})
+		klog.V(2).InfoS("discovery cache changed but enabled custom resources are unchanged; skipping store rebuild")
+		return false, nil
+	}
+	// Create clients for discovered factories. Keep this outside ConfigureStore:
+	// client construction is slow and must not hold the metrics handler lock.
+	discoveredCustomResourceClients, err := c.createClients(customFactories...)
+	if err != nil {
+		// Preserve WasUpdated so a later tick retries.
+		return false, err
+	}
+	// Apply builder config under the same lock Build() uses, then rebuild.
+	// Mutating the shared builder directly would race ConfigureSharding / BuildWriters.
+	if err := c.store.ConfigureStore(ctx, func(b ksmtypes.BuilderInterface) error {
+		replacer, ok := b.(ksmtypes.CustomResourceReplacer)
+		if !ok {
+			return fmt.Errorf("builder does not support replacing custom resources")
+		}
+		b.WithCustomResourceClients(discoveredCustomResourceClients)
+		b.WithCustomResourceStoreFactories(customFactories...)
+		if err := replacer.ReplaceEnabledCustomResources(enabledCustomResources); err != nil {
+			return err
+		}
+		b.WithGenerateCustomResourceStoresFunc(b.DefaultGenerateCustomResourceStoresFunc())
+		return nil
+	}); err != nil {
+		// Preserve WasUpdated so a later tick retries.
+		return false, err
+	}
+	c.lastAppliedEnabled = slices.Clone(enabledCustomResources)
+	c.lastAppliedStopChans = stopChans
+	// Clear only the revision we applied. If discovery changed while clients
+	// were being created, leave the flag set for another reconciliation.
+	r.SafeWrite(func() {
+		if r.cacheRevision == observedRevision {
+			r.WasUpdated = false
+		}
+	})
+	return true, nil
 }

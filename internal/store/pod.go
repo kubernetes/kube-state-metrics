@@ -318,7 +318,9 @@ func createPodContainerStateStartedFamilyGenerator() generator.FamilyGenerator {
 						LabelValues: []string{cs.Name},
 						Value:       float64((cs.State.Running.StartedAt).Unix()),
 					})
-				} else if cs.State.Terminated != nil {
+				} else if cs.State.Terminated != nil && !cs.State.Terminated.StartedAt.IsZero() {
+					// The kubelet reports a terminated state without timestamps
+					// when it lost track of the container (ContainerStatusUnknown).
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{"container"},
 						LabelValues: []string{cs.Name},
@@ -396,7 +398,9 @@ func createPodContainerStatusLastTerminatedTimestampFamilyGenerator() generator.
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(p.Status.ContainerStatuses))
 			for _, cs := range p.Status.ContainerStatuses {
-				if cs.LastTerminationState.Terminated != nil {
+				// The kubelet reports a terminated state without timestamps when it
+				// lost track of the container (ContainerStatusUnknown).
+				if cs.LastTerminationState.Terminated != nil && !cs.LastTerminationState.Terminated.FinishedAt.IsZero() {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{"container"},
 						LabelValues: []string{cs.Name},
@@ -1146,7 +1150,9 @@ func createPodInitContainerStateStartedFamilyGenerator() generator.FamilyGenerat
 						LabelValues: []string{cs.Name},
 						Value:       float64((cs.State.Running.StartedAt).Unix()),
 					})
-				} else if cs.State.Terminated != nil {
+				} else if cs.State.Terminated != nil && !cs.State.Terminated.StartedAt.IsZero() {
+					// The kubelet reports a terminated state without timestamps
+					// when it lost track of the container (ContainerStatusUnknown).
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{"container"},
 						LabelValues: []string{cs.Name},
@@ -1198,7 +1204,9 @@ func createPodInitContainerStatusLastTerminatedTimestampFamilyGenerator() genera
 		wrapPodFunc(func(p *v1.Pod) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(p.Status.InitContainerStatuses))
 			for _, cs := range p.Status.InitContainerStatuses {
-				if cs.LastTerminationState.Terminated != nil {
+				// The kubelet reports a terminated state without timestamps when it
+				// lost track of the container (ContainerStatusUnknown).
+				if cs.LastTerminationState.Terminated != nil && !cs.LastTerminationState.Terminated.FinishedAt.IsZero() {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{"container"},
 						LabelValues: []string{cs.Name},

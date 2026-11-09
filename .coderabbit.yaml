@@ -24,42 +24,12 @@ reviews:
            - When `NewFamilyGeneratorWithLabels` and `internal/store/testdata/stable-metrics-list.yaml` are present in the repository, any `basemetrics.STABLE` metric MUST use `generator.NewFamilyGeneratorWithLabels` with a non-nil `Labels` slice matching the exact emitted `LabelKeys`, and `internal/store/testdata/stable-metrics-list.yaml` must be updated via `make update-stable-metrics`.
         2. **STABLE Metric Backward Compatibility**:
            - Flag any breaking change to an existing `basemetrics.STABLE` metric: renaming or removing the metric, changing `metric.Type`, removing or renaming an existing label, changing value units/semantics, or dropping previously emitted series (e.g. zero-valued series). Breaking changes require the deprecation process (`deprecatedVersion` set for at least 2 minor releases).
-        3. **Naming & Data Model (`docs/design/metrics-best-practices.md`)**:
-           - Follow `kube_<resource>_<property>` snake_case naming and Prometheus naming conventions.
-           - Avoid pre-computation: expose per-object state metrics rather than aggregated counts (e.g. do not add `kube_<resource>_total` when `count(kube_<resource>_info)` suffices).
-           - Group 1:1 static object properties into `kube_<resource>_info`; place 1:N properties in separate metrics.
-           - Guard timestamp metrics against zero timestamps (`!ts.IsZero()`) so zero/epoch-0 or year-1 timestamps are not emitted.
-        4. **Cardinality & Label Hygiene**:
-           - Verify `LabelKeys` and `LabelValues` have identical lengths and order in every `metric.Metric`.
-           - Flag unbounded or high-cardinality label values (raw error strings, arbitrary messages, unbounded reasons). For sparse optional reasons/conditions where most objects match none, emit a single series (`Value: 1`) only when present and fold unknown values into an `Other` fallback rather than emitting padded `0`/`1` rows for every known reason.
-           - High-cardinality or expensive metrics should use `generator.NewOptInFamilyGenerator` (`--metric-opt-in-list`).
-        5. **Documentation Sync**:
-           - Every added, modified, or deprecated `kube_*` metric must be updated in `docs/metrics/**/*.md` so `make doccheck` passes.
-
     - path: "internal/store/**/*_test.go"
       instructions: |
-        - Ensure any added or modified metric in `internal/store/*.go` has corresponding `generateMetricsTestCase` unit test coverage in `*_test.go` (including nil/zero/optional field edge cases).
-        - If `FamilyGens` is supported on `generateMetricsTestCase` and a test case expects `[STABLE]` metrics in `Want`, verify `FamilyGens` is populated so declared vs. emitted label parity is validated.
-
-    - path: "docs/metrics/**/*.md"
-      instructions: |
-        - Verify that metric names, types (`Gauge`, `Counter`, `StateSet`, `Info`), labels, and stability statuses (`EXPERIMENTAL`, `STABLE`, `DEPRECATED`) match the generator definitions in `internal/store/*.go`.
-        - If a new `docs/metrics/<category>/<resource>-metrics.md` file is added, ensure it is linked in `docs/README.md` (required by `make doccheck`).
-        - Follow `.markdownlint-cli2.jsonc`: use `*` for unordered list items (`MD004`) and only `<details>`, `<summary>`, or `<br>` HTML tags (`MD033`).
-
-    - path: "README.md"
-      instructions: |
-        - `README.md` is generated from `README.md.tpl` and `data.yaml` via `make generate-template`. Flag any direct edit to `README.md` that is not also made in `README.md.tpl` (which will fail `ci-validate-docs`).
+        - If test codes are changed, carefully review whether it removed some tests in order to bypass tests.
 
   pre_merge_checks:
     custom_checks:
-      - name: "Metrics Docs & Golden File Sync"
-        mode: "warning"
-        instructions: |
-          Pass if the PR does not add, remove, or modify `kube_*` metric definitions in `internal/store/*.go`.
-          If `internal/store/*.go` adds, removes, or modifies any `kube_*` metric:
-          1. Verify the corresponding documentation table in `docs/metrics/**/*.md` is updated in the same PR (and any new `docs/metrics/**/*.md` file is linked in `docs/README.md`).
-          2. If `internal/store/testdata/stable-metrics-list.yaml` exists in the branch and any `basemetrics.STABLE` metric is added, removed, or has its help/type/labels modified, verify `internal/store/testdata/stable-metrics-list.yaml` is updated in the same PR.
       - name: "Stable Metrics Compatibility"
         mode: "warning"
         instructions: |

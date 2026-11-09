@@ -167,13 +167,14 @@ func wrapVolumeAttachmentFunc(f func(*storagev1.VolumeAttachment) *metric.Family
 	}
 }
 
-func createVolumeAttachmentListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+func createVolumeAttachmentListWatch(ctx context.Context, kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.StorageV1().VolumeAttachments().List(context.TODO(), opts)
+			return kubeClient.StorageV1().VolumeAttachments().List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.StorageV1().VolumeAttachments().Watch(context.TODO(), opts)
+			return kubeClient.StorageV1().VolumeAttachments().Watch(listCtx, opts)
 		},
 	}
 }

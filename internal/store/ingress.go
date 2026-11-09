@@ -223,15 +223,16 @@ func wrapIngressFunc(f func(*networkingv1.Ingress) *metric.Family) func(any) *me
 	}
 }
 
-func createIngressListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createIngressListWatch(ctx context.Context, kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.NetworkingV1().Ingresses(ns).List(context.TODO(), opts)
+			return kubeClient.NetworkingV1().Ingresses(ns).List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.NetworkingV1().Ingresses(ns).Watch(context.TODO(), opts)
+			return kubeClient.NetworkingV1().Ingresses(ns).Watch(listCtx, opts)
 		},
 	}
 }

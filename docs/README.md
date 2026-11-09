@@ -19,8 +19,10 @@ Stages about metrics are grouped into three categories：
 | Stage        | Description                                                                                                                |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | EXPERIMENTAL | Metrics which normally correspond to the Kubernetes API object alpha status or spec fields and can be changed at any time. |
-| STABLE       | Metrics which should have very few backwards-incompatible changes outside of major version updates.                        |
+| STABLE       | Metrics whose breaking changes always go through a deprecation window.                                                     |
 | DEPRECATED   | Metrics which will be removed once the deprecation timeline is met.                                                        |
+
+See [Metric Stability and Lifecycle](metric-stability.md) for what each stage guarantees and how metrics are promoted, deprecated and removed.
 
 ## Opt-in Metrics
 

@@ -30,3 +30,5 @@ The following steps are needed to introduce a new resource and its respective re
 |------------------------|--------------------|
 | EXPERIMENTAL           | basemetrics.ALPHA  |
 | STABLE                 | basemetrics.STABLE |
+
+See [Metric Stability and Lifecycle](../metric-stability.md) for how metrics are promoted, deprecated and removed.

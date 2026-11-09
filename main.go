@@ -16,24 +16,8 @@ limitations under the License.
 
 package main
 
-import (
-	"github.com/spf13/cobra"
-	"k8s.io/klog/v2"
-
-	"k8s.io/kube-state-metrics/v2/internal"
-	"k8s.io/kube-state-metrics/v2/pkg/options"
-)
+import "k8s.io/kube-state-metrics/v2/internal"
 
 func main() {
-	opts := options.NewOptions()
-	cmd := options.InitCommand
-	cmd.Run = func(_ *cobra.Command, _ []string) {
-		internal.RunKubeStateMetricsWrapper(opts)
-	}
-	opts.AddFlags(cmd)
-	// Parse only returns on error or shutdown; options are validated in PreRunE.
-	if err := opts.Parse(); err != nil {
-		klog.ErrorS(err, "Running kube-state-metrics failed")
-		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-	}
+	internal.Main()
 }

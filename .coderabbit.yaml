@@ -9,12 +9,6 @@ reviews:
   review_status: true
   collapse_walkthrough: false
 
-  path_filters:
-    - "!vendor/**"
-    - "!scripts/vendor/**"
-    - "!**/testdata/**"
-    - "internal/store/testdata/stable-metrics-list.yaml"
-
   path_instructions:
     - path: "internal/store/**/*.go"
       instructions: |

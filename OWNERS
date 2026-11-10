@@ -3,7 +3,6 @@ reviewers:
   - dgrisonnet
   - logicalhan
   - mrueg
-  - rexagod
   - bhope
   - nmn3m
 approvers:
@@ -11,7 +10,6 @@ approvers:
   - CatherineF-dev
   - dgrisonnet
   - mrueg
-  - rexagod
 emeritus_approvers:
   - LiliC
   - andyxning
@@ -19,3 +17,4 @@ emeritus_approvers:
   - tariq1890
   - zouyee
   - fpetkovski
+  - rexagod

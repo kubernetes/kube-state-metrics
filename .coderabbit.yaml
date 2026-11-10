@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+
+  path_instructions:
+    - path: "internal/store/**/*.go"
+      instructions: |
+        When reviewing Kubernetes metric generators in `internal/store/` (excluding `*_test.go`):
+        1. **Stability & Constructor**:
+           - Newly introduced `kube_*` metrics MUST start as `basemetrics.ALPHA` (`EXPERIMENTAL`) unless the PR is an explicit stability promotion (requires GA Kubernetes API fields and 2 consecutive minor releases without changes).
+           - When `NewFamilyGeneratorWithLabels` and `internal/store/testdata/stable-metrics-list.yaml` are present in the repository, any `basemetrics.STABLE` metric MUST use `generator.NewFamilyGeneratorWithLabels` with a non-nil `Labels` slice matching the exact emitted `LabelKeys`, and `internal/store/testdata/stable-metrics-list.yaml` must be updated via `make update-stable-metrics`.
+        2. **STABLE Metric Backward Compatibility**:
+           - Flag any breaking change to an existing `basemetrics.STABLE` metric: renaming or removing the metric, changing `metric.Type`, removing or renaming an existing label, changing value units/semantics, or dropping previously emitted series (e.g. zero-valued series). Breaking changes require the deprecation process (`deprecatedVersion` set for at least 2 minor releases).
+    - path: "internal/store/**/*_test.go"
+      instructions: |
+        - If test codes are changed, carefully review whether it removed some tests in order to bypass tests.
+
+  pre_merge_checks:
+    custom_checks:
+      - name: "Stable Metrics Compatibility"
+        mode: "warning"
+        instructions: |
+          Pass if no existing `basemetrics.STABLE` metric is modified or removed.
+          Fail if an existing `basemetrics.STABLE` metric in `internal/store/*.go` is deleted, renamed, has its metric type changed, or has an existing label removed or renamed without following the deprecation timeline (`deprecatedVersion`).
+      - name: "New Metric Lifecycle & Cardinality"
+        mode: "warning"
+        instructions: |
+          Pass if no new `kube_*` metric is introduced in `internal/store/*.go`.
+          If a new `kube_*` metric is introduced:
+          1. It must start with `basemetrics.ALPHA` (`EXPERIMENTAL`) stability unless the PR explicitly documents a stability promotion.
+          2. Label values must be bounded (no raw error messages or arbitrary free-form strings), and `LabelKeys` length must match `LabelValues` length.
+          3. The PR description should state the cardinality impact (`increases`, `decreases`, or `does not change cardinality`).
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "docs/design/metrics-best-practices.md"

@@ -43,6 +43,3 @@ knowledge_base:
     enabled: true
     filePatterns:
       - "docs/design/metrics-best-practices.md"
-      - "docs/metric-stability.md"
-      - "docs/developer/guide.md"
-      - "CONTRIBUTING.md"

@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	descServiceAccountLabelsDefaultLabels = []string{"namespace", "serviceaccount", "uid"}
+	descServiceAccountLabelsDefaultLabels = []string{"namespace", "serviceaccount"}
 )
 
 func serviceAccountMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
@@ -64,8 +64,8 @@ func createServiceAccountInfoFamilyGenerator() generator.FamilyGenerator {
 
 			return &metric.Family{
 				Metrics: []*metric.Metric{{
-					LabelKeys:   []string{"automount_token"},
-					LabelValues: []string{automountToken},
+					LabelKeys:   []string{"uid", "automount_token"},
+					LabelValues: []string{string(sa.UID), automountToken},
 					Value:       1,
 				}},
 			}
@@ -228,7 +228,7 @@ func wrapServiceAccountFunc(f func(*v1.ServiceAccount) *metric.Family) func(any)
 		metricFamily := f(serviceAccount)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descServiceAccountLabelsDefaultLabels, []string{serviceAccount.Namespace, serviceAccount.Name, string(serviceAccount.UID)}, m.LabelKeys, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descServiceAccountLabelsDefaultLabels, []string{serviceAccount.Namespace, serviceAccount.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

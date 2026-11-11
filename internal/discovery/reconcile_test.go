@@ -91,13 +91,21 @@ func newTestReconciler(r *CRDiscoverer, store *fakeStore, configured ...schema.G
 	}
 }
 
-// addCRD and deleteCRD change the cache as the CRD informer's event handlers
-// do.
+// addCRD, updateCRD and deleteCRD change the cache as the CRD informer's event
+// handlers do.
 func addCRD(r *CRDiscoverer, gvkps ...groupVersionKindPlural) {
 	r.SafeWrite(func() {
 		if r.AppendToMap(gvkps...) {
 			r.WasUpdated = true
 		}
+	})
+}
+
+func updateCRD(r *CRDiscoverer, oldObj, newObj any) {
+	oldGVKPs := extractGVKPs(oldObj)
+	newGVKPs := extractGVKPs(newObj)
+	r.SafeWrite(func() {
+		r.applyCRDUpdate(oldGVKPs, newGVKPs)
 	})
 }
 
@@ -197,5 +205,102 @@ func TestReconcileRebuildsWhenStopChannelIsReplacedDuringRebuild(t *testing.T) {
 	c.reconcile(t.Context())
 	if store.rebuilds != 2 {
 		t.Fatalf("got %d rebuilds, want 2", store.rebuilds)
+	}
+}
+
+// TestReconcileOnServedVersionChanges covers CRD updates that change which
+// versions are served. They reach the cache through applyCRDUpdate and change
+// its revision, but rebuild only when they affect a version that the
+// configuration resolves to: no reflector runs for any other version.
+func TestReconcileOnServedVersionChanges(t *testing.T) {
+	served := func(name string) any { return testCRDVersion(name, true) }
+	unserved := func(name string) any { return testCRDVersion(name, false) }
+	for _, tc := range []struct {
+		name string
+		// configuredVersion is the version of the configured Foo.
+		configuredVersion string
+		initial           []any
+		// updates are the versions of the CRD after each update, all made
+		// between two ticks.
+		updates     [][]any
+		wantRebuild bool
+	}{
+		{
+			name:              "configured version is no longer served",
+			configuredVersion: "v1",
+			initial:           []any{served("v1"), served("v2")},
+			updates:           [][]any{{unserved("v1"), served("v2")}},
+			wantRebuild:       true,
+		},
+		{
+			// The enabled resources end up the same as before, but the
+			// reflectors of v1 were stopped with the old stop channel.
+			name:              "configured version is unserved and served again",
+			configuredVersion: "v1",
+			initial:           []any{served("v1"), served("v2")},
+			updates: [][]any{
+				{unserved("v1"), served("v2")},
+				{served("v1"), served("v2")},
+			},
+			wantRebuild: true,
+		},
+		{
+			name:              "unconfigured version starts being served",
+			configuredVersion: "v1",
+			initial:           []any{served("v1"), unserved("v2")},
+			updates:           [][]any{{served("v1"), served("v2")}},
+		},
+		{
+			name:              "unconfigured version is no longer served",
+			configuredVersion: "v1",
+			initial:           []any{served("v1"), served("v2")},
+			updates:           [][]any{{served("v1"), unserved("v2")}},
+		},
+		{
+			name:              "version wildcard: another version starts being served",
+			configuredVersion: "*",
+			initial:           []any{served("v1"), unserved("v2")},
+			updates:           [][]any{{served("v1"), served("v2")}},
+			wantRebuild:       true,
+		},
+		{
+			name:              "version wildcard: another version is no longer served",
+			configuredVersion: "*",
+			initial:           []any{served("v1"), served("v2")},
+			updates:           [][]any{{served("v1"), unserved("v2")}},
+			wantRebuild:       true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := &CRDiscoverer{}
+			store := &fakeStore{}
+			c := newTestReconciler(r, store, schema.GroupVersionKind{Group: "example.com", Version: tc.configuredVersion, Kind: "Foo"})
+			crd := testCRD(tc.initial...)
+			addCRD(r, extractGVKPs(crd)...)
+			c.reconcile(t.Context())
+			if store.rebuilds != 1 {
+				t.Fatalf("got %d rebuilds after the CRD was added, want 1", store.rebuilds)
+			}
+
+			for _, versions := range tc.updates {
+				updated := testCRD(versions...)
+				updateCRD(r, crd, updated)
+				crd = updated
+			}
+			if !wasUpdated(r) {
+				t.Fatal("expected the update to change the cache")
+			}
+			c.reconcile(t.Context())
+			wantRebuilds := 1
+			if tc.wantRebuild {
+				wantRebuilds = 2
+			}
+			if store.rebuilds != wantRebuilds {
+				t.Fatalf("got %d rebuilds, want %d", store.rebuilds, wantRebuilds)
+			}
+			if wasUpdated(r) {
+				t.Fatal("WasUpdated is still set after the reconcile")
+			}
+		})
 	}
 }

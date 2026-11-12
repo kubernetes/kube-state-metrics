@@ -99,6 +99,35 @@ func TestWatchFileWrite(t *testing.T) {
 	expectEvent(t, events)
 }
 
+// TestWatchFileChmod checks that a file becoming readable again triggers a
+// change, so a reload that failed because the file could not be read is
+// retried, while permission changes that keep it readable do not.
+func TestWatchFileChmod(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root can read files regardless of their permissions")
+	}
+	file := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(file, []byte("a: 1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	events := startWatch(t, file)
+
+	if err := os.Chmod(file, 0o400); err != nil {
+		t.Fatal(err)
+	}
+	expectNoEvent(t, events)
+
+	if err := os.Chmod(file, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	expectNoEvent(t, events)
+
+	if err := os.Chmod(file, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	expectEvent(t, events)
+}
+
 // TestWatchFileConfigMapUpdate mimics how the kubelet updates a mounted
 // ConfigMap: config.yaml -> ..data/config.yaml, and ..data is a symlink that
 // is atomically swapped to a new timestamped directory.

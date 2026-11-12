@@ -290,9 +290,10 @@ func TestDefaultCollectorMetricsAvailable(t *testing.T) {
 		"volumeattributesclass": true,
 	}
 	nonResources := map[string]bool{
-		"builder":   true,
-		"utils":     true,
-		"testutils": true,
+		"builder":     true,
+		"listcontext": true,
+		"utils":       true,
+		"testutils":   true,
 	}
 
 	files, err := os.ReadDir("../../internal/store/")

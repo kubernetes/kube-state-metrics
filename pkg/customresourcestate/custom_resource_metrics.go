@@ -19,16 +19,14 @@ package customresourcestate
 import (
 	"context"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
+	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -43,6 +41,7 @@ type customResourceMetrics struct {
 }
 
 var _ customresource.RegistryFactory = &customResourceMetrics{}
+var _ customresource.ContextListWatchFactory = customResourceMetrics{}
 
 // NewCustomResourceMetrics creates a customresource.RegistryFactory from a configuration object.
 func NewCustomResourceMetrics(resource Resource) (customresource.RegistryFactory, error) {
@@ -90,19 +89,13 @@ func (s customResourceMetrics) ExpectedType() any {
 	return &u
 }
 
+func (s customResourceMetrics) ListWatchWithContext(ctx context.Context, customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher {
+	client := customResourceClient.(dynamic.NamespaceableResourceInterface)
+	return store.DynamicNamespacedListWatch(ctx, client, ns, fieldSelector)
+}
+
 func (s customResourceMetrics) ListWatch(customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher {
-	api := customResourceClient.(dynamic.NamespaceableResourceInterface).Namespace(ns)
-	ctx := context.Background()
-	return &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			options.FieldSelector = fieldSelector
-			return api.List(ctx, options)
-		},
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			options.FieldSelector = fieldSelector
-			return api.Watch(ctx, options)
-		},
-	}
+	return s.ListWatchWithContext(context.Background(), customResourceClient, ns, fieldSelector)
 }
 
 func (s customResourceMetrics) names() (names []string) {

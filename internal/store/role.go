@@ -138,15 +138,16 @@ func roleMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 	}
 }
 
-func createRoleListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createRoleListWatch(ctx context.Context, kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.RbacV1().Roles(ns).List(context.TODO(), opts)
+			return kubeClient.RbacV1().Roles(ns).List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.RbacV1().Roles(ns).Watch(context.TODO(), opts)
+			return kubeClient.RbacV1().Roles(ns).Watch(listCtx, opts)
 		},
 	}
 }

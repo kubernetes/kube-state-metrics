@@ -17,7 +17,6 @@ limitations under the License.
 package app
 
 import (
-	"bytes"
 	"context"
 	"crypto/md5" //nolint:gosec
 	"encoding/binary"
@@ -38,7 +37,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // Initialize common client auth plugins.
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
@@ -138,39 +136,22 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	})
 	storeBuilder := store.NewBuilder()
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
-	got := options.GetConfigFile(*opts)
-	if got != "" {
-		if _, err := os.Stat(filepath.Clean(got)); err != nil {
-			klog.ErrorS(err, "encountered error while processing the file", "file", got)
-		} else {
-			configFile, err := os.ReadFile(filepath.Clean(got))
-			if err != nil {
-				return fmt.Errorf("failed to read opts config file: %w", err)
-			}
-			// NOTE: Config value will override default values of intersecting options.
-			err = yaml.Unmarshal(configFile, opts)
-
-			if err != nil {
-				// DO NOT end the process.
-				// We want to allow the user to still be able to fix the misconfigured config (redeploy or edit the configmaps) and reload KSM automatically once that's done.
+	if opts.Prepared == nil {
+		_, prepared, err := prepareRun(opts, prepareStartup)
+		if err != nil {
+			configPath := options.GetConfigFile(*opts)
+			if configPath != "" && isOptionsConfigUnmarshalError(err) && ctx.Err() != nil {
+				cleaned := filepath.Clean(configPath)
 				klog.ErrorS(err, "failed to unmarshal opts config file")
-				// Wait for the next reload.
-				klog.InfoS("misconfigured config detected, KSM will automatically reload on next write to the config")
-				klog.InfoS("waiting for config to be fixed")
-				configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
-				<-ctx.Done()
-				// The watcher cancelled this run to start a fresh one.
+				configSuccess.WithLabelValues("config", cleaned).Set(0)
 				return nil
 			}
-
-			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(1)
-			configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
-			hash := md5HashAsMetricValue(configFile)
-			configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
-
-			opts = configureResourcesAndMetrics(opts, configFile)
-			klog.InfoS("Using config file", "file", got)
+			return err
 		}
+		opts.Prepared = prepared
+	}
+	if err := applyPreparedRunConfig(opts, configHash, configSuccess, configSuccessTime); err != nil {
+		return err
 	}
 
 	if opts.AutoGoMemlimit {
@@ -187,7 +168,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		}
 	}
 
-	kubeConfig, err := clientcmd.BuildConfigFromFlags(opts.Apiserver, opts.Kubeconfig)
+	kubeConfig, err := util.BuildRESTConfig(opts.Apiserver, opts.Kubeconfig, kubeconfigContent(opts))
 	if err != nil {
 		return fmt.Errorf("failed to build config from flags: %w", err)
 	}
@@ -198,7 +179,11 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		return err
 	}
 
-	if opts.CustomResourceConfigFile != "" {
+	if err := applyCustomResourceConfigMetrics(opts, configHash, configSuccess, configSuccessTime); err != nil {
+		return err
+	}
+
+	if opts.CustomResourceConfigFile != "" && opts.Prepared == nil {
 		if _, err := os.Stat(filepath.Clean(opts.CustomResourceConfigFile)); err != nil {
 			klog.ErrorS(err, "encountered error while processing the file", "file", opts.CustomResourceConfigFile)
 		} else {
@@ -279,7 +264,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	proc.StartReaper()
 
 	storeBuilder.WithUtilOptions(opts)
-	kubeClient, err := util.CreateKubeClient(opts.Apiserver, opts.Kubeconfig)
+	kubeClient, err := util.CreateKubeClientWithPrepared(opts.Apiserver, opts.Kubeconfig, opts.Prepared)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
@@ -349,7 +334,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		)
 	}
 
-	telemetryMux := buildTelemetryServer(ksmMetricsRegistry, opts.AuthFilter, kubeConfig)
+	telemetryMux := buildTelemetryServer(ksmMetricsRegistry, m, opts.AuthFilter, kubeConfig)
 	telemetryListenAddress := net.JoinHostPort(opts.TelemetryHost, strconv.Itoa(opts.TelemetryPort))
 	telemetryServer := http.Server{
 		Handler:           telemetryMux,
@@ -467,7 +452,7 @@ func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *opt
 	return opts
 }
 
-func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {
+func buildTelemetryServer(registry prometheus.Gatherer, m *metricshandler.MetricsHandler, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	loghandler := logr.ToSlogHandler(klog.Background())
@@ -524,8 +509,14 @@ func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeCon
 		mux.Handle(path, h)
 	}
 
-	// Add readyzPath
+	// Add readyzPath on the telemetry server. Readiness probes must target
+	// opts.TelemetryPort (default 8081), not the main metrics port.
 	mux.Handle(readyzPath, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if !m.Ready() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(http.StatusText(http.StatusServiceUnavailable)))
+			return
+		}
 		count, err := util.GatherAndCount(registry)
 		if err != nil || count == 0 {
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -648,6 +639,10 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
 	return mux
 }
 
+func isOptionsConfigUnmarshalError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "unmarshal options config file")
+}
+
 // md5HashAsMetricValue creates an md5 hash and returns the most significant bytes that fit into a float64
 // Taken from https://github.com/prometheus/alertmanager/blob/6ef6e6868dbeb7984d2d577dd4bf75c65bf1904f/config/coordinator.go#L149
 func md5HashAsMetricValue(data []byte) float64 {
@@ -657,22 +652,4 @@ func md5HashAsMetricValue(data []byte) float64 {
 	buf := make([]byte, 8)
 	copy(buf, smallSum)
 	return float64(binary.LittleEndian.Uint64(buf))
-}
-
-func resolveCustomResourceConfig(opts *options.Options) (customresourcestate.ConfigDecoder, error) {
-	if s := opts.CustomResourceConfig; s != "" {
-		return yaml.NewDecoder(strings.NewReader(s)), nil
-	}
-	if file := opts.CustomResourceConfigFile; file != "" {
-		data, err := os.ReadFile(filepath.Clean(file))
-		if err != nil {
-			if opts.ContinueWithoutCustomResourceConfigFile && os.IsNotExist(err) {
-				klog.Warningf("Failed to open Custom Resource State Metrics file %s: %v, ignoring", file, err)
-				return nil, nil
-			}
-			return nil, fmt.Errorf("unable to open Custom Resource State Metrics file: %w", err)
-		}
-		return yaml.NewDecoder(bytes.NewReader(data)), nil
-	}
-	return nil, nil
 }

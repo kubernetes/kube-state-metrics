@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"slices"
 	"sort"
 	"time"
 
@@ -311,10 +310,10 @@ type cacheReconciler struct {
 	factoryGenerator func() ([]customresource.RegistryFactory, error)
 	createClients    func(factories ...customresource.RegistryFactory) (map[string]any, error)
 
-	// The enabled CR set and the stop channels of their GVKs at the last
-	// rebuild, compared on each tick to skip no-op rebuilds.
-	lastAppliedEnabled   []string
-	lastAppliedStopChans map[string]chan struct{}
+	// lastApplied maps each custom resource enabled at the last rebuild to the
+	// stop channel its reflectors were started with. It is compared on each tick
+	// to skip no-op rebuilds.
+	lastApplied map[string]chan struct{}
 
 	// Failed rebuilds are retried with exponential backoff so a persistent error
 	// (e.g. an invalid custom resource state config) does not retry and log on
@@ -412,7 +411,7 @@ func (c *cacheReconciler) generateMetrics(ctx context.Context, observedRevision 
 	// Update the list of enabled custom resources, and collect the stop channels
 	// that their reflectors will be started with.
 	var enabledCustomResources []string
-	stopChans := make(map[string]chan struct{}, len(customFactories))
+	resolved := make(map[string]chan struct{}, len(customFactories))
 	for _, factory := range customFactories {
 		expectedType := factory.ExpectedType()
 		gvr, err := util.GVRFromType(factory.Name(), expectedType)
@@ -426,11 +425,12 @@ func (c *cacheReconciler) generateMetrics(ctx context.Context, observedRevision 
 			gvrString = factory.Name()
 		}
 		enabledCustomResources = append(enabledCustomResources, gvrString)
-		// Key the channels the same way startReflector looks them up.
+		// Look the channel up the same way startReflector does.
+		var stopCh chan struct{}
 		if u, ok := expectedType.(*unstructured.Unstructured); ok {
-			gvk := u.GroupVersionKind().String()
-			stopChans[gvk] = observedStopChans[gvk]
+			stopCh = observedStopChans[u.GroupVersionKind().String()]
 		}
+		resolved[gvrString] = stopCh
 	}
 	sort.Strings(enabledCustomResources)
 	// Rebuild only when either changed since the last rebuild:
@@ -442,7 +442,7 @@ func (c *cacheReconciler) generateMetrics(ctx context.Context, observedRevision 
 	//     same GVR since.
 	//
 	// Changes to CRDs that the configuration does not resolve to change neither.
-	if slices.Equal(enabledCustomResources, c.lastAppliedEnabled) && maps.Equal(stopChans, c.lastAppliedStopChans) {
+	if maps.Equal(resolved, c.lastApplied) {
 		r.SafeWrite(func() {
 			if r.cacheRevision == observedRevision {
 				r.WasUpdated = false
@@ -476,8 +476,7 @@ func (c *cacheReconciler) generateMetrics(ctx context.Context, observedRevision 
 		// Preserve WasUpdated so a later tick retries.
 		return false, err
 	}
-	c.lastAppliedEnabled = slices.Clone(enabledCustomResources)
-	c.lastAppliedStopChans = stopChans
+	c.lastApplied = resolved
 	// Clear only the revision we applied. If discovery changed while clients
 	// were being created, leave the flag set for another reconciliation.
 	r.SafeWrite(func() {

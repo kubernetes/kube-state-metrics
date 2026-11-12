@@ -21,5 +21,3 @@ kube_serviceaccount_secret
     * on(namespace, serviceaccount) group_left(uid)
       kube_serviceaccount_info
 ```
-
-The join requires a unique matching `kube_serviceaccount_info` series per `(namespace, serviceaccount)`. If multiple series exist, deduplication or additional matching labels may be necessary.

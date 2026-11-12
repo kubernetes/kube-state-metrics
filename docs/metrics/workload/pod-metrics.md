@@ -102,10 +102,6 @@ For example, to retrieve init container resource requests for pods scheduled on 
 
 ```promql
 kube_pod_init_container_resource_requests
-  * on(namespace, pod) group_left(node)
+  * on(namespace, pod, uid) group_left(node)
     kube_pod_info{node="node1"}
 ```
-
-This approach can also be used for other pod metrics that expose `namespace` and `pod` labels but do not include the `node` label.
-
-The join requires a unique matching `kube_pod_info` series per `(namespace, pod)`. If multiple series exist for the same pod, deduplication or additional matching labels may be necessary.

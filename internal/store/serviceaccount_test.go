@@ -30,10 +30,16 @@ func TestServiceAccountStore(t *testing.T) {
 	cases := []generateMetricsTestCase{
 		{
 			Obj: &v1.ServiceAccount{
-				Name:                         "serviceAccountName",
-				CreationTimestamp:            metav1.Time{Time: time.Unix(1500000000, 0)},
-				DeletionTimestamp:            &metav1.Time{Time: time.Unix(3000000000, 0)},
-				Namespace:                    "serviceAccountNS",
+				Name:              "serviceAccountName",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				DeletionTimestamp: &metav1.Time{Time: time.Unix(3000000000, 0)},
+				Namespace:         "serviceAccountNS",
+				Labels: map[string]string{
+					"app": "test",
+				},
+				Annotations: map[string]string{
+					"example.test/team": "test",
+				},
 				UID:                          "serviceAccountUID",
 				AutomountServiceAccountToken: new(true),
 				Secrets: []v1.ObjectReference{
@@ -50,28 +56,38 @@ func TestServiceAccountStore(t *testing.T) {
 					},
 				},
 			},
+			AllowAnnotationsList: []string{"example.test/team"},
+			AllowLabelsList:      []string{"app"},
 			Want: `
 			# HELP kube_serviceaccount_info Information about a service account
 			# HELP kube_serviceaccount_created Unix creation timestamp
 			# HELP kube_serviceaccount_deleted Unix deletion timestamp
 			# HELP kube_serviceaccount_secret Secret being referenced by a service account
 			# HELP kube_serviceaccount_image_pull_secret Secret being referenced by a service account for the purpose of pulling images
+			# HELP kube_serviceaccount_annotations Kubernetes annotations converted to Prometheus labels.
+			# HELP kube_serviceaccount_labels Kubernetes labels converted to Prometheus labels.
 			# TYPE kube_serviceaccount_info gauge
 			# TYPE kube_serviceaccount_created gauge
 			# TYPE kube_serviceaccount_deleted gauge
 			# TYPE kube_serviceaccount_secret gauge
+			# TYPE kube_serviceaccount_annotations gauge
+			# TYPE kube_serviceaccount_labels gauge
             # TYPE kube_serviceaccount_image_pull_secret gauge
 			kube_serviceaccount_info{namespace="serviceAccountNS",serviceaccount="serviceAccountName",uid="serviceAccountUID",automount_token="true"} 1
-			kube_serviceaccount_created{namespace="serviceAccountNS",serviceaccount="serviceAccountName",uid="serviceAccountUID"} 1.5e+09
-			kube_serviceaccount_deleted{namespace="serviceAccountNS",serviceaccount="serviceAccountName",uid="serviceAccountUID"} 3e+09
-			kube_serviceaccount_secret{namespace="serviceAccountNS",serviceaccount="serviceAccountName",uid="serviceAccountUID",name="secretName"} 1
-			kube_serviceaccount_image_pull_secret{namespace="serviceAccountNS",serviceaccount="serviceAccountName",uid="serviceAccountUID",name="imagePullSecretName"} 1`,
+			kube_serviceaccount_created{namespace="serviceAccountNS",serviceaccount="serviceAccountName"} 1.5e+09
+			kube_serviceaccount_deleted{namespace="serviceAccountNS",serviceaccount="serviceAccountName"} 3e+09
+			kube_serviceaccount_secret{namespace="serviceAccountNS",serviceaccount="serviceAccountName",name="secretName"} 1
+			kube_serviceaccount_image_pull_secret{namespace="serviceAccountNS",serviceaccount="serviceAccountName",name="imagePullSecretName"} 1
+			kube_serviceaccount_annotations{namespace="serviceAccountNS",serviceaccount="serviceAccountName",annotation_example_test_team="test"} 1
+			kube_serviceaccount_labels{namespace="serviceAccountNS",serviceaccount="serviceAccountName",label_app="test"} 1`,
 			MetricNames: []string{
 				"kube_serviceaccount_info",
 				"kube_serviceaccount_created",
 				"kube_serviceaccount_deleted",
 				"kube_serviceaccount_secret",
 				"kube_serviceaccount_image_pull_secret",
+				"kube_serviceaccount_annotations",
+				"kube_serviceaccount_labels",
 			},
 		},
 	}

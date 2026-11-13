@@ -35,6 +35,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/optin"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/prometheus/exporter-toolkit/web"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -1344,14 +1345,14 @@ func TestConfigReloadStartsFromBaseline(t *testing.T) {
 	base.Kubeconfig = filepath.Join(dir, "missing-kubeconfig")
 	base.TotalShards = 1
 
-	writeConfig("annotations_allow_list:\n  secrets: [\"*\"]\nnamespaces: [team-a]\ncustom_resource_config_file: " + filepath.Join(dir, "crs.yaml") + "\n")
+	writeConfig("annotations_allow_list:\n  secrets: [\"*\"]\nnamespaces: [team-a]\ncustom_resource_state_config_file: " + filepath.Join(dir, "crs.yaml") + "\n")
 	first := base.Clone()
 	_ = RunKubeStateMetricsWrapper(context.Background(), first)
 	if len(first.AnnotationsAllowList["secrets"]) != 1 || !slices.Equal(first.Namespaces, []string{"team-a"}) {
 		t.Fatalf("expected config values to be applied, got annotations=%v namespaces=%v", first.AnnotationsAllowList, first.Namespaces)
 	}
 	if first.CustomResourceConfigFile != filepath.Join(dir, "crs.yaml") {
-		t.Fatalf("expected deprecated custom_resource_config_file to be honored, got %q", first.CustomResourceConfigFile)
+		t.Fatalf("expected custom_resource_state_config_file to be applied, got %q", first.CustomResourceConfigFile)
 	}
 
 	writeConfig("enable_gzip_encoding: true\n")
@@ -1362,5 +1363,50 @@ func TestConfigReloadStartsFromBaseline(t *testing.T) {
 	}
 	if len(base.AnnotationsAllowList) != 0 || len(base.Namespaces) != 0 {
 		t.Fatalf("baseline options were modified: annotations=%v namespaces=%v", base.AnnotationsAllowList, base.Namespaces)
+	}
+}
+
+func TestRunWithConfigFileIgnoresTheFileOnDisk(t *testing.T) {
+	dir := t.TempDir()
+	cfg := filepath.Join(dir, "config.yaml")
+	// The file changed to an invalid one after the reload checked it.
+	if err := os.WriteFile(cfg, []byte("port: [\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	base := options.NewOptions()
+	base.Config = cfg
+	// A missing kubeconfig makes the run return right after the config merge.
+	base.Kubeconfig = filepath.Join(dir, "missing-kubeconfig")
+	base.TotalShards = 1
+
+	// Reading the invalid file would make the run wait for a fix until the
+	// context ends.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	opts := base.Clone()
+	_ = RunKubeStateMetricsWrapperWithConfigFile(ctx, opts, []byte("namespaces: [team-a]\n"))
+	if !slices.Equal(opts.Namespaces, []string{"team-a"}) {
+		t.Fatalf("expected the given config file contents to be applied, got namespaces=%v", opts.Namespaces)
+	}
+
+	opts = base.Clone()
+	_ = RunKubeStateMetricsWrapperWithConfigFile(ctx, opts, nil)
+	if ctx.Err() != nil || len(opts.Namespaces) != 0 {
+		t.Fatalf("expected a run without config file contents to start without the file, got namespaces=%v ctx=%v", opts.Namespaces, ctx.Err())
+	}
+}
+
+func TestReportRejectedConfig(t *testing.T) {
+	g := prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "test_config_success"}, []string{"type", "filename"})
+	g.WithLabelValues("config", "/etc/ksm/config.yaml").Set(1)
+	activeConfigSuccess.Store(g)
+	t.Cleanup(func() { activeConfigSuccess.Store(nil) })
+
+	ReportRejectedConfig("/etc/ksm/config.yaml")
+
+	if got := testutil.ToFloat64(g.WithLabelValues("config", "/etc/ksm/config.yaml")); got != 0 {
+		t.Fatalf("expected the rejected config to be reported as failed, got %v", got)
 	}
 }

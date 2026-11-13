@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	robfigcron "github.com/robfig/cron/v3"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -715,5 +716,116 @@ func TestCronJobStoreScheduleParsing(t *testing.T) {
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}
+	}
+}
+
+// TestCronJobParserParity compares KSM's schedule parser with robfig/cron/v3,
+// which the Kubernetes CronJob controller uses. Fixed expected times are
+// covered by TestParseScheduleRobfigCompat; this test checks that both
+// parsers accept or reject the same schedules and produce the same next run
+// times, so a change in either library is caught.
+func TestCronJobParserParity(t *testing.T) {
+	defaultFrom := time.Date(2026, time.October, 17, 12, 0, 0, 0, time.UTC)
+	const runsToCompare = 5
+
+	testCases := []struct {
+		name     string
+		schedule string
+		timeZone string
+		from     time.Time
+		wantErr  bool
+	}{
+		{
+			name:     "every six hours",
+			schedule: "0 */6 * * *",
+		},
+		{
+			name:     "every fifteen minutes",
+			schedule: "*/15 * * * *",
+		},
+		{
+			name:     "weekdays at nine",
+			schedule: "0 9 * * 1-5",
+		},
+		{
+			name:     "hourly descriptor",
+			schedule: "@hourly",
+		},
+		{
+			name:     "four fields",
+			schedule: "* * * *",
+			wantErr:  true,
+		},
+		{
+			name:     "zero step",
+			schedule: "*/0 * * * *",
+			wantErr:  true,
+		},
+		{
+			// A step equal to the range size selects only the range start.
+			name:     "minute step equal to range",
+			schedule: "*/60 * * * *",
+		},
+		{
+			// A restricted day of month and day of week match either, not both.
+			name:     "day-of-month and day-of-week both restricted",
+			schedule: "0 3 1 * 0",
+		},
+		{
+			// A day-of-week step stops at Saturday instead of wrapping to Sunday.
+			name:     "day-of-week step from Wednesday",
+			schedule: "0 5 * * 3/2",
+		},
+		{
+			// An interval below one second rounds up to one second.
+			name:     "sub-second every descriptor",
+			schedule: "@every 500ms",
+		},
+		{
+			// 02:30 does not exist on the day clocks move forward.
+			name:     "time zone across spring-forward",
+			schedule: "30 2 * * *",
+			timeZone: "America/New_York",
+			from:     time.Date(2026, time.March, 6, 12, 0, 0, 0, time.UTC),
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			var ksmTimeZone *string
+			k8sSchedule := test.schedule
+			if test.timeZone != "" {
+				ksmTimeZone = &test.timeZone
+				// The CronJob controller prefixes the schedule with TZ=.
+				k8sSchedule = fmt.Sprintf("TZ=%s %s", test.timeZone, test.schedule)
+			}
+
+			ksmSched, ksmErr := parseSchedule(test.schedule, ksmTimeZone)
+			k8sSched, k8sErr := robfigcron.ParseStandard(k8sSchedule)
+
+			if (ksmErr != nil) != test.wantErr {
+				t.Errorf("schedule %q: KSM parse: wantErr=%v, got %v", test.schedule, test.wantErr, ksmErr)
+			}
+			if (k8sErr != nil) != test.wantErr {
+				t.Errorf("schedule %q: robfig/cron parse: wantErr=%v, got %v", test.schedule, test.wantErr, k8sErr)
+			}
+			if ksmErr != nil || k8sErr != nil {
+				return
+			}
+
+			from := defaultFrom
+			if !test.from.IsZero() {
+				from = test.from
+			}
+
+			ksmNext, k8sNext := from, from
+			for run := 1; run <= runsToCompare; run++ {
+				ksmNext = ksmSched.Next(ksmNext)
+				k8sNext = k8sSched.Next(k8sNext)
+				if !ksmNext.Equal(k8sNext) {
+					t.Fatalf("schedule %q: run %d differs: KSM %v, robfig/cron %v", test.schedule, run, ksmNext, k8sNext)
+				}
+			}
+		})
 	}
 }

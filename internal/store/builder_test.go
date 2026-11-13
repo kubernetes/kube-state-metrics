@@ -26,10 +26,16 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
@@ -420,5 +426,23 @@ func TestReplaceEnabledCustomResources(t *testing.T) {
 	}
 	if !slices.Equal(b.enabledResources, []string{"deployments", customB, "pods"}) {
 		t.Fatalf("expected removed custom resource to be dropped: %#v", b.enabledResources)
+	}
+}
+
+// The object limit of a store reports each dropped object in
+// kube_state_metrics_object_limit_dropped_total, labelled with the resource.
+func TestObjectLimitCountsDroppedObjects(t *testing.T) {
+	b := NewBuilder()
+	b.WithMetrics(prometheus.NewRegistry())
+
+	store := metricsstore.NewMetricsStore(nil, func(any) []metric.FamilyInterface { return nil }, b.objectLimitOption(&v1.Pod{}, 1))
+	for _, uid := range []string{"a", "b", "c"} {
+		if err := store.Add(&v1.Pod{ObjectMeta: metav1.ObjectMeta{UID: types.UID(uid)}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if got := testutil.ToFloat64(b.listWatchMetrics.ObjectsDropped.WithLabelValues("*v1.Pod")); got != 2 {
+		t.Fatalf("expected 2 dropped objects for *v1.Pod, got %v", got)
 	}
 }

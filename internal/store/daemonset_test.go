@@ -248,6 +248,57 @@ func TestDaemonSetStore(t *testing.T) {
 				"kube_daemonset_deletion_timestamp",
 			},
 		},
+		{
+			Obj: &v1.DaemonSet{
+				Name:      "ds5",
+				Namespace: "ns5",
+				Spec: v1.DaemonSetSpec{
+					UpdateStrategy: v1.DaemonSetUpdateStrategy{
+						Type: v1.OnDeleteDaemonSetStrategyType,
+					},
+				},
+			},
+			Want: `
+				# HELP kube_daemonset_spec_update_strategy Update strategy of the DaemonSet.
+				# TYPE kube_daemonset_spec_update_strategy gauge
+				kube_daemonset_spec_update_strategy{daemonset="ds5",namespace="ns5",strategy="OnDelete"} 1
+`,
+			MetricNames: []string{
+				"kube_daemonset_spec_update_strategy",
+			},
+		},
+		{
+			Obj: &v1.DaemonSet{
+				Name:      "ds6",
+				Namespace: "ns6",
+				Spec: v1.DaemonSetSpec{
+					UpdateStrategy: v1.DaemonSetUpdateStrategy{
+						Type: v1.RollingUpdateDaemonSetStrategyType,
+					},
+				},
+			},
+			Want: `
+				# HELP kube_daemonset_spec_update_strategy Update strategy of the DaemonSet.
+				# TYPE kube_daemonset_spec_update_strategy gauge
+				kube_daemonset_spec_update_strategy{daemonset="ds6",namespace="ns6",strategy="RollingUpdate"} 1
+`,
+			MetricNames: []string{
+				"kube_daemonset_spec_update_strategy",
+			},
+		},
+		{
+			Obj: &v1.DaemonSet{
+				Name:      "ds7",
+				Namespace: "ns7",
+			},
+			Want: `
+				# HELP kube_daemonset_spec_update_strategy Update strategy of the DaemonSet.
+				# TYPE kube_daemonset_spec_update_strategy gauge
+`,
+			MetricNames: []string{
+				"kube_daemonset_spec_update_strategy",
+			},
+		},
 	}
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(daemonSetMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))

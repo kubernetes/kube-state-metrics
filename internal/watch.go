@@ -34,11 +34,23 @@ func readYAMLFile(path string) error {
 	return yaml.Unmarshal(b, &map[string]any{})
 }
 
+// isReadable reports whether the file at path can be opened for reading.
+func isReadable(path string) bool {
+	f, err := os.Open(filepath.Clean(path))
+	if err != nil {
+		return false
+	}
+	_ = f.Close()
+	return true
+}
+
 // watchFile calls onChange whenever the file at path changes, until the file
 // is removed or the returned stop function is called. It watches the parent
 // directory rather than the file itself, so it also sees atomic saves and
 // Kubernetes ConfigMap updates, which swap the ..data symlink instead of
-// writing to the file.
+// writing to the file. A change of permissions that makes an unreadable file
+// readable counts as a change too, since a reload attempted while the file
+// could not be read failed and nothing else would retry it.
 func watchFile(path string, onChange func(fsnotify.Event)) (stop func(), err error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -50,6 +62,7 @@ func watchFile(path string, onChange func(fsnotify.Event)) (stop func(), err err
 		return nil, err
 	}
 	realFile, _ := filepath.EvalSymlinks(file)
+	readable := isReadable(file)
 
 	go func() {
 		defer watcher.Close()
@@ -61,7 +74,15 @@ func watchFile(path string, onChange func(fsnotify.Event)) (stop func(), err err
 				}
 				isFile := filepath.Clean(event.Name) == file
 				currentFile, _ := filepath.EvalSymlinks(file)
-				if (isFile && (event.Has(fsnotify.Write) || event.Has(fsnotify.Create))) ||
+				// Chmod also fires for touch and chown, so only a chmod that
+				// makes the file readable again counts as a change.
+				becameReadable := false
+				if isFile {
+					wasReadable := readable
+					readable = isReadable(file)
+					becameReadable = event.Has(fsnotify.Chmod) && readable && !wasReadable
+				}
+				if (isFile && (event.Has(fsnotify.Write) || event.Has(fsnotify.Create) || becameReadable)) ||
 					(currentFile != "" && currentFile != realFile) {
 					realFile = currentFile
 					onChange(event)

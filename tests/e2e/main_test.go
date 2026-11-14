@@ -291,6 +291,7 @@ func TestDefaultCollectorMetricsAvailable(t *testing.T) {
 	}
 	nonResources := map[string]bool{
 		"builder":   true,
+		"listwatch": true,
 		"utils":     true,
 		"testutils": true,
 	}

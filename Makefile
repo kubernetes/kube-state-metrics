@@ -8,6 +8,11 @@ ARCH ?= $(shell go env GOARCH)
 OS ?= $(shell uname -s | tr A-Z a-z)
 USER ?= $(shell id -u -n)
 HOST ?= $(shell hostname)
+BRANCH = $(strip $(shell git rev-parse --abbrev-ref HEAD))
+BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
+PKG = github.com/prometheus/common
+KSM_MODULE = $(shell go list -m)
 PROMETHEUS_VERSION = 3.9.1
 GO_VERSION = $(shell cat .go-version)
 GORELEASER_VERSION = 2.20.0
@@ -66,13 +71,14 @@ doccheck: generate validate-template
 	@echo OK
 
 # build produces the release artifact via goreleaser, matching what ships in the
-# container image. build-local produces a binary for the host, which is what the
-# docs generation needs; version information is only set by goreleaser.
+# container image. build-local produces a binary for OS/ARCH; the docs generation
+# and the release-binaries workflow use it, the latter passing the version
+# information below.
 build:
 	GOOS=linux GOARCH=$(ARCH) K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser build --single-target --clean --snapshot
 
 build-local:
-	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -o kube-state-metrics .
+	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-s -w -X ${PKG}/version.Version=${TAG} -X ${PKG}/version.Revision=${GIT_COMMIT} -X ${PKG}/version.Branch=${BRANCH} -X ${PKG}/version.BuildUser=${USER}@${HOST} -X ${PKG}/version.BuildDate=${BUILD_DATE} -X ${KSM_MODULE}/pkg/app.ClientGoVersion=${CLIENT_GO_VERSION}" -o kube-state-metrics .
 
 test-unit:
 	GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) $(TESTENVVAR) go test --race $(FLAGS) $(PKGS)
@@ -124,8 +130,8 @@ all-container: container
 container:
 	K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser release --snapshot --clean --skip=archive,announce,publish
 
-# Pushes the container images only. The GitHub release is published separately
-# by the pre-release workflow, which is the runner that holds a GITHUB_TOKEN.
+# Pushes the container images only. Cloud Build has no GITHUB_TOKEN; the release
+# binaries are attached to the GitHub release by the release-binaries workflow.
 # Only pin the tag for goreleaser when TAG is a release tag. A push to a branch
 # sets TAG to the branch name (e.g. main), which goreleaser would reject, so the
 # images are tagged with it via IMAGE_TAG and the check that HEAD is tagged is skipped.

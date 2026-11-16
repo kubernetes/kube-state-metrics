@@ -74,8 +74,7 @@ func watchFile(path string, onChange func(fsnotify.Event)) (stop func(), err err
 				}
 				isFile := filepath.Clean(event.Name) == file
 				currentFile, _ := filepath.EvalSymlinks(file)
-				// Chmod also fires for touch and chown, so only a chmod that
-				// makes the file readable again counts as a change.
+				// Chmod also fires for touch and chown; only becoming readable counts.
 				becameReadable := false
 				if isFile {
 					wasReadable := readable

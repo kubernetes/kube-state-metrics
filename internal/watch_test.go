@@ -99,9 +99,8 @@ func TestWatchFileWrite(t *testing.T) {
 	expectEvent(t, events)
 }
 
-// TestWatchFileChmod checks that a file becoming readable again triggers a
-// change, so a reload that failed because the file could not be read is
-// retried, while permission changes that keep it readable do not.
+// TestWatchFileChmod checks that only a chmod that makes the file readable
+// again triggers a change.
 func TestWatchFileChmod(t *testing.T) {
 	if os.Geteuid() == 0 {
 		t.Skip("root can read files regardless of their permissions")

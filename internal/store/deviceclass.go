@@ -26,6 +26,7 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	basemetrics "k8s.io/component-base/metrics"
+	"k8s.io/utils/ptr"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -62,15 +63,11 @@ var (
 			basemetrics.ALPHA,
 			"",
 			wrapDeviceClassFunc(func(dc *resourcev1.DeviceClass) *metric.Family {
-				extendedResourceName := ""
-				if dc.Spec.ExtendedResourceName != nil {
-					extendedResourceName = *dc.Spec.ExtendedResourceName
-				}
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"extended_resource_name"},
-							LabelValues: []string{extendedResourceName},
+							LabelValues: []string{ptr.Deref(dc.Spec.ExtendedResourceName, "")},
 							Value:       1,
 						},
 					},

@@ -24,6 +24,8 @@ CLIENT_GO_VERSION = $(shell go list -m -f '{{.Version}}' k8s.io/client-go)
 GORELEASER_OS = $(shell uname -s)
 GORELEASER_ARCH = $(patsubst aarch64,arm64,$(shell uname -m))
 GORELEASER_INSTALL_DIR ?= /usr/local/bin
+# macOS ships shasum rather than sha256sum.
+SHA256SUM ?= $(shell command -v sha256sum 2>/dev/null || echo shasum -a 256)
 comma := ,
 
 DOCKER_CLI ?= docker
@@ -194,9 +196,20 @@ install-promtool:
 	@wget -qO- "https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}.tar.gz" |\
 	tar xvz --strip-components=1 prometheus-${PROMETHEUS_VERSION}.${OS}-${ARCH}/promtool
 
+# The archive is checked against the release's checksums.txt before it is
+# unpacked. The archive name is matched exactly: checksums.txt also lists
+# .sbom.json files whose names start with it.
 install-goreleaser:
 	@echo Installing goreleaser v${GORELEASER_VERSION} to ${GORELEASER_INSTALL_DIR}
-	@curl -sSL "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/goreleaser_${GORELEASER_OS}_${GORELEASER_ARCH}.tar.gz" |\
-	tar xz -C ${GORELEASER_INSTALL_DIR} goreleaser
+	@set -e; \
+	tmp=$$(mktemp -d); trap 'rm -rf "$$tmp"' EXIT; \
+	base="https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}"; \
+	tarball="goreleaser_${GORELEASER_OS}_${GORELEASER_ARCH}.tar.gz"; \
+	curl -sSfL -o "$$tmp/$$tarball" "$$base/$$tarball"; \
+	curl -sSfL -o "$$tmp/checksums.txt" "$$base/checksums.txt"; \
+	awk -v f="$$tarball" '$$2 == f' "$$tmp/checksums.txt" > "$$tmp/expected.txt"; \
+	test "$$(wc -l < "$$tmp/expected.txt")" -eq 1 || { echo "no checksum for $$tarball" >&2; exit 1; }; \
+	(cd "$$tmp" && ${SHA256SUM} -c expected.txt); \
+	tar xzf "$$tmp/$$tarball" -C ${GORELEASER_INSTALL_DIR} goreleaser
 
 .PHONY: all build build-local all-container container push test-unit test-rules test-benchmark-compare clean e2e validate-modules shellcheck licensecheck lint lint-fix generate generate-template validate-template install-promtool install-goreleaser

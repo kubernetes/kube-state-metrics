@@ -130,13 +130,15 @@ all-container: container
 container:
 	K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser release --snapshot --clean --skip=archive,announce,publish
 
-# Pushes the container images only. Cloud Build has no GITHUB_TOKEN; the release
-# binaries are attached to the GitHub release by the release-binaries workflow.
+# Pushes the container images only. Cloud Build has no GITHUB_TOKEN, so the
+# changelog, which `use: github` builds from the GitHub API, is skipped (needs
+# goreleaser >= v2.20.0); the release binaries are attached to the GitHub release
+# by the release-binaries workflow.
 # Only pin the tag for goreleaser when TAG is a release tag. A push to a branch
 # sets TAG to the branch name (e.g. main), which goreleaser would reject, so the
 # images are tagged with it via IMAGE_TAG and the check that HEAD is tagged is skipped.
 GORELEASER_TAG_ENV = $(if $(filter v%,$(TAG)),GORELEASER_CURRENT_TAG=$(TAG),IMAGE_TAG=$(TAG))
-GORELEASER_PUSH_SKIP = announce,archive$(if $(filter v%,$(TAG)),,$(comma)validate)
+GORELEASER_PUSH_SKIP = announce,archive,changelog$(if $(filter v%,$(TAG)),,$(comma)validate)
 
 push:
 	GORELEASER_SKIP_GITHUB_RELEASE=true $(GORELEASER_TAG_ENV) K8S_CLIENT_VERSION=$(CLIENT_GO_VERSION) goreleaser release --clean --skip=$(GORELEASER_PUSH_SKIP)

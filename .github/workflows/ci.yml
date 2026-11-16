@@ -211,11 +211,10 @@ jobs:
       id: go
 
     - name: Install GoReleaser
-      uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
-      with:
-        install-only: true
-        # Keep in sync with GORELEASER_VERSION in the Makefile.
-        version: v2.20.0
+      run: |
+        mkdir -p "${RUNNER_TEMP}/bin"
+        make install-goreleaser GORELEASER_INSTALL_DIR="${RUNNER_TEMP}/bin"
+        echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
 
     - name: Build
       run: |
@@ -238,11 +237,10 @@ jobs:
       id: go
 
     - name: Install GoReleaser
-      uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
-      with:
-        install-only: true
-        # Keep in sync with GORELEASER_VERSION in the Makefile.
-        version: v2.20.0
+      run: |
+        mkdir -p "${RUNNER_TEMP}/bin"
+        make install-goreleaser GORELEASER_INSTALL_DIR="${RUNNER_TEMP}/bin"
+        echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
 
     - name: End-to-end tests
       run: |

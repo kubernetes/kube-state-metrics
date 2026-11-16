@@ -53,6 +53,7 @@ import (
 
 	"k8s.io/kube-state-metrics/v2/internal/store"
 	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
+	"k8s.io/kube-state-metrics/v2/pkg/authfilter"
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -466,13 +467,16 @@ func TestPprofRouting(t *testing.T) {
 	fakeConfig := &rest.Config{Host: "https://fake-server:443"}
 
 	for _, authEnabled := range []bool{false, true} {
-		var cfg *rest.Config
+		var filter *authfilter.Filter
 		if authEnabled {
-			cfg = fakeConfig
+			filter = newAuthFilter(fakeConfig)
+			if filter == nil {
+				t.Fatal("expected auth filter to be built from fake config")
+			}
 		}
 
 		reg := prometheus.NewRegistry()
-		telemetryMux := buildTelemetryServer(reg, authEnabled, cfg)
+		telemetryMux := buildTelemetryServer(reg, authEnabled, filter)
 		for _, path := range pprofPaths {
 			req := httptest.NewRequest("GET", "http://localhost:8081"+path, nil)
 			_, pattern := telemetryMux.Handler(req)
@@ -487,7 +491,7 @@ func TestPprofRouting(t *testing.T) {
 			prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "test_duration_seconds", Help: "helpless"}, []string{"method"}),
 			fake.NewSimpleClientset(),
 			authEnabled,
-			cfg,
+			filter,
 		)
 		for _, path := range pprofPaths {
 			req := httptest.NewRequest("GET", "http://localhost:8080"+path, nil)

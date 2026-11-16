@@ -209,12 +209,18 @@ func createPodContainerResourceRequestsFamilyGenerator() generator.FamilyGenerat
 // labels, the resource and its unit. Resources without a known unit are
 // skipped.
 func containerResourceMetrics(containers []v1.Container, resources func(v1.ResourceRequirements) v1.ResourceList, extraKeys, extraValues []string) []*metric.Metric {
-	labelKeys := append(append([]string{"container"}, extraKeys...), "resource", "unit")
+	labelKeys := make([]string, 0, len(extraKeys)+3)
+	labelKeys = append(labelKeys, "container")
+	labelKeys = append(labelKeys, extraKeys...)
+	labelKeys = append(labelKeys, "resource", "unit")
 	ms := []*metric.Metric{}
 	for _, c := range containers {
 		for resourceName, val := range resources(c.Resources) {
 			newMetric := func(unit constant.ResourceUnit, value float64) *metric.Metric {
-				labelValues := append(append([]string{c.Name}, extraValues...), SanitizeLabelName(string(resourceName)), string(unit))
+				labelValues := make([]string, 0, len(extraValues)+3)
+				labelValues = append(labelValues, c.Name)
+				labelValues = append(labelValues, extraValues...)
+				labelValues = append(labelValues, SanitizeLabelName(string(resourceName)), string(unit))
 				return &metric.Metric{LabelKeys: labelKeys, LabelValues: labelValues, Value: value}
 			}
 			switch resourceName {

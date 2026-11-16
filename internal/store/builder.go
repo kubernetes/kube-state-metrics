@@ -755,11 +755,18 @@ func newCRReflectorStopCh(ctx context.Context, gvkStopCh chan struct{}) chan str
 // objectLimitOption limits the number of objects a store keeps and counts the
 // add/update events it drops once the limit is reached.
 func (b *Builder) objectLimitOption(expectedType any, objectLimit int64) metricsstore.Option {
+	if b.listWatchMetrics == nil {
+		return metricsstore.WithObjectLimit(objectLimit, func() {})
+	}
+	dropped := b.listWatchMetrics.ObjectsDropped
 	resource := reflect.TypeOf(expectedType).String()
+	// Look the counter up on the first drop rather than here, so that a store
+	// that never drops an object does not export a zero series.
+	var counter prometheus.Counter
+	var once sync.Once
 	return metricsstore.WithObjectLimit(objectLimit, func() {
-		if b.listWatchMetrics != nil {
-			b.listWatchMetrics.ObjectsDropped.WithLabelValues(resource).Inc()
-		}
+		once.Do(func() { counter = dropped.WithLabelValues(resource) })
+		counter.Inc()
 	})
 }
 

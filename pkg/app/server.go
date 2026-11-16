@@ -349,7 +349,12 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		)
 	}
 
-	telemetryMux := buildTelemetryServer(ksmMetricsRegistry, opts.AuthFilter, kubeConfig)
+	var filter *authfilter.Filter
+	if opts.AuthFilter {
+		filter = newAuthFilter(kubeConfig)
+	}
+
+	telemetryMux := buildTelemetryServer(ksmMetricsRegistry, opts.AuthFilter, filter)
 	telemetryListenAddress := net.JoinHostPort(opts.TelemetryHost, strconv.Itoa(opts.TelemetryPort))
 	telemetryServer := http.Server{
 		Handler:           telemetryMux,
@@ -359,7 +364,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		WebConfigFile:      &tlsConfig,
 	}
 
-	metricsMux := buildMetricsServer(m, durationVec, kubeClient, opts.AuthFilter, kubeConfig)
+	metricsMux := buildMetricsServer(m, durationVec, kubeClient, opts.AuthFilter, filter)
 	metricsServerListenAddress := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
 	metricsServer := http.Server{
 		Handler:           metricsMux,
@@ -467,7 +472,34 @@ func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *opt
 	return opts
 }
 
-func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {
+// newAuthFilter builds the auth filter shared by the telemetry and metrics
+// servers. It has its own HTTP client, so its reviews are not throttled by the
+// client-side rate limiter of the informers' clientset. It returns nil if the
+// filter cannot be built.
+func newAuthFilter(kubeConfig *rest.Config) *authfilter.Filter {
+	client, err := rest.HTTPClientFor(kubeConfig)
+	if err != nil {
+		klog.ErrorS(err, "failed to create HTTP client from config")
+		return nil
+	}
+	filter, err := authfilter.New(kubeConfig, client)
+	if err != nil {
+		klog.ErrorS(err, "failed to create auth handler")
+		return nil
+	}
+	return filter
+}
+
+// authUnavailable answers in place of handlers that should be behind the auth
+// filter when it could not be built.
+var authUnavailable = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	http.Error(w, "auth filter unavailable", http.StatusServiceUnavailable)
+})
+
+// buildTelemetryServer builds the telemetry mux. With authFilter set, filter
+// protects the metrics and pprof handlers; a nil filter means it could not be
+// built, so metrics answer 503 and pprof is not registered.
+func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, filter *authfilter.Filter) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	loghandler := logr.ToSlogHandler(klog.Background())
@@ -486,18 +518,8 @@ func buildTelemetryServer(registry prometheus.Gatherer, authFilter bool, kubeCon
 
 	// Add Authentication/Authorization via Kubernetes API
 	if authFilter {
-		unavailable := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			http.Error(w, "auth filter unavailable", http.StatusServiceUnavailable)
-		})
-
-		client, err := rest.HTTPClientFor(kubeConfig)
-		if err != nil {
-			klog.ErrorS(err, "failed to create HTTP client from config")
-			metricsHandler = unavailable
-			pprofHandlers = map[string]http.Handler{}
-		} else if filter, err := authfilter.New(kubeConfig, client); err != nil {
-			klog.ErrorS(err, "failed to create auth handler")
-			metricsHandler = unavailable
+		if filter == nil {
+			metricsHandler = authUnavailable
 			pprofHandlers = map[string]http.Handler{}
 		} else {
 			metricsHandler = filter.Wrap(metricsHandler)
@@ -574,7 +596,10 @@ func handleClusterDelegationForProber(client kubernetes.Interface, probeType str
 	}
 }
 
-func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prometheus.ObserverVec, client kubernetes.Interface, authFilter bool, kubeConfig *rest.Config) *http.ServeMux {
+// buildMetricsServer builds the metrics mux. With authFilter set, filter
+// protects the metrics handler; a nil filter means it could not be built, so
+// metrics answer 503.
+func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prometheus.ObserverVec, client kubernetes.Interface, authFilter bool, filter *authfilter.Filter) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// Add metricsPath
@@ -582,17 +607,8 @@ func buildMetricsServer(m *metricshandler.MetricsHandler, durationObserver prome
 
 	// Add Authentication/Authorization via Kubernetes API
 	if authFilter {
-		unavailable := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			http.Error(w, "auth filter unavailable", http.StatusServiceUnavailable)
-		})
-
-		client, err := rest.HTTPClientFor(kubeConfig)
-		if err != nil {
-			klog.ErrorS(err, "failed to create HTTP client from config")
-			metricsHandler = unavailable
-		} else if filter, err := authfilter.New(kubeConfig, client); err != nil {
-			klog.ErrorS(err, "failed to create auth handler")
-			metricsHandler = unavailable
+		if filter == nil {
+			metricsHandler = authUnavailable
 		} else {
 			metricsHandler = filter.Wrap(metricsHandler)
 		}

@@ -113,17 +113,18 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 		})
 	}
 
-	// Headers describe the families written below, so they are emitted only
-	// when there is at least one object to describe, across all stores: there
-	// is one store per namespace, so the first can be empty while a later one
-	// holds objects whose families are still written.
-	hasMetrics := len(objects) > 0
+	// Headers describe the families written below, so nothing is written
+	// when no store holds an object. There is one store per namespace, so
+	// the first can be empty while a later one holds objects.
+	if len(objects) == 0 {
+		return nil
+	}
 
 	for i, help := range m.stores[0].headers {
 		// SanitizeHeaders blanks duplicate headers to preserve header/family
 		// index alignment. An empty header means suppress the header text but
 		// still emit the metric family bytes at this index.
-		if help != "" && hasMetrics {
+		if help != "" {
 			// Avoid allocating a new string if the header lacks a trailing newline:
 			// check once and emit "\n" as a second write if needed.
 			needsNewline := help[len(help)-1] != '\n'

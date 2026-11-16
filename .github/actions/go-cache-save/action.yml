@@ -1,0 +1,25 @@
+name: Save Go build cache
+description: >
+  Save the Go build cache restored by go-cache-restore, from pushes to main
+  only (see the note in go-cache-restore). Run it as the job's last step.
+
+inputs:
+  key:
+    description: The `save-key` output of go-cache-restore.
+    required: true
+  extra-path:
+    description: Same as go-cache-restore's `extra-path`.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+  - name: Save Go build output
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.key != ''
+    uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    with:
+      path: |
+        ~/.cache/go-build
+        ${{ inputs.extra-path }}
+      key: ${{ inputs.key }}

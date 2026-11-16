@@ -16,12 +16,25 @@ on:
 permissions:
   contents: read
 
+# Superseded runs on a pull request are pointless work; the org runner pool is
+# shared, so cancel them. Every other run gets a group of its own (keyed on the
+# run id): a shared group would still let a newer push replace a pending one,
+# and pushes to main/release branches and tags must each get their own run, as
+# that is the record for that commit.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   E2E_SETUP_KIND: yes
   E2E_SETUP_KUBECTL: yes
   SUDO: sudo
   GOLANGCI_LINT_VERSION: "v2.15.0"
 
+# setup-go's own caching is off in every job below: its single key makes all
+# jobs race for one entry. The Go module and per-job build caches are handled
+# by .github/actions/go-cache-restore and go-cache-save instead; see the note
+# in go-cache-restore. ci-validate-go-modules alone saves the module cache.
 jobs:
   ci-go-lint:
     name: ci-go-lint
@@ -34,7 +47,15 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go caches
+      id: gocache
+      uses: ./.github/actions/go-cache-restore
+      with:
+        name: lint
+        extra-path: ~/.cache/golangci-lint
 
     - name: Lint
       run: |
@@ -53,6 +74,12 @@ jobs:
         rm -rf "${tarball}" "golangci-lint-${version}-linux-amd64" checksums.txt
         make lint
 
+    - name: Save Go build output
+      uses: ./.github/actions/go-cache-save
+      with:
+        key: ${{ steps.gocache.outputs.save-key }}
+        extra-path: ~/.cache/golangci-lint
+
   ci-validate-manifests:
     name: ci-validate-manifests
     runs-on: ubuntu-latest
@@ -64,7 +91,11 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go modules
+      uses: ./.github/actions/go-cache-restore
 
     - name: Validate generated manifests
       run: |
@@ -81,7 +112,15 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Cache Go modules
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/go/pkg/mod
+        key: gomod-${{ runner.os }}-${{ hashFiles('go.sum', '.go-version') }}
+        restore-keys: gomod-${{ runner.os }}-
 
     - name: Validate go modules
       run: |
@@ -98,11 +137,23 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go caches
+      id: gocache
+      uses: ./.github/actions/go-cache-restore
+      with:
+        name: docs
 
     - name: Check that all metrics are documented and templates have no delta
       run: |
         make doccheck
+
+    - name: Save Go build output
+      uses: ./.github/actions/go-cache-save
+      with:
+        key: ${{ steps.gocache.outputs.save-key }}
 
   ci-unit-tests:
     name: ci-unit-tests
@@ -115,11 +166,23 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go caches
+      id: gocache
+      uses: ./.github/actions/go-cache-restore
+      with:
+        name: unit
 
     - name: Unit tests
       run: |
         make test-unit
+
+    - name: Save Go build output
+      uses: ./.github/actions/go-cache-save
+      with:
+        key: ${{ steps.gocache.outputs.save-key }}
 
   ci-rule-tests:
     name: ci-rule-tests
@@ -147,7 +210,14 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go caches
+      id: gocache
+      uses: ./.github/actions/go-cache-restore
+      with:
+        name: benchmark-main
 
     - name: Benchmark tests
       run: |
@@ -164,6 +234,11 @@ jobs:
         Refer to <a href="https://pkg.go.dev/golang.org/x/perf/cmd/benchstat">benchstat's documentation</a> for more help.
         EOL
 
+    - name: Save Go build output
+      uses: ./.github/actions/go-cache-save
+      with:
+        key: ${{ steps.gocache.outputs.save-key }}
+
   ci-benchmark-tests-release:
     name: ci-benchmark-tests-releasebranch
     runs-on: ubuntu-latest
@@ -178,7 +253,14 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go caches
+      id: gocache
+      uses: ./.github/actions/go-cache-restore
+      with:
+        name: benchmark-release
 
     - name: Benchmark tests
       run: |
@@ -195,6 +277,11 @@ jobs:
         Refer to <a href="https://pkg.go.dev/golang.org/x/perf/cmd/benchstat">benchstat's documentation</a> for more help.
         EOL
 
+    - name: Save Go build output
+      uses: ./.github/actions/go-cache-save
+      with:
+        key: ${{ steps.gocache.outputs.save-key }}
+
   ci-build-kube-state-metrics:
     name: ci-build-kube-state-metrics
     runs-on: ubuntu-latest
@@ -206,11 +293,23 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go caches
+      id: gocache
+      uses: ./.github/actions/go-cache-restore
+      with:
+        name: build
 
     - name: Build
       run: |
         make build
+
+    - name: Save Go build output
+      uses: ./.github/actions/go-cache-save
+      with:
+        key: ${{ steps.gocache.outputs.save-key }}
 
   ci-e2e-tests:
     name: ci-e2e-tests
@@ -223,8 +322,20 @@ jobs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
+        cache: false # see the caching note above `jobs`
       id: go
+
+    - name: Restore Go caches
+      id: gocache
+      uses: ./.github/actions/go-cache-restore
+      with:
+        name: e2e
 
     - name: End-to-end tests
       run: |
         make e2e
+
+    - name: Save Go build output
+      uses: ./.github/actions/go-cache-save
+      with:
+        key: ${{ steps.gocache.outputs.save-key }}

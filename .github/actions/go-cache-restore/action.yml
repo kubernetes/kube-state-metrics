@@ -1,0 +1,62 @@
+name: Restore Go caches
+description: >
+  Restore the Go module cache and, when `name` is set, this job's Go build
+  cache. Pair with go-cache-save to save the build cache.
+
+# setup-go's own caching is off in every CI job. It derives a single cache key
+# from OS + Go version + go.sum, so all jobs collide on it: they start together,
+# all miss, all race to save, and one arbitrary winner takes the slot - often a
+# job that barely populates GOCACHE, which the rest then restore. This action
+# splits the two caches:
+# - GOMODCACHE is keyed on go.sum, so its contents are fixed by the key. It is
+#   only restored here; ci-validate-go-modules alone saves it, since `go mod
+#   tidy` there walks the whole module graph, so the entry is complete. Were
+#   all jobs to save, the first to finish would win the key with whatever
+#   subset of modules it happened to download.
+# - GOCACHE is kept per job (`name`) and per commit: actions/cache never
+#   re-saves on an exact key hit, so a key fixed by go.sum alone would freeze
+#   the build cache at the first commit to use it. restore-keys picks up the
+#   most recent entry for the job instead. go-cache-save only saves it from
+#   pushes to main, once the job has succeeded: an entry per job for every PR
+#   push and tag would fill the repository's cache quota and evict the main
+#   entries everything else restores from.
+# Jobs that compile little enough not to earn a build cache entry leave `name`
+# empty and take the module cache only.
+
+inputs:
+  name:
+    description: Job tag for the build cache key; empty restores the module cache only.
+    required: false
+    default: ''
+  extra-path:
+    description: Additional path(s) to keep in the build cache, e.g. a linter cache.
+    required: false
+    default: ''
+
+outputs:
+  save-key:
+    description: Key for go-cache-save; empty when there is nothing to save (no build cache, or an exact hit).
+    value: ${{ steps.gobuild.outputs.cache-hit != 'true' && steps.gobuild.outputs.cache-primary-key || '' }}
+
+runs:
+  using: composite
+  steps:
+  - name: Restore Go modules
+    uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    with:
+      path: ~/go/pkg/mod
+      key: gomod-${{ runner.os }}-${{ hashFiles('go.sum', '.go-version') }}
+      restore-keys: gomod-${{ runner.os }}-
+
+  - name: Restore Go build output
+    id: gobuild
+    if: inputs.name != ''
+    uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    with:
+      path: |
+        ~/.cache/go-build
+        ${{ inputs.extra-path }}
+      key: gobuild-${{ runner.os }}-${{ inputs.name }}-${{ hashFiles('go.sum', '.go-version') }}-${{ github.sha }}
+      restore-keys: |
+        gobuild-${{ runner.os }}-${{ inputs.name }}-${{ hashFiles('go.sum', '.go-version') }}-
+        gobuild-${{ runner.os }}-${{ inputs.name }}-

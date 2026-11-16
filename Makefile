@@ -15,7 +15,7 @@ PKG = github.com/prometheus/common
 KSM_MODULE = $(shell go list -m)
 PROMETHEUS_VERSION = 3.9.1
 GO_VERSION = $(shell cat .go-version)
-GORELEASER_VERSION = 2.20.0
+GORELEASER_VERSION = 2.20.2
 MARKDOWNLINT_CLI2_VERSION = 0.21.0
 CLIENT_GO_VERSION = $(shell go list -m -f '{{.Version}}' k8s.io/client-go)
 

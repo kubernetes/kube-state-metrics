@@ -219,6 +219,23 @@ func TestValidate(t *testing.T) {
 			name:   "last shard of a sharded set",
 			mutate: func(o *Options) { o.Shard = 2; o.TotalShards = 3 },
 		},
+		{
+			name: "label selector for a known but disabled resource",
+			mutate: func(o *Options) {
+				o.Resources = ResourceSet{"nodes": {}}
+				o.LabelSelectors = LabelSelectorSet{"pods": "app=frontend"}
+			},
+		},
+		{
+			name:    "invalid label selector syntax",
+			mutate:  func(o *Options) { o.LabelSelectors = LabelSelectorSet{"pods": "app in (frontend"} },
+			wantErr: true,
+		},
+		{
+			// Unknown resources are rejected when the store builder is set up.
+			name:   "label selector for an unknown resource",
+			mutate: func(o *Options) { o.LabelSelectors = LabelSelectorSet{"foos": "app=frontend"} },
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			opts := NewOptions()
@@ -236,6 +253,7 @@ func TestValidate(t *testing.T) {
 func TestOptionsClone(t *testing.T) {
 	opts := NewOptions()
 	opts.AnnotationsAllowList = LabelsAllowList{"pods": {"team"}}
+	opts.LabelSelectors = LabelSelectorSet{"pods": "app=frontend"}
 	opts.LabelsAllowList = LabelsAllowList{"pods": {"app"}}
 	opts.MetricAllowlist = MetricSet{"kube_pod_info": {}}
 	opts.MetricDenylist = MetricSet{"kube_pod_labels": {}}
@@ -254,6 +272,7 @@ func TestOptionsClone(t *testing.T) {
 
 	c.AnnotationsAllowList["secrets"] = []string{"*"}
 	c.AnnotationsAllowList["pods"][0] = "changed"
+	c.LabelSelectors["nodes"] = "tenant=team-a"
 	c.LabelsAllowList["secrets"] = []string{"*"}
 	c.MetricAllowlist["changed"] = struct{}{}
 	c.MetricDenylist["changed"] = struct{}{}
@@ -265,6 +284,9 @@ func TestOptionsClone(t *testing.T) {
 
 	if len(opts.AnnotationsAllowList) != 1 || opts.AnnotationsAllowList["pods"][0] != "team" {
 		t.Errorf("AnnotationsAllowList shared with clone: %v", opts.AnnotationsAllowList)
+	}
+	if len(opts.LabelSelectors) != 1 {
+		t.Errorf("LabelSelectors shared with clone: %v", opts.LabelSelectors)
 	}
 	if len(opts.LabelsAllowList) != 1 {
 		t.Errorf("LabelsAllowList shared with clone: %v", opts.LabelsAllowList)

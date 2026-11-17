@@ -60,7 +60,7 @@ func createEndpointsSliceInfo() generator.FamilyGenerator {
 		wrapEndpointSliceFunc(func(s *discoveryv1.EndpointSlice) *metric.Family {
 
 			m := metric.Metric{
-				LabelKeys:   []string{"addresstype"},
+				LabelKeys:   []string{"address_type"},
 				LabelValues: []string{string(s.AddressType)},
 				Value:       1,
 			}

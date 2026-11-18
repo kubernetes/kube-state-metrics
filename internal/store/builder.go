@@ -295,7 +295,9 @@ func (b *Builder) allowList(list map[string][]string) (map[string][]string, erro
 	return m, nil
 }
 
-// mergeLabels combines two label slices, deduplicating entries.
+// mergeLabels combines two label slices, deduplicating entries. A full
+// wildcard is only honoured as the first entry, so if either input starts with
+// one it stays first in the result.
 func mergeLabels(base, additional []string) []string {
 	if len(additional) == 0 {
 		return base
@@ -311,6 +313,12 @@ func mergeLabels(base, additional []string) []string {
 	// space if collisions occur, but avoid reallocations otherwise.
 	result := make([]string, 0, len(base)+len(additional))
 
+	// Hoist a leading full wildcard from either input to the front.
+	if hasLeadingWildcard(additional) && !hasLeadingWildcard(base) {
+		seen[options.LabelWildcard] = struct{}{}
+		result = append(result, options.LabelWildcard)
+	}
+
 	for _, l := range base {
 		if _, exists := seen[l]; !exists {
 			seen[l] = struct{}{}
@@ -324,6 +332,10 @@ func mergeLabels(base, additional []string) []string {
 		}
 	}
 	return result
+}
+
+func hasLeadingWildcard(l []string) bool {
+	return len(l) > 0 && l[0] == options.LabelWildcard
 }
 
 // WithAllowAnnotations configures which annotations can be returned for metrics

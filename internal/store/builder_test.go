@@ -264,6 +264,24 @@ func TestMergeLabels(t *testing.T) {
 			want:       []string{"a", "b", "c", "d"},
 		},
 		{
+			name:       "wildcard in additional moves first",
+			base:       []string{"team"},
+			additional: []string{"*"},
+			want:       []string{"*", "team"},
+		},
+		{
+			name:       "wildcard in base stays first",
+			base:       []string{"*"},
+			additional: []string{"team"},
+			want:       []string{"*", "team"},
+		},
+		{
+			name:       "non-leading wildcard is not hoisted",
+			base:       []string{"team"},
+			additional: []string{"zone", "*"},
+			want:       []string{"team", "zone", "*"},
+		},
+		{
 			name:       "all duplicates",
 			base:       []string{"a", "b"},
 			additional: []string{"a", "b"},
@@ -494,5 +512,18 @@ func TestReplaceEnabledCustomResources(t *testing.T) {
 	}
 	if !slices.Equal(b.enabledResources, []string{"deployments", customB, "pods"}) {
 		t.Fatalf("expected removed custom resource to be dropped: %#v", b.enabledResources)
+	}
+}
+
+func TestAllowListWildcardWithResourceWildcard(t *testing.T) {
+	b := NewBuilder()
+	b.WithEnabledResources([]string{"nodes"})
+	got, err := b.allowList(map[string][]string{"*": {"team"}, "nodes": {"*"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	keys, _ := createPrometheusLabelKeysValues("label", map[string]string{"team": "platform", "zone": "west"}, got["nodes"])
+	if !slices.Equal(keys, []string{"label_team", "label_zone"}) {
+		t.Errorf("got keys %v, want label_team and label_zone", keys)
 	}
 }

@@ -19,6 +19,7 @@ package app
 import (
 	"bytes"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -34,6 +35,7 @@ import (
 
 	"k8s.io/kube-state-metrics/v2/pkg/optin"
 
+	"github.com/KimMachineGun/automemlimit/memlimit"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/exporter-toolkit/web"
 	v1 "k8s.io/api/core/v1"
@@ -1362,5 +1364,36 @@ func TestConfigReloadStartsFromBaseline(t *testing.T) {
 	}
 	if len(base.AnnotationsAllowList) != 0 || len(base.Namespaces) != 0 {
 		t.Fatalf("baseline options were modified: annotations=%v namespaces=%v", base.AnnotationsAllowList, base.Namespaces)
+	}
+}
+
+func TestCgroupLimitWithFallback(t *testing.T) {
+	errRead := errors.New("read failed")
+	type result struct {
+		limit uint64
+		err   error
+	}
+	// Each step is one provider call, as at startup and then on every refresh.
+	steps := []struct {
+		name   string
+		cgroup result
+		want   result
+	}{
+		{name: "error before any cgroup limit falls back", cgroup: result{err: errRead}, want: result{limit: 1000}},
+		{name: "cgroup limit is used", cgroup: result{limit: 100}, want: result{limit: 100}},
+		{name: "error after a cgroup limit is returned", cgroup: result{err: errRead}, want: result{err: errRead}},
+		{name: "no cgroup limit falls back", cgroup: result{err: memlimit.ErrNoLimit}, want: result{limit: 1000}},
+	}
+
+	step := 0
+	provider := cgroupLimitWithFallback(
+		func() (uint64, error) { return steps[step].cgroup.limit, steps[step].cgroup.err },
+		func() (uint64, error) { return 1000, nil },
+	)
+	for ; step < len(steps); step++ {
+		limit, err := provider()
+		if limit != steps[step].want.limit || !errors.Is(err, steps[step].want.err) {
+			t.Fatalf("%s: got (%d, %v), want (%d, %v)", steps[step].name, limit, err, steps[step].want.limit, steps[step].want.err)
+		}
 	}
 }

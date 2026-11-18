@@ -182,6 +182,9 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 					memlimit.FromSystem,
 				),
 			),
+			// A config reload cancels ctx, which stops this run's refresh.
+			memlimit.WithRefreshInterval(ctx, opts.AutoGoMemlimitRefreshInterval),
+			memlimit.WithLogger(slog.New(logr.ToSlogHandler(klog.Background()))),
 		); err != nil {
 			return fmt.Errorf("failed to set GOMEMLIMIT automatically: %w", err)
 		}

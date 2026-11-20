@@ -167,6 +167,20 @@ func removeUnusedWhitespace(s string) string {
 	return strings.Join(trimmedLines, "\n")
 }
 
+// legacyVariableLabelSets lists pre-existing STABLE metrics whose series emit
+// one of several fixed label-key sets depending on object state rather than a
+// single uniform label set across all series.
+var legacyVariableLabelSets = map[string][][]string{
+	"kube_ingress_path": {
+		{"namespace", "ingress", "host", "path", "path_type", "service_name", "service_port"},
+		{"namespace", "ingress", "host", "path", "path_type", "resource_api_group", "resource_kind", "resource_name"},
+	},
+	"kube_job_status_failed": {
+		{"namespace", "job_name"},
+		{"namespace", "job_name", "reason"},
+	},
+}
+
 func (testCase *generateMetricsTestCase) validateLabels(metricFamilies []metric.FamilyInterface) error {
 	if testCase.FamilyGens == nil {
 		if strings.Contains(testCase.Want, "[STABLE]") {
@@ -203,18 +217,98 @@ func (testCase *generateMetricsTestCase) validateLabels(metricFamilies []metric.
 }
 
 func validateFamilyLabels(family metric.Family, gen generator.FamilyGenerator) error {
+	if gen.Labels == nil {
+		return fmt.Errorf("STABLE metric %q is missing declared Labels", family.Name)
+	}
+	if allowedSets, isLegacy := legacyVariableLabelSets[family.Name]; isLegacy {
+		return validateLegacyVariableFamilyLabels(family, gen, allowedSets)
+	}
 	for _, m := range family.Metrics {
-		for _, actualKey := range m.LabelKeys {
-			if slices.Contains(gen.Labels, actualKey) {
-				continue
-			}
-			if isDynamicLabelCompatible(actualKey, gen.Labels) {
-				continue
-			}
-			return fmt.Errorf("metric %q output undeclared label %q. Declared labels: %v", family.Name, actualKey, gen.Labels)
+		if err := validateSeriesLabels(family.Name, m.LabelKeys, gen.Labels); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+func validateSeriesLabels(metricName string, actualKeys, declaredKeys []string) error {
+	if dup, ok := findDuplicateLabel(actualKeys); ok {
+		return fmt.Errorf("metric %q output duplicate label %q in %v", metricName, dup, actualKeys)
+	}
+	for _, actualKey := range actualKeys {
+		if slices.Contains(declaredKeys, actualKey) || isDynamicLabelCompatible(actualKey, declaredKeys) {
+			continue
+		}
+		return fmt.Errorf("metric %q output undeclared label %q. Declared labels: %v", metricName, actualKey, declaredKeys)
+	}
+	for _, declaredKey := range declaredKeys {
+		if isDynamicLabel(declaredKey) {
+			continue
+		}
+		if !slices.Contains(actualKeys, declaredKey) {
+			return fmt.Errorf("metric %q missing declared label %q. Emitted labels: %v, Declared labels: %v", metricName, declaredKey, actualKeys, declaredKeys)
+		}
+	}
+	return nil
+}
+
+func validateLegacyVariableFamilyLabels(family metric.Family, gen generator.FamilyGenerator, allowedSets [][]string) error {
+	var union []string
+	for _, set := range allowedSets {
+		for _, k := range set {
+			if !slices.Contains(union, k) {
+				union = append(union, k)
+			}
+		}
+	}
+	if !equalLabelSet(union, gen.Labels) {
+		return fmt.Errorf("metric %q legacy allowed label union %v does not match declared labels %v", family.Name, union, gen.Labels)
+	}
+	for _, m := range family.Metrics {
+		if dup, ok := findDuplicateLabel(m.LabelKeys); ok {
+			return fmt.Errorf("metric %q output duplicate label %q in %v", family.Name, dup, m.LabelKeys)
+		}
+		if !matchesAnyLabelSet(m.LabelKeys, allowedSets) {
+			return fmt.Errorf("metric %q emitted label set %v does not match any allowed set in %v", family.Name, m.LabelKeys, allowedSets)
+		}
+	}
+	return nil
+}
+
+func matchesAnyLabelSet(actual []string, allowedSets [][]string) bool {
+	for _, allowed := range allowedSets {
+		if equalLabelSet(actual, allowed) {
+			return true
+		}
+	}
+	return false
+}
+
+func equalLabelSet(a, b []string) bool {
+	for _, k := range a {
+		if !slices.Contains(b, k) {
+			return false
+		}
+	}
+	for _, k := range b {
+		if !slices.Contains(a, k) {
+			return false
+		}
+	}
+	return true
+}
+
+func findDuplicateLabel(keys []string) (string, bool) {
+	for i, k := range keys {
+		if slices.Contains(keys[:i], k) {
+			return k, true
+		}
+	}
+	return "", false
+}
+
+func isDynamicLabel(key string) bool {
+	return strings.HasPrefix(key, "label_") || strings.HasPrefix(key, "annotation_")
 }
 
 func isDynamicLabelCompatible(key string, declaredLabels []string) bool {

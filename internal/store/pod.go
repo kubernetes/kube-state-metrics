@@ -2055,15 +2055,16 @@ func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(any) *metric.Family {
 	}
 }
 
-func createPodListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+func createPodListWatch(ctx context.Context, kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().Pods(ns).List(context.TODO(), opts)
+			return kubeClient.CoreV1().Pods(ns).List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			opts.FieldSelector = fieldSelector
-			return kubeClient.CoreV1().Pods(ns).Watch(context.TODO(), opts)
+			return kubeClient.CoreV1().Pods(ns).Watch(listCtx, opts)
 		},
 	}
 }

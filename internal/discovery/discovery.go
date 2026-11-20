@@ -343,14 +343,14 @@ func (r *CRDiscoverer) PollForCacheUpdates(
 		}
 		// Create clients for discovered factories. Keep this outside ConfigureStore:
 		// client construction is slow and must not hold the metrics handler lock.
-		discoveredCustomResourceClients, err := util.CreateCustomResourceClients(opts.Apiserver, opts.Kubeconfig, customFactories...)
+		discoveredCustomResourceClients, err := util.CreateCustomResourceClientsWithPrepared(opts.Prepared, opts.Apiserver, opts.Kubeconfig, customFactories...)
 		if err != nil {
 			// Preserve WasUpdated so a later tick retries.
 			return false, err
 		}
 		// Apply builder config under the same lock Build() uses, then rebuild.
 		// Mutating the shared builder directly would race ConfigureSharding / BuildWriters.
-		if err := m.ConfigureStore(ctx, func(b ksmtypes.BuilderInterface) error {
+		if err := m.ConfigureStoreAsync(ctx, func(b ksmtypes.BuilderInterface) error {
 			replacer, ok := b.(ksmtypes.CustomResourceReplacer)
 			if !ok {
 				return fmt.Errorf("builder does not support replacing custom resources")

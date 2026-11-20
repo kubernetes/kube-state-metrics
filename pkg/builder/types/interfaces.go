@@ -18,6 +18,8 @@ package types
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 
@@ -58,10 +60,32 @@ type CustomResourceReplacer interface {
 	ReplaceEnabledCustomResources(c []string) error
 }
 
+// ErrStoreSyncTimeout means the store-sync timeout elapsed before every running reflector listed.
+// A deadline on the caller's context is a different error.
+var ErrStoreSyncTimeout = errors.New("store sync timed out")
+
+// StoreSyncBuilder waits for reflector stores to sync after Build().
+type StoreSyncBuilder interface {
+	// WaitForStoresSync waits until each reflector has listed or stopped.
+	// nil means every reflector listed; ErrStoreSyncTimeout means the observation window expired; a canceled ctx returns ctx.Err().
+	WaitForStoresSync(ctx context.Context, timeout time.Duration) error
+}
+
 // BuildStoresFunc function signature that is used to return a list of cache.Store
 type BuildStoresFunc func(metricFamilies []generator.FamilyGenerator,
 	expectedType any,
 	listWatchFunc func(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher,
+	useAPIServerCache bool, limit int64,
+) []cache.Store
+
+// ContextListWatchFactory is like the listWatchFunc passed to BuildStoresFunc, but
+// receives the build context for cancellation-aware LIST/WATCH calls.
+type ContextListWatchFactory func(ctx context.Context, kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher
+
+// BuildStoresFuncWithContext is the context-aware variant of BuildStoresFunc.
+type BuildStoresFuncWithContext func(metricFamilies []generator.FamilyGenerator,
+	expectedType any,
+	listWatchFunc ContextListWatchFactory,
 	useAPIServerCache bool, limit int64,
 ) []cache.Store
 
@@ -70,6 +94,17 @@ type BuildCustomResourceStoresFunc func(resourceName string,
 	metricFamilies []generator.FamilyGenerator,
 	expectedType any,
 	listWatchFunc func(customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher,
+	useAPIServerCache bool, limit int64,
+) []cache.Store
+
+// ContextCustomResourceListWatchFactory receives the build context for CR LIST/WATCH calls.
+type ContextCustomResourceListWatchFactory func(ctx context.Context, customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher
+
+// BuildCustomResourceStoresFuncWithContext is the context-aware CR store builder signature.
+type BuildCustomResourceStoresFuncWithContext func(resourceName string,
+	metricFamilies []generator.FamilyGenerator,
+	expectedType any,
+	listWatchFunc ContextCustomResourceListWatchFactory,
 	useAPIServerCache bool, limit int64,
 ) []cache.Store
 

@@ -39,10 +39,6 @@ func wrapConfigMapDefaultLabels(labels []string) []string {
 	return mergeKeys(descConfigMapLabelsDefaultLabels, labels)
 }
 
-func wrapConfigMapDefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
-}
-
 func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -165,8 +161,7 @@ func wrapConfigMapFunc(f func(*v1.ConfigMap) *metric.Family) func(any) *metric.F
 		metricFamily := f(configMap)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapConfigMapDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapConfigMapDefaultLabelValues(configMap.Namespace, configMap.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descConfigMapLabelsDefaultLabels, []string{configMap.Namespace, configMap.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

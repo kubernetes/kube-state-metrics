@@ -43,10 +43,6 @@ func wrapPodDisruptionBudgetDefaultLabels(labels []string) []string {
 	return mergeKeys(descPodDisruptionBudgetLabelsDefaultLabels, labels)
 }
 
-func wrapPodDisruptionBudgetDefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
-}
-
 func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -229,8 +225,7 @@ func wrapPodDisruptionBudgetFunc(f func(*policyv1.PodDisruptionBudget) *metric.F
 		metricFamily := f(podDisruptionBudget)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapPodDisruptionBudgetDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapPodDisruptionBudgetDefaultLabelValues(podDisruptionBudget.Namespace, podDisruptionBudget.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descPodDisruptionBudgetLabelsDefaultLabels, []string{podDisruptionBudget.Namespace, podDisruptionBudget.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

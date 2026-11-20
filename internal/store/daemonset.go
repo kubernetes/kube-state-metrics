@@ -43,10 +43,6 @@ func wrapDaemonSetDefaultLabels(labels []string) []string {
 	return mergeKeys(descDaemonSetLabelsDefaultLabels, labels)
 }
 
-func wrapDaemonSetDefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
-}
-
 func daemonSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithLabels(
@@ -316,8 +312,7 @@ func wrapDaemonSetFunc(f func(*v1.DaemonSet) *metric.Family) func(any) *metric.F
 		metricFamily := f(daemonSet)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapDaemonSetDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapDaemonSetDefaultLabelValues(daemonSet.Namespace, daemonSet.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descDaemonSetLabelsDefaultLabels, []string{daemonSet.Namespace, daemonSet.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

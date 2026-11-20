@@ -45,10 +45,6 @@ func wrapIngressDefaultLabels(labels []string) []string {
 	return mergeKeys(descIngressLabelsDefaultLabels, labels)
 }
 
-func wrapIngressDefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
-}
-
 func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	infoLabelKeys := []string{"ingressclass"}
 	pathLabelKeys := []string{"host", "path", "path_type", "service_name", "service_port", "resource_api_group", "resource_kind", "resource_name"}
@@ -235,8 +231,7 @@ func wrapIngressFunc(f func(*networkingv1.Ingress) *metric.Family) func(any) *me
 		metricFamily := f(ingress)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapIngressDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapIngressDefaultLabelValues(ingress.Namespace, ingress.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descIngressLabelsDefaultLabels, []string{ingress.Namespace, ingress.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

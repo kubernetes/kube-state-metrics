@@ -51,10 +51,6 @@ func wrapNodeDefaultLabels(labels []string) []string {
 	return mergeKeys(descNodeLabelsDefaultLabels, labels)
 }
 
-func wrapNodeDefaultLabelValues(nodeName string, values []string) []string {
-	return mergeValues([]string{nodeName}, values)
-}
-
 func nodeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		createNodeAnnotationsGenerator(allowAnnotationsList),
@@ -583,8 +579,7 @@ func wrapNodeFunc(f func(*v1.Node) *metric.Family) func(any) *metric.Family {
 		metricFamily := f(node)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapNodeDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapNodeDefaultLabelValues(node.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descNodeLabelsDefaultLabels, []string{node.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

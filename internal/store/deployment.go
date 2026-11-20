@@ -45,10 +45,6 @@ func wrapDeploymentDefaultLabels(labels []string) []string {
 	return mergeKeys(descDeploymentLabelsDefaultLabels, labels)
 }
 
-func wrapDeploymentDefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
-}
-
 // Reasons copied from kubernetes/pkg/controller/deployment/deployment_utils.go.
 var (
 	allowedDeploymentReasons = map[string]struct{}{
@@ -470,8 +466,7 @@ func wrapDeploymentFunc(f func(*v1.Deployment) *metric.Family) func(any) *metric
 		metricFamily := f(deployment)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapDeploymentDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapDeploymentDefaultLabelValues(deployment.Namespace, deployment.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descDeploymentLabelsDefaultLabels, []string{deployment.Namespace, deployment.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

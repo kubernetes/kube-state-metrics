@@ -686,15 +686,3 @@ func TestMergeKeys(t *testing.T) {
 		t.Errorf("mergeKeys() got = %v, want %v", got, want)
 	}
 }
-
-func TestMergeValues(t *testing.T) {
-	got := mergeValues(
-		[]string{"valueA", "valueB"},
-		nil,
-		[]string{"valueC"},
-	)
-	want := []string{"valueA", "valueB", "valueC"}
-	if !slices.Equal(got, want) {
-		t.Errorf("mergeValues() got = %v, want %v", got, want)
-	}
-}

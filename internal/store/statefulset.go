@@ -44,10 +44,6 @@ func wrapStatefulSetDefaultLabels(labels []string) []string {
 	return mergeKeys(descStatefulSetLabelsDefaultLabels, labels)
 }
 
-func wrapStatefulSetDefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
-}
-
 func statefulSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	persistentvolumeclaimRetentionPolicyLabelKeys := []string{"when_deleted", "when_scaled"}
 	statusCurrentRevisionLabelKeys := []string{"revision"}
@@ -379,8 +375,7 @@ func wrapStatefulSetFunc(f func(*v1.StatefulSet) *metric.Family) func(any) *metr
 		metricFamily := f(statefulSet)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapStatefulSetDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapStatefulSetDefaultLabelValues(statefulSet.Namespace, statefulSet.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descStatefulSetLabelsDefaultLabels, []string{statefulSet.Namespace, statefulSet.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

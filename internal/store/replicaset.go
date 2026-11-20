@@ -45,10 +45,6 @@ func wrapReplicaSetDefaultLabels(labels []string) []string {
 	return mergeKeys(descReplicaSetLabelsDefaultLabels, labels)
 }
 
-func wrapReplicaSetDefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
-}
-
 func replicaSetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	ownerLabelKeys := []string{"owner_kind", "owner_name", "owner_is_controller"}
 
@@ -302,8 +298,7 @@ func wrapReplicaSetFunc(f func(*v1.ReplicaSet) *metric.Family) func(any) *metric
 		metricFamily := f(replicaSet)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapReplicaSetDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapReplicaSetDefaultLabelValues(replicaSet.Namespace, replicaSet.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descReplicaSetLabelsDefaultLabels, []string{replicaSet.Namespace, replicaSet.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

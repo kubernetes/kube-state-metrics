@@ -48,10 +48,6 @@ func wrapPodDefaultLabels(labels []string) []string {
 	return mergeKeys(descPodLabelsDefaultLabels, labels)
 }
 
-func wrapPodDefaultLabelValues(namespace, name, uid string, values []string) []string {
-	return mergeValues([]string{namespace, name, uid}, values)
-}
-
 func podMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		createPodCompletionTimeFamilyGenerator(),
@@ -2131,8 +2127,7 @@ func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(any) *metric.Family {
 		metricFamily := f(pod)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapPodDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapPodDefaultLabelValues(pod.Namespace, pod.Name, string(pod.UID), m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descPodLabelsDefaultLabels, []string{pod.Namespace, pod.Name, string(pod.UID)}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

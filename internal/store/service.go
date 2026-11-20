@@ -43,10 +43,6 @@ func wrapServiceDefaultLabels(labels []string) []string {
 	return mergeKeys(descServiceLabelsDefaultLabels, labels)
 }
 
-func wrapServiceDefaultLabelValues(namespace, name, uid string, values []string) []string {
-	return mergeValues([]string{namespace, name, uid}, values)
-}
-
 func serviceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	infoLabelKeys := []string{"cluster_ip", "external_name", "load_balancer_ip", "external_traffic_policy"}
 	specTypeLabelKeys := []string{"type"}
@@ -232,8 +228,7 @@ func wrapSvcFunc(f func(*v1.Service) *metric.Family) func(any) *metric.Family {
 		metricFamily := f(svc)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapServiceDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapServiceDefaultLabelValues(svc.Namespace, svc.Name, string(svc.UID), m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descServiceLabelsDefaultLabels, []string{svc.Namespace, svc.Name, string(svc.UID)}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

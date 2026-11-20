@@ -45,10 +45,6 @@ func wrapPersistentVolumeClaimDefaultLabels(labels []string) []string {
 	return mergeKeys(descPersistentVolumeClaimLabelsDefaultLabels, labels)
 }
 
-func wrapPersistentVolumeClaimDefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
-}
-
 func persistentVolumeClaimMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	infoLabelKeys := []string{"storageclass", "volumename", "volumemode"}
 	statusPhaseLabelKeys := []string{"phase"}
@@ -409,8 +405,7 @@ func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) *metric.Fam
 		metricFamily := f(persistentVolumeClaim)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapPersistentVolumeClaimDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapPersistentVolumeClaimDefaultLabelValues(persistentVolumeClaim.Namespace, persistentVolumeClaim.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descPersistentVolumeClaimLabelsDefaultLabels, []string{persistentVolumeClaim.Namespace, persistentVolumeClaim.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

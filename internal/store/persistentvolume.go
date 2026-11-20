@@ -51,10 +51,6 @@ func wrapPersistentVolumeDefaultLabels(labels []string) []string {
 	return mergeKeys(descPersistentVolumeLabelsDefaultLabels, labels)
 }
 
-func wrapPersistentVolumeDefaultLabelValues(name string, values []string) []string {
-	return mergeValues([]string{name}, values)
-}
-
 func persistentVolumeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		createPersistentVolumeClaimRef(),
@@ -78,8 +74,7 @@ func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) *metric.Family) func(
 		metricFamily := f(persistentVolume)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapPersistentVolumeDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapPersistentVolumeDefaultLabelValues(persistentVolume.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descPersistentVolumeLabelsDefaultLabels, []string{persistentVolume.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

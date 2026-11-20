@@ -44,10 +44,6 @@ func wrapSecretDefaultLabels(labels []string) []string {
 	return mergeKeys(descSecretLabelsDefaultLabels, labels)
 }
 
-func wrapSecretDefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
-}
-
 func secretMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	typeLabelKeys := []string{"type"}
 
@@ -225,8 +221,7 @@ func wrapSecretFunc(f func(*v1.Secret) *metric.Family) func(any) *metric.Family 
 		metricFamily := f(secret)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapSecretDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapSecretDefaultLabelValues(secret.Namespace, secret.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descSecretLabelsDefaultLabels, []string{secret.Namespace, secret.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

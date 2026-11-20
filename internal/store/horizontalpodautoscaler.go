@@ -57,10 +57,6 @@ func wrapHPADefaultLabels(labels []string) []string {
 	return mergeKeys(descHorizontalPodAutoscalerLabelsDefaultLabels, labels)
 }
 
-func wrapHPADefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
-}
-
 func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		createHPAInfo(),
@@ -88,8 +84,7 @@ func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) *metric.Family) fu
 		metricFamily := f(hpa)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapHPADefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapHPADefaultLabelValues(hpa.Namespace, hpa.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descHorizontalPodAutoscalerLabelsDefaultLabels, []string{hpa.Namespace, hpa.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

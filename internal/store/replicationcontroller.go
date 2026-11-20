@@ -224,10 +224,6 @@ func wrapReplicationControllerDefaultLabels(labels []string) []string {
 	return mergeKeys(descReplicationControllerLabelsDefaultLabels, labels)
 }
 
-func wrapReplicationControllerDefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
-}
-
 func wrapReplicationControllerFunc(f func(*v1.ReplicationController) *metric.Family) func(any) *metric.Family {
 	return func(obj any) *metric.Family {
 		replicationController := obj.(*v1.ReplicationController)
@@ -235,8 +231,7 @@ func wrapReplicationControllerFunc(f func(*v1.ReplicationController) *metric.Fam
 		metricFamily := f(replicationController)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapReplicationControllerDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapReplicationControllerDefaultLabelValues(replicationController.Namespace, replicationController.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descReplicationControllerLabelsDefaultLabels, []string{replicationController.Namespace, replicationController.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

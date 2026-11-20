@@ -44,10 +44,6 @@ func wrapStorageClassDefaultLabels(labels []string) []string {
 	return mergeKeys(descStorageClassLabelsDefaultLabels, labels)
 }
 
-func wrapStorageClassDefaultLabelValues(name string, values []string) []string {
-	return mergeValues([]string{name}, values)
-}
-
 func storageClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	infoLabelKeys := []string{"provisioner", "reclaim_policy", "volume_binding_mode"}
 
@@ -152,8 +148,7 @@ func wrapStorageClassFunc(f func(*storagev1.StorageClass) *metric.Family) func(a
 		metricFamily := f(storageClass)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapStorageClassDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapStorageClassDefaultLabelValues(storageClass.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descStorageClassLabelsDefaultLabels, []string{storageClass.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

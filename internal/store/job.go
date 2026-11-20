@@ -57,10 +57,6 @@ func wrapJobDefaultLabels(labels []string) []string {
 	return mergeKeys(descJobLabelsDefaultLabels, labels)
 }
 
-func wrapJobDefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
-}
-
 func jobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	statusFailedLabelKeys := []string{"reason"}
 	completeLabelKeys := []string{"condition"}
@@ -490,8 +486,7 @@ func wrapJobFunc(f func(*v1batch.Job) *metric.Family) func(any) *metric.Family {
 		metricFamily := f(job)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapJobDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapJobDefaultLabelValues(job.Namespace, job.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descJobLabelsDefaultLabels, []string{job.Namespace, job.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

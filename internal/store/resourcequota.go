@@ -43,10 +43,6 @@ func wrapResourceQuotaDefaultLabels(labels []string) []string {
 	return mergeKeys(descResourceQuotaLabelsDefaultLabels, labels)
 }
 
-func wrapResourceQuotaDefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
-}
-
 func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	resourcequotaLabelKeys := []string{"resource", "type"}
 
@@ -160,8 +156,7 @@ func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) *metric.Family) func(any) *
 		metricFamily := f(resourceQuota)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapResourceQuotaDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapResourceQuotaDefaultLabelValues(resourceQuota.Namespace, resourceQuota.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descResourceQuotaLabelsDefaultLabels, []string{resourceQuota.Namespace, resourceQuota.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

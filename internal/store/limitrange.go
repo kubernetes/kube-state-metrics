@@ -125,8 +125,7 @@ func wrapLimitRangeFunc(f func(*v1.LimitRange) *metric.Family) func(any) *metric
 		metricFamily := f(limitRange)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapLimitRangeDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapLimitRangeDefaultLabelValues(limitRange.Namespace, limitRange.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descLimitRangeLabelsDefaultLabels, []string{limitRange.Namespace, limitRange.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily
@@ -135,10 +134,6 @@ func wrapLimitRangeFunc(f func(*v1.LimitRange) *metric.Family) func(any) *metric
 
 func wrapLimitRangeDefaultLabels(labels []string) []string {
 	return mergeKeys(descLimitRangeLabelsDefaultLabels, labels)
-}
-
-func wrapLimitRangeDefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
 }
 
 func createLimitRangeListWatch(kubeClient clientset.Interface, ns string, fieldSelector string) cache.ListerWatcher {

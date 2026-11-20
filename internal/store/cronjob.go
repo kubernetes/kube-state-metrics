@@ -52,10 +52,6 @@ func wrapCronJobDefaultLabels(labels []string) []string {
 	return mergeKeys(descCronJobLabelsDefaultLabels, labels)
 }
 
-func wrapCronJobDefaultLabelValues(namespace, name string, values []string) []string {
-	return mergeValues([]string{namespace, name}, values)
-}
-
 func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	infoLabelKeys := []string{"schedule", "concurrency_policy", "timezone"}
 
@@ -376,8 +372,7 @@ func wrapCronJobFunc(f func(*batchv1.CronJob) *metric.Family) func(any) *metric.
 		metricFamily := f(cronJob)
 
 		for _, m := range metricFamily.Metrics {
-			m.LabelKeys = wrapCronJobDefaultLabels(m.LabelKeys)
-			m.LabelValues = wrapCronJobDefaultLabelValues(cronJob.Namespace, cronJob.Name, m.LabelValues)
+			m.LabelKeys, m.LabelValues = mergeKeyValues(descCronJobLabelsDefaultLabels, []string{cronJob.Namespace, cronJob.Name}, m.LabelKeys, m.LabelValues)
 		}
 
 		return metricFamily

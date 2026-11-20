@@ -567,7 +567,7 @@ func addPathLabels(obj any, labels map[string]valuePath, protected, result map[s
 		if strings.HasSuffix(star, "*") {
 			prefix = star[:len(star)-1]
 		}
-		for _, k := range slices.Backward(slices.Sorted(maps.Keys(kv))) {
+		for _, k := range slices.Backward(starPathKeys(kv, star)) {
 			name := store.SanitizeLabelName(prefix + k)
 			_, set := result[name]
 			_, isProtected := protected[name]
@@ -588,6 +588,25 @@ func addPathLabels(obj any, labels map[string]valuePath, protected, result map[s
 		}
 		result[store.SanitizeLabelName(k)] = fmt.Sprintf("%v", value)
 	}
+}
+
+// maxStarPathLabels is the maximum number of keys a single "*" labelsFromPath
+// entry copies from an object into labels. The copied labels are added to
+// every metric of the family, so without a bound a single object with many
+// keys and many values produces output that grows quadratically with its size.
+const maxStarPathLabels = 100
+
+// starPathKeys returns the keys of kv to copy into labels for the given "*"
+// labelsFromPath entry, in sorted order. When kv has more than
+// maxStarPathLabels keys, only the first maxStarPathLabels are returned, so
+// that the same keys are kept on every update of the object.
+func starPathKeys(kv map[string]any, star string) []string {
+	keys := slices.Sorted(maps.Keys(kv))
+	if len(keys) <= maxStarPathLabels {
+		return keys
+	}
+	klog.V(2).InfoS("Truncating labels copied from object", "labelsFromPath", star, "keys", len(keys), "limit", maxStarPathLabels)
+	return keys[:maxStarPathLabels]
 }
 
 // isCopiableLabelName reports whether a label name copied from an object may be

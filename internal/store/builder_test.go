@@ -70,6 +70,25 @@ func TestWithAllowLabels(t *testing.T) {
 			}),
 		},
 		{
+			Desc:             "wildcard merged with resource-specific labels",
+			LabelsAllowlist:  map[string][]string{"*": {"common_label"}, "pods": {"pod_specific"}, "nodes": {"node_label1", "node_label2"}},
+			EnabledResources: []string{"pods", "deployments", "nodes"},
+			Wanted: LabelsAllowList(map[string][]string{
+				"deployments": {"common_label"},
+				"pods":        {"common_label", "pod_specific"},
+				"nodes":       {"common_label", "node_label1", "node_label2"},
+			}),
+		},
+		{
+			Desc:             "wildcard merged with resource-specific labels, deduplication",
+			LabelsAllowlist:  map[string][]string{"*": {"label1", "label2"}, "pods": {"label2", "label3"}},
+			EnabledResources: []string{"pods", "deployments"},
+			Wanted: LabelsAllowList(map[string][]string{
+				"deployments": {"label1", "label2"},
+				"pods":        {"label1", "label2", "label3"},
+			}),
+		},
+		{
 			Desc:             "wildcard key-value as not the only element, with resource mismatch",
 			LabelsAllowlist:  map[string][]string{"*": {"*"}, "pods": {"*"}, "cronjobs": {"*"}, "configmaps": {"*"}},
 			EnabledResources: []string{"cronjobs", "pods", "deployments"},
@@ -204,6 +223,79 @@ func TestWithAllowAnnotations(t *testing.T) {
 			t.Log("Expected maps to be equal.")
 			t.Errorf("Test error for Desc: %s\n Want: \n%+v\n Got: \n%#+v", test.Desc, test.Wanted, resolvedAllowAnnotations)
 		}
+	}
+}
+
+func TestMergeLabels(t *testing.T) {
+	tests := []struct {
+		name       string
+		base       []string
+		additional []string
+		want       []string
+	}{
+		{
+			name:       "both empty",
+			base:       nil,
+			additional: nil,
+			want:       nil,
+		},
+		{
+			name:       "base only",
+			base:       []string{"a", "b"},
+			additional: nil,
+			want:       []string{"a", "b"},
+		},
+		{
+			name:       "additional only",
+			base:       nil,
+			additional: []string{"c", "d"},
+			want:       []string{"c", "d"},
+		},
+		{
+			name:       "merge without duplicates",
+			base:       []string{"a", "b"},
+			additional: []string{"c", "d"},
+			want:       []string{"a", "b", "c", "d"},
+		},
+		{
+			name:       "merge with duplicates",
+			base:       []string{"a", "b", "c"},
+			additional: []string{"b", "c", "d"},
+			want:       []string{"a", "b", "c", "d"},
+		},
+		{
+			name:       "wildcard in additional moves first",
+			base:       []string{"team"},
+			additional: []string{"*"},
+			want:       []string{"*", "team"},
+		},
+		{
+			name:       "wildcard in base stays first",
+			base:       []string{"*"},
+			additional: []string{"team"},
+			want:       []string{"*", "team"},
+		},
+		{
+			name:       "non-leading wildcard is not hoisted",
+			base:       []string{"team"},
+			additional: []string{"zone", "*"},
+			want:       []string{"team", "zone", "*"},
+		},
+		{
+			name:       "all duplicates",
+			base:       []string{"a", "b"},
+			additional: []string{"a", "b"},
+			want:       []string{"a", "b"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mergeLabels(tt.base, tt.additional)
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("mergeLabels() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
@@ -420,5 +512,18 @@ func TestReplaceEnabledCustomResources(t *testing.T) {
 	}
 	if !slices.Equal(b.enabledResources, []string{"deployments", customB, "pods"}) {
 		t.Fatalf("expected removed custom resource to be dropped: %#v", b.enabledResources)
+	}
+}
+
+func TestAllowListWildcardWithResourceWildcard(t *testing.T) {
+	b := NewBuilder()
+	b.WithEnabledResources([]string{"nodes"})
+	got, err := b.allowList(map[string][]string{"*": {"team"}, "nodes": {"*"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	keys, _ := createPrometheusLabelKeysValues("label", map[string]string{"team": "platform", "zone": "west"}, got["nodes"])
+	if !slices.Equal(keys, []string{"label_team", "label_zone"}) {
+		t.Errorf("got keys %v, want label_team and label_zone", keys)
 	}
 }

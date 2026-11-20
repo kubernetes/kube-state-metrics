@@ -96,3 +96,148 @@ Use "kube-state-metrics [command] --help" for more information about a command.
 ```
 <!-- markdownlint-enable link-image-reference-definitions -->
 <!-- markdownlint-enable blanks-around-fences -->
+
+## Usage examples
+
+The flag list above is generated from `kube-state-metrics -h`.
+The examples below show common patterns for each flag type.
+
+### Flag types
+
+**Boolean** (presence enables the option):
+
+```sh
+kube-state-metrics --enable-gzip-encoding
+```
+
+**Integer**:
+
+```sh
+kube-state-metrics --port=8080 --telemetry-port=8081
+```
+
+**String**:
+
+```sh
+kube-state-metrics --apiserver=https://kubernetes.default.svc --kubeconfig=/etc/kubernetes/kubeconfig
+```
+
+**Duration** (Go duration syntax: `s`, `m`, `h`):
+
+```sh
+kube-state-metrics \
+  --server-read-timeout=30s \
+  --server-write-timeout=30s \
+  --server-idle-timeout=2m \
+  --server-read-header-timeout=5s
+```
+
+Align server timeouts with your scrape client's interval and idle timeout so long scrapes are not cut off.
+
+**List** (comma-separated string values):
+
+```sh
+# Only scrape objects in these namespaces
+kube-state-metrics --namespaces=default,kube-system,monitoring
+
+# Skip noisy namespaces (used alone, or as a filter on --namespaces)
+kube-state-metrics --namespaces-denylist=kube-public,kube-node-lease
+
+# Restrict which resource types are collected
+kube-state-metrics --resources=pods,deployments,services
+```
+
+### Metric allowlist and denylist
+
+`--metric-allowlist` and `--metric-denylist` are mutually exclusive; only one may be set.
+Values may be exact metric names or ECMAScript regex patterns.
+
+```sh
+# Expose only pod and deployment metrics
+kube-state-metrics --metric-allowlist='kube_pod_.*,kube_deployment_.*'
+
+# Hide secret metrics
+kube-state-metrics --metric-denylist='kube_secret_.*'
+```
+
+### Labels and annotations allowlists
+
+By default, `kube_*_labels` and `kube_*_annotations` series do not include Kubernetes label or annotation keys as Prometheus labels.
+Use the allowlist flags to opt in.
+
+**Important:** pass the original Kubernetes label or annotation keys, not the sanitized Prometheus label names that appear on scraped series.
+
+| Use this (Kubernetes key) | Do not use (exported Prometheus label) |
+| --- | --- |
+| `app.kubernetes.io/name` | `label_app_kubernetes_io_name` |
+| `node-role.kubernetes.io/control-plane` | `label_node_role_kubernetes_io_control_plane` |
+
+Resource names in the allowlist are the plural form (`nodes`, `pods`, `namespaces`, …).
+
+```sh
+# Expose selected node and pod labels on kube_node_labels / kube_pod_labels
+kube-state-metrics \
+  --metric-labels-allowlist='nodes=[kubernetes.io/os,node.kubernetes.io/instance-type],pods=[app.kubernetes.io/name,app.kubernetes.io/instance]'
+
+# Allow all labels on pods (high cardinality; use with care)
+kube-state-metrics --metric-labels-allowlist='pods=[*]'
+
+# Allow the same labels on every enabled resource
+kube-state-metrics --metric-labels-allowlist='*=[app.kubernetes.io/name,app.kubernetes.io/component]'
+
+# Annotations use the same resource=[key,...] syntax
+kube-state-metrics \
+  --metric-annotations-allowlist='namespaces=[kubernetes.io/description],pods=[prometheus.io/scrape]'
+```
+
+Example outcome for nodes with `--metric-labels-allowlist='nodes=[kubernetes.io/os]'`:
+
+```prometheus
+kube_node_labels{node="worker-1",label_kubernetes_io_os="linux"} 1
+```
+
+Without an allowlist entry, only the base series is emitted (for example `kube_node_labels{node="worker-1"} 1`).
+
+### Kubernetes Deployment args
+
+Any of the flags can be set under `args` on the container:
+
+```yaml
+spec:
+  template:
+    spec:
+      containers:
+        - name: kube-state-metrics
+          args:
+            - --port=8080
+            - --telemetry-port=8081
+            - --metric-labels-allowlist=nodes=[kubernetes.io/os,topology.kubernetes.io/zone],pods=[app.kubernetes.io/name]
+            - --metric-allowlist=kube_pod_.*,kube_node_.*,kube_deployment_.*
+            - --namespaces-denylist=kube-node-lease
+            - --server-read-timeout=30s
+            - --server-write-timeout=30s
+            - --enable-gzip-encoding
+```
+
+### Config file
+
+Flags can also be provided via `--config` (YAML). When a config file is set, values from the file override the corresponding command-line flags.
+
+```yaml
+# config.yaml
+port: 8080
+telemetry_port: 8081
+labels_allow_list:
+  nodes:
+    - kubernetes.io/os
+  pods:
+    - app.kubernetes.io/name
+server_read_timeout: 30s
+server_write_timeout: 30s
+```
+
+```sh
+kube-state-metrics --config=config.yaml
+```
+
+YAML keys use snake_case names from the options struct (for example `labels_allow_list` for `--metric-labels-allowlist`). Prefer the flag forms in Deployment manifests when unsure.

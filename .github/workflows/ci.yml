@@ -201,12 +201,20 @@ jobs:
     steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
 
     - name: Set up Go 1.x
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
       id: go
+
+    - name: Install GoReleaser
+      run: |
+        mkdir -p "${RUNNER_TEMP}/bin"
+        make install-goreleaser GORELEASER_INSTALL_DIR="${RUNNER_TEMP}/bin"
+        echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
 
     - name: Build
       run: |
@@ -218,12 +226,21 @@ jobs:
     steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        # goreleaser derives the snapshot version from the git history.
+        fetch-depth: 0
 
     - name: Set up Go 1.x
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: '.go-version'
       id: go
+
+    - name: Install GoReleaser
+      run: |
+        mkdir -p "${RUNNER_TEMP}/bin"
+        make install-goreleaser GORELEASER_INSTALL_DIR="${RUNNER_TEMP}/bin"
+        echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
 
     - name: End-to-end tests
       run: |

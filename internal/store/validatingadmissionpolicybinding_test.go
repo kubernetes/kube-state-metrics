@@ -82,6 +82,7 @@ func TestValidatingAdmissionPolicyBindingStore(t *testing.T) {
 	for i, c := range cases {
 		c.Func = generator.ComposeMetricGenFuncs(validatingAdmissionPolicyBindingMetricFamilies)
 		c.Headers = generator.ExtractMetricFamilyHeaders(validatingAdmissionPolicyBindingMetricFamilies)
+		c.FamilyGens = validatingAdmissionPolicyBindingMetricFamilies
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
 		}

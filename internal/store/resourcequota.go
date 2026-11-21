@@ -39,14 +39,21 @@ var (
 	descResourceQuotaLabelsDefaultLabels = []string{"namespace", "resourcequota"}
 )
 
+func wrapResourceQuotaDefaultLabels(labels []string) []string {
+	return mergeKeys(descResourceQuotaLabelsDefaultLabels, labels)
+}
+
 func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	resourcequotaLabelKeys := []string{"resource", "type"}
+
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_resourcequota_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapResourceQuotaDefaultLabels(nil),
 			wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -62,12 +69,13 @@ func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_resourcequota",
 			"Information about resource quota.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapResourceQuotaDefaultLabels(resourcequotaLabelKeys),
 			wrapResourceQuotaFunc(func(r *v1.ResourceQuota) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -85,7 +93,7 @@ func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 				}
 
 				for _, m := range ms {
-					m.LabelKeys = []string{"resource", "type"}
+					m.LabelKeys = resourcequotaLabelKeys
 				}
 
 				return &metric.Family{
@@ -115,12 +123,13 @@ func resourceQuotaMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			descResourceQuotaLabelsName,
 			descResourceQuotaLabelsHelp,
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapResourceQuotaDefaultLabels([]string{"label_RESOURCE_QUOTA_LABEL"}),
 			wrapResourceQuotaFunc(func(d *v1.ResourceQuota) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}

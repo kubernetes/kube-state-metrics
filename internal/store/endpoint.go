@@ -40,14 +40,22 @@ var (
 	descEndpointLabelsDefaultLabels = []string{"namespace", "endpoint"}
 )
 
+func wrapEndpointDefaultLabels(labels []string) []string {
+	return mergeKeys(descEndpointLabelsDefaultLabels, labels)
+}
+
 func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	addressLabelKeys := []string{"port_protocol", "port_number", "port_name", "ip", "ready"}
+	portsLabelKeys := []string{"port_name", "port_protocol", "port_number"}
+
 	return []generator.FamilyGenerator{
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_endpoint_info",
 			"Information about endpoint.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapEndpointDefaultLabels(nil),
 			wrapEndpointFunc(func(_ *v1.Endpoints) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -58,12 +66,13 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_endpoint_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapEndpointDefaultLabels(nil),
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -101,12 +110,13 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			descEndpointLabelsName,
 			descEndpointLabelsHelp,
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapEndpointDefaultLabels([]string{"label_ENDPOINT_LABEL"}),
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
@@ -123,15 +133,15 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_endpoint_address",
 			"Information about Endpoint available and non available addresses.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapEndpointDefaultLabels(addressLabelKeys),
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
-				labelKeys := []string{"port_protocol", "port_number", "port_name", "ip", "ready"}
 
 				for _, s := range e.Subsets {
 					for _, port := range s.Ports {
@@ -140,7 +150,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 
 							ms = append(ms, &metric.Metric{
 								LabelValues: append(labelValues, available.IP, "true"),
-								LabelKeys:   labelKeys,
+								LabelKeys:   addressLabelKeys,
 								Value:       1,
 							})
 						}
@@ -149,7 +159,7 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 
 							ms = append(ms, &metric.Metric{
 								LabelValues: append(labelValues, notReadyAddresses.IP, "false"),
-								LabelKeys:   labelKeys,
+								LabelKeys:   addressLabelKeys,
 								Value:       1,
 							})
 						}
@@ -160,19 +170,20 @@ func endpointMetricFamilies(allowAnnotationsList, allowLabelsList []string) []ge
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_endpoint_ports",
 			"Information about the Endpoint ports.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"v2.14.0",
+			wrapEndpointDefaultLabels(portsLabelKeys),
 			wrapEndpointFunc(func(e *v1.Endpoints) *metric.Family {
 				ms := []*metric.Metric{}
 				for _, s := range e.Subsets {
 					for _, port := range s.Ports {
 						ms = append(ms, &metric.Metric{
 							LabelValues: []string{port.Name, string(port.Protocol), strconv.FormatInt(int64(port.Port), 10)},
-							LabelKeys:   []string{"port_name", "port_protocol", "port_number"},
+							LabelKeys:   portsLabelKeys,
 							Value:       1,
 						})
 					}

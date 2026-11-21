@@ -251,10 +251,11 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 				// If the cron job is suspended, don't track the next scheduled time
 				nextScheduledTime, err := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp, j.Spec.TimeZone)
-				// A single CronJob with an unparseable schedule must not crash the
-				// whole exporter. Skip its next-schedule metric and keep going, the
-				// same way the Kubernetes CronJob controller tolerates such schedules.
-				// kube_cronjob_schedule_invalid surfaces the parse failure as a metric.
+				// A single CronJob with an unparseable schedule, or one with no next
+				// occurrence, must not crash the whole exporter. Skip its next-schedule
+				// metric and keep going, the same way the Kubernetes CronJob controller
+				// tolerates such schedules. kube_cronjob_schedule_invalid surfaces only
+				// the parse failure as a metric.
 				if err == nil && (j.Spec.Suspend == nil || !*j.Spec.Suspend) {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{},

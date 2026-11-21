@@ -90,13 +90,9 @@ func (m MetricsWriter) WriteAll(w io.Writer) error {
 		return nil
 	}
 
-	// Collect every store's rendered objects once, up front. The output is
-	// grouped by family, so the objects are walked once per header: ranging
-	// over the sync.Map that many times re-traverses its hash trie for every
-	// family, whereas a flat slice is a sequential scan. The snapshot also
-	// keeps one scrape self-consistent -- an object added or removed while
-	// the response is being written is either in every family or in none.
-	// The rendered byte slices are immutable, so holding on to them is safe.
+	// Snapshot every store once: the output is walked once per family, and a
+	// flat slice is far cheaper to re-scan than a sync.Map. It also keeps a
+	// scrape self-consistent. The rendered byte slices are immutable.
 	snapshot := snapshotPool.Get().(*[][][]byte)
 	objects := (*snapshot)[:0]
 	defer func() {

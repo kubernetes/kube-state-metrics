@@ -348,6 +348,17 @@ func BenchmarkAdd(b *testing.B) {
 	}
 }
 
+// storedUIDs returns the sorted UIDs of the objects in the store.
+func storedUIDs(ms *MetricsStore) []string {
+	var uids []string
+	ms.metrics.Range(func(k, _ any) bool {
+		uids = append(uids, string(k.(types.UID)))
+		return true
+	})
+	slices.Sort(uids)
+	return uids
+}
+
 func TestMetricsStoreObjectLimit(t *testing.T) {
 	genFunc := func(obj any) []metric.FamilyInterface {
 		o, err := meta.Accessor(obj)
@@ -366,16 +377,6 @@ func TestMetricsStoreObjectLimit(t *testing.T) {
 	service := func(id, rv string) *v1.Service {
 		return &v1.Service{ObjectMeta: metav1.ObjectMeta{Name: id, Namespace: "default", UID: types.UID(id), ResourceVersion: rv}}
 	}
-	stored := func(ms *MetricsStore) []string {
-		var uids []string
-		ms.metrics.Range(func(k, _ any) bool {
-			uids = append(uids, string(k.(types.UID)))
-			return true
-		})
-		slices.Sort(uids)
-		return uids
-	}
-
 	dropped := 0
 	ms := NewMetricsStore([]string{"Information about service."}, genFunc, WithObjectLimit(2, func() { dropped++ }))
 
@@ -383,7 +384,7 @@ func TestMetricsStoreObjectLimit(t *testing.T) {
 	if err := ms.Replace([]any{service("a", "1"), service("b", "1"), service("c", "1")}, "1"); err != nil {
 		t.Fatal(err)
 	}
-	if got := stored(ms); !slices.Equal(got, []string{"a", "b"}) {
+	if got := storedUIDs(ms); !slices.Equal(got, []string{"a", "b"}) {
 		t.Fatalf("after Replace: got %v, want [a b]", got)
 	}
 
@@ -397,7 +398,7 @@ func TestMetricsStoreObjectLimit(t *testing.T) {
 	if err := ms.Update(service("c", "3")); err != nil {
 		t.Fatal(err)
 	}
-	if got := stored(ms); !slices.Equal(got, []string{"a", "b"}) {
+	if got := storedUIDs(ms); !slices.Equal(got, []string{"a", "b"}) {
 		t.Fatalf("after watch events: got %v, want [a b]", got)
 	}
 	if dropped != 4 {
@@ -423,7 +424,7 @@ func TestMetricsStoreObjectLimit(t *testing.T) {
 	if err := ms.Add(service("d", "6")); err != nil {
 		t.Fatal(err)
 	}
-	if got := stored(ms); !slices.Equal(got, []string{"a", "d"}) {
+	if got := storedUIDs(ms); !slices.Equal(got, []string{"a", "d"}) {
 		t.Fatalf("after Delete and Add: got %v, want [a d]", got)
 	}
 
@@ -434,7 +435,7 @@ func TestMetricsStoreObjectLimit(t *testing.T) {
 	if err := ms.Add(service("e", "8")); err != nil {
 		t.Fatal(err)
 	}
-	if got := stored(ms); !slices.Equal(got, []string{"a", "d"}) {
+	if got := storedUIDs(ms); !slices.Equal(got, []string{"a", "d"}) {
 		t.Fatalf("after deleting a dropped object: got %v, want [a d]", got)
 	}
 }
@@ -455,14 +456,8 @@ func TestReplaceObjectLimitAfterChurn(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got := map[types.UID]struct{}{}
-	ms.metrics.Range(func(key, _ any) bool {
-		got[key.(types.UID)] = struct{}{}
-		return true
-	})
-	want := map[types.UID]struct{}{"b": {}, "c": {}}
-	if !maps.Equal(got, want) {
-		t.Fatalf("expected store keys %v, got %v", want, got)
+	if got := storedUIDs(ms); !slices.Equal(got, []string{"b", "c"}) {
+		t.Fatalf("expected store keys [b c], got %v", got)
 	}
 	if n := ms.objectCount; n != 2 {
 		t.Fatalf("expected an object count of 2, got %d", n)

@@ -756,7 +756,7 @@ func newCRReflectorStopCh(ctx context.Context, gvkStopCh chan struct{}) chan str
 // add/update events it drops once the limit is reached.
 func (b *Builder) objectLimitOption(expectedType any, objectLimit int64) metricsstore.Option {
 	if b.listWatchMetrics == nil {
-		return metricsstore.WithObjectLimit(objectLimit, func() {})
+		return metricsstore.WithObjectLimit(objectLimit, nil)
 	}
 	dropped := b.listWatchMetrics.ObjectsDropped
 	resource := reflect.TypeOf(expectedType).String()

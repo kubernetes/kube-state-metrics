@@ -67,8 +67,8 @@ type Options struct {
 	TLSConfig                               string   `yaml:"tls_config"`
 	TelemetryHost                           string   `yaml:"telemetry_host"`
 
-	Config                string
-	ContinueWithoutConfig bool `yaml:"continue_without_config"`
+	Config                string `yaml:"-"`
+	ContinueWithoutConfig bool   `yaml:"continue_without_config"`
 
 	Namespaces              NamespaceList `yaml:"namespaces"`
 	NamespacesDenylist      NamespaceList `yaml:"namespaces_denylist"`
@@ -130,11 +130,7 @@ func UnmarshalConfigFile(configFile []byte, o *Options) error {
 
 // isEmptyDocument reports whether a decoded YAML document holds no value.
 func isEmptyDocument(doc *yaml.Node) bool {
-	if len(doc.Content) == 0 {
-		return true
-	}
-	value := doc.Content[0]
-	return len(doc.Content) == 1 && value.Kind == yaml.ScalarNode && value.Tag == "!!null"
+	return len(doc.Content) == 0 || (len(doc.Content) == 1 && doc.Content[0].Tag == "!!null")
 }
 
 // NewOptions returns a new instance of `Options`.

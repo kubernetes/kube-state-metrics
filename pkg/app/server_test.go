@@ -37,7 +37,6 @@ import (
 
 	"github.com/KimMachineGun/automemlimit/memlimit"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/prometheus/exporter-toolkit/web"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -1450,27 +1449,52 @@ func TestRunWithConfigFileIgnoresTheFileOnDisk(t *testing.T) {
 	defer cancel()
 
 	opts := base.Clone()
-	_ = RunKubeStateMetricsWrapperWithConfigFile(ctx, opts, []byte("namespaces: [team-a]\n"))
+	_ = RunKubeStateMetricsWrapper(ctx, opts, WithOptionsConfigFile([]byte("namespaces: [team-a]\n")))
 	if !slices.Equal(opts.Namespaces, []string{"team-a"}) {
 		t.Fatalf("expected the given config file contents to be applied, got namespaces=%v", opts.Namespaces)
 	}
 
 	opts = base.Clone()
-	_ = RunKubeStateMetricsWrapperWithConfigFile(ctx, opts, nil)
+	_ = RunKubeStateMetricsWrapper(ctx, opts, WithOptionsConfigFile(nil))
 	if ctx.Err() != nil || len(opts.Namespaces) != 0 {
 		t.Fatalf("expected a run without config file contents to start without the file, got namespaces=%v ctx=%v", opts.Namespaces, ctx.Err())
 	}
 }
 
-func TestReportRejectedConfig(t *testing.T) {
-	g := prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "test_config_success"}, []string{"type", "filename"})
-	g.WithLabelValues("config", "/etc/ksm/config.yaml").Set(1)
-	activeConfigSuccess.Store(g)
-	t.Cleanup(func() { activeConfigSuccess.Store(nil) })
+// The run reports in once it has set the options config file status, also when
+// it waits for an invalid file to be fixed.
+func TestRunReportsConfigStatus(t *testing.T) {
+	dir := t.TempDir()
+	base := options.NewOptions()
+	base.Config = filepath.Join(dir, "config.yaml")
+	// A missing kubeconfig makes the run return right after the config merge.
+	base.Kubeconfig = filepath.Join(dir, "missing-kubeconfig")
+	base.TotalShards = 1
 
-	ReportRejectedConfig("/etc/ksm/config.yaml")
-
-	if got := testutil.ToFloat64(g.WithLabelValues("config", "/etc/ksm/config.yaml")); got != 0 {
-		t.Fatalf("expected the rejected config to be reported as failed, got %v", got)
+	for _, tc := range []struct {
+		name     string
+		contents []byte
+	}{
+		{name: "valid", contents: []byte("namespaces: [team-a]\n")},
+		{name: "invalid", contents: []byte("prot: 9090\n")},
+		{name: "missing", contents: nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			reported := false
+			// An invalid file makes the run wait until the context ends.
+			_ = RunKubeStateMetricsWrapper(ctx, base.Clone(), WithOptionsConfigFile(tc.contents), WithConfigReloadReporter(func(reportRejected func()) {
+				reported = true
+				reportRejected()
+				cancel()
+			}))
+			if !reported {
+				t.Fatal("expected the run to report its config status")
+			}
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatal("the run did not return after its context was cancelled")
+			}
+		})
 	}
 }

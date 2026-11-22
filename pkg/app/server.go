@@ -89,21 +89,43 @@ var ErrConfigReload = errors.New("configuration reload")
 // once the servers shut down.
 const serverShutdownTimeout = 3 * time.Second
 
+// RunOption configures a single run of kube-state-metrics.
+type RunOption func(*runConfig)
+
+type runConfig struct {
+	// configFile holds the contents of the options config file when
+	// configFileSet is true, nil meaning that the file does not exist.
+	configFile    []byte
+	configFileSet bool
+	// onConfigStatus is called once the run has set the reload status of the
+	// options config file.
+	onConfigStatus func(reportRejected func())
+}
+
+// WithOptionsConfigFile makes the run use contents as the options config file
+// instead of reading the file. nil contents mean that the file does not exist.
+func WithOptionsConfigFile(contents []byte) RunOption {
+	return func(c *runConfig) {
+		c.configFile = contents
+		c.configFileSet = true
+	}
+}
+
+// WithConfigReloadReporter calls onReady once the run has published the reload
+// status of the options config file. reportRejected marks a later reload of
+// that file as failed in the run's
+// kube_state_metrics_last_config_reload_successful metric, for a caller that
+// keeps the run going instead of restarting it with the rejected file.
+func WithConfigReloadReporter(onReady func(reportRejected func())) RunOption {
+	return func(c *runConfig) {
+		c.onConfigStatus = onReady
+	}
+}
+
 // RunKubeStateMetricsWrapper runs KSM with context cancellation. Cancelling
 // ctx, for a config reload or on shutdown, stops the run without an error.
-func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options) error {
-	return restartOnCancel(ctx, RunKubeStateMetrics(ctx, opts))
-}
-
-// RunKubeStateMetricsWrapperWithConfigFile runs KSM with context cancellation
-// like RunKubeStateMetricsWrapper, but uses configFile as the contents of the
-// options config file instead of reading the file. A nil configFile means
-// that the options config file was not found.
-func RunKubeStateMetricsWrapperWithConfigFile(ctx context.Context, opts *options.Options, configFile []byte) error {
-	return restartOnCancel(ctx, runKubeStateMetrics(ctx, opts, configFile))
-}
-
-func restartOnCancel(ctx context.Context, err error) error {
+func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options, runOpts ...RunOption) error {
+	err := RunKubeStateMetrics(ctx, opts, runOpts...)
 	if ctx.Err() == context.Canceled {
 		return nil
 	}
@@ -113,12 +135,19 @@ func restartOnCancel(ctx context.Context, err error) error {
 // RunKubeStateMetrics will build and run the kube-state-metrics.
 // Any out-of-tree custom resource metrics could be registered by newing a registry factory
 // which implements customresource.RegistryFactory and pass all factories into this function.
-func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
-	configFile, err := readOptionsConfigFile(opts)
-	if err != nil {
-		return err
+func RunKubeStateMetrics(ctx context.Context, opts *options.Options, runOpts ...RunOption) error {
+	var c runConfig
+	for _, opt := range runOpts {
+		opt(&c)
 	}
-	return runKubeStateMetrics(ctx, opts, configFile)
+	if !c.configFileSet {
+		configFile, err := readOptionsConfigFile(opts)
+		if err != nil {
+			return err
+		}
+		c.configFile = configFile
+	}
+	return runKubeStateMetrics(ctx, opts, c)
 }
 
 // readOptionsConfigFile returns the contents of the options config file, or
@@ -139,9 +168,9 @@ func readOptionsConfigFile(opts *options.Options) ([]byte, error) {
 	return configFile, nil
 }
 
-// runKubeStateMetrics runs KSM with configFile as the contents of the options
-// config file, which is nil if there is none.
-func runKubeStateMetrics(ctx context.Context, opts *options.Options, configFile []byte) error {
+// runKubeStateMetrics runs KSM with c.configFile as the contents of the
+// options config file, which is nil if there is none.
+func runKubeStateMetrics(ctx context.Context, opts *options.Options, c runConfig) error {
 	ksmMetricsRegistry := prometheus.NewRegistry()
 	ksmMetricsRegistry.MustRegister(versionCollector.NewCollector("kube_state_metrics", versionCollector.WithExtraConstLabels(
 		prometheus.Labels{"client_go_version": ClientGoVersion},
@@ -165,7 +194,6 @@ func runKubeStateMetrics(ctx context.Context, opts *options.Options, configFile 
 			Name: "kube_state_metrics_last_config_reload_successful",
 			Help: "Whether the last configuration reload attempt was successful.",
 		}, []string{"type", "filename"})
-	activeConfigSuccess.Store(configSuccess)
 	configSuccessTime := promauto.With(ksmMetricsRegistry).NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "kube_state_metrics_last_config_reload_success_timestamp_seconds",
@@ -191,7 +219,20 @@ func runKubeStateMetrics(ctx context.Context, opts *options.Options, configFile 
 	})
 	storeBuilder := store.NewBuilder()
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
-	if got := options.GetConfigFile(*opts); got != "" && configFile != nil {
+	configFile := c.configFile
+	got := options.GetConfigFile(*opts)
+	reportConfigStatus := func() {
+		if c.onConfigStatus == nil {
+			return
+		}
+		c.onConfigStatus(func() {
+			if got != "" {
+				configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
+			}
+		})
+	}
+	if got != "" && configFile != nil {
+		file := filepath.Clean(got)
 		// NOTE: Config value will override default values of intersecting options.
 		err := options.UnmarshalConfigFile(configFile, opts)
 
@@ -202,20 +243,22 @@ func runKubeStateMetrics(ctx context.Context, opts *options.Options, configFile 
 			// Wait for the next reload.
 			klog.InfoS("misconfigured config detected, KSM will automatically reload on next write to the config")
 			klog.InfoS("waiting for config to be fixed")
-			configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
+			configSuccess.WithLabelValues("config", file).Set(0)
+			reportConfigStatus()
 			<-ctx.Done()
 			// The watcher cancelled this run to start a fresh one.
 			return nil
 		}
 
-		configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(1)
-		configSuccessTime.WithLabelValues("config", filepath.Clean(got)).SetToCurrentTime()
+		configSuccess.WithLabelValues("config", file).Set(1)
+		configSuccessTime.WithLabelValues("config", file).SetToCurrentTime()
 		hash := md5HashAsMetricValue(configFile)
-		configHash.WithLabelValues("config", filepath.Clean(got)).Set(hash)
+		configHash.WithLabelValues("config", file).Set(hash)
 
 		opts = configureResourcesAndMetrics(opts, configFile)
 		klog.InfoS("Using config file", "file", got)
 	}
+	reportConfigStatus()
 
 	sLogger := slog.New(logr.ToSlogHandler(klog.Background()))
 
@@ -519,17 +562,6 @@ func shutdownDelay(ctx context.Context, delay time.Duration) time.Duration {
 		return 0
 	}
 	return delay
-}
-
-// activeConfigSuccess is the config reload status gauge of the running instance.
-var activeConfigSuccess atomic.Pointer[prometheus.GaugeVec]
-
-// ReportRejectedConfig marks a reload of the options config file as failed in
-// the running instance, which keeps serving its current configuration.
-func ReportRejectedConfig(file string) {
-	if g := activeConfigSuccess.Load(); g != nil {
-		g.WithLabelValues("config", filepath.Clean(file)).Set(0)
-	}
 }
 
 func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *options.Options {

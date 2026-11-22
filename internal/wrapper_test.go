@@ -149,3 +149,95 @@ func TestMovableWatch(t *testing.T) {
 	}
 	expectEvent(t, events)
 }
+
+func TestConfigStatus(t *testing.T) {
+	// reporter returns the reportRejected callback of a run and counts its calls.
+	reporter := func() (*int, func()) {
+		var n int
+		return &n, func() { n++ }
+	}
+
+	t.Run("rejected before the run reports in", func(t *testing.T) {
+		s := &configStatus{}
+		onReady := s.newRun(false)
+		// A reload is rejected while the run is still starting, then the run
+		// reports the file it was started with as loaded.
+		s.reject()
+		n, report := reporter()
+		onReady(report)
+		if *n != 1 {
+			t.Fatalf("expected the rejection to be applied once the run reports in, got %d calls", *n)
+		}
+	})
+
+	t.Run("rejected after the run reported in", func(t *testing.T) {
+		s := &configStatus{}
+		n, report := reporter()
+		s.newRun(false)(report)
+		if *n != 0 {
+			t.Fatalf("expected no rejection for an accepted file, got %d calls", *n)
+		}
+		s.reject()
+		if *n != 1 {
+			t.Fatalf("expected the rejection to be applied, got %d calls", *n)
+		}
+	})
+
+	t.Run("restarted with a rejected file", func(t *testing.T) {
+		s := &configStatus{}
+		n, report := reporter()
+		s.newRun(true)(report)
+		if *n != 1 {
+			t.Fatalf("expected the rejection to carry over to the restarted run, got %d calls", *n)
+		}
+	})
+
+	t.Run("accepted reload clears the rejection", func(t *testing.T) {
+		s := &configStatus{}
+		s.newRun(false)
+		s.reject()
+		n, report := reporter()
+		s.newRun(false)(report)
+		if *n != 0 {
+			t.Fatalf("expected no rejection for the new run, got %d calls", *n)
+		}
+	})
+
+	t.Run("a replaced run cannot report in", func(t *testing.T) {
+		s := &configStatus{}
+		stale := s.newRun(false)
+		current := s.newRun(false)
+		staleN, staleReport := reporter()
+		n, report := reporter()
+		current(report)
+		stale(staleReport)
+		s.reject()
+		if *staleN != 0 || *n != 1 {
+			t.Fatalf("expected only the current run to be marked, got stale=%d current=%d", *staleN, *n)
+		}
+	})
+}
+
+func TestOptionsFor(t *testing.T) {
+	base := options.NewOptions()
+	base.Kubeconfig = "/etc/ksm/kubeconfig-from-flag"
+
+	for _, tc := range []struct {
+		name       string
+		configFile []byte
+		want       string
+	}{
+		{name: "no config file", want: "/etc/ksm/kubeconfig-from-flag"},
+		{name: "valid config file", configFile: []byte("kubeconfig: /etc/ksm/kubeconfig-from-config\n"), want: "/etc/ksm/kubeconfig-from-config"},
+		{name: "invalid config file", configFile: []byte("kubeconfig: /etc/ksm/kubeconfig-from-config\nprot: 9090\n"), want: "/etc/ksm/kubeconfig-from-flag"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := optionsFor(base, tc.configFile).Kubeconfig; got != tc.want {
+				t.Errorf("got kubeconfig %q, want %q", got, tc.want)
+			}
+		})
+	}
+	if base.Kubeconfig != "/etc/ksm/kubeconfig-from-flag" {
+		t.Errorf("the base options must not change, got %q", base.Kubeconfig)
+	}
+}

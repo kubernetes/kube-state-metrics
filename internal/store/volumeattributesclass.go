@@ -136,13 +136,14 @@ func wrapVolumeAttributesClassFunc(f func(*storagev1.VolumeAttributesClass) *met
 }
 
 // createVolumeAttributesClassListWatch returns a ListerWatcher for VolumeAttributesClass objects.
-func createVolumeAttributesClassListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+func createVolumeAttributesClassListWatch(ctx context.Context, kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
+	listCtx := ListWatchContext(ctx)
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return kubeClient.StorageV1().VolumeAttributesClasses().List(context.TODO(), opts)
+			return kubeClient.StorageV1().VolumeAttributesClasses().List(listCtx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return kubeClient.StorageV1().VolumeAttributesClasses().Watch(context.TODO(), opts)
+			return kubeClient.StorageV1().VolumeAttributesClasses().Watch(listCtx, opts)
 		},
 	}
 }

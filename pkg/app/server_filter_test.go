@@ -21,7 +21,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/kubernetes/fake"
@@ -78,11 +77,9 @@ func TestResourceFiltering(t *testing.T) {
 	))
 	builder.WithAllowLabels(map[string][]string{})
 
-	handler := metricshandler.New(&options.Options{}, kubeClient, builder, false)
+	handler := metricshandler.New(syncedHandlerOptions(), kubeClient, builder, false)
 	handler.ConfigureSharding(ctx, 0, 1)
-
-	// Wait for caches to fill
-	time.Sleep(time.Second)
+	waitForHandlerReady(t, handler)
 
 	tests := []struct {
 		name             string

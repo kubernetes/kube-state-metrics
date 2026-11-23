@@ -17,6 +17,8 @@ limitations under the License.
 package customresource
 
 import (
+	"context"
+
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
@@ -115,4 +117,10 @@ type RegistryFactory interface {
 	//	}
 	// }
 	ListWatch(customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher
+}
+
+// ContextListWatchFactory is optional. When implemented, store builds call
+// ListWatchWithContext with the builder generation context instead of ListWatch.
+type ContextListWatchFactory interface {
+	ListWatchWithContext(ctx context.Context, customResourceClient any, ns string, fieldSelector string) cache.ListerWatcher
 }

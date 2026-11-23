@@ -20,12 +20,15 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
 	"time"
+
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -101,7 +104,9 @@ func TestParseResources(t *testing.T) {
 func TestServeHTTPGzipWrapsOnce(t *testing.T) {
 	// No writers are needed: the response is wrapped before any are consulted,
 	// and an empty gzip stream is still a valid one.
-	handler := New(&options.Options{}, fake.NewSimpleClientset(), &stubStoreBuilder{}, true)
+	opts := options.NewOptions()
+	opts.StoreSyncTimeout = 0
+	handler := New(opts, fake.NewSimpleClientset(), &stubStoreBuilder{}, true)
 	handler.ConfigureSharding(context.Background(), 0, 1)
 
 	for _, acceptEncoding := range []string{"gzip", "gzip, gzip", "gzip;q=1.0, gzip"} {
@@ -152,8 +157,10 @@ func TestServeHTTPUnavailableUntilShardingConfigured(t *testing.T) {
 // A scrape must not see sharding as configured before the first writers are
 // built, or it would get an empty 200 instead of a 503.
 func TestConfigureShardingBuildsBeforeReady(t *testing.T) {
+	opts := options.NewOptions()
+	opts.StoreSyncTimeout = 0
 	stub := &stubStoreBuilder{}
-	handler := New(&options.Options{}, fake.NewSimpleClientset(), stub, false)
+	handler := New(opts, fake.NewSimpleClientset(), stub, false)
 	// Build runs with mtx held, so the field can be read directly.
 	stub.onBuild = func() {
 		if handler.shardingConfigured {
@@ -172,8 +179,10 @@ func TestConfigureShardingBuildsBeforeReady(t *testing.T) {
 // the shard is known. That must not build writers with the static default
 // sharding, which would serve every object and duplicate series across shards.
 func TestConfigureStoreWaitsForAutosharding(t *testing.T) {
+	opts := &options.Options{Pod: "ksm-0", Namespace: "ns"}
+	opts.StoreSyncTimeout = 0
 	stub := &stubStoreBuilder{}
-	handler := New(&options.Options{Pod: "ksm-0", Namespace: "ns"}, fake.NewSimpleClientset(), stub, false)
+	handler := New(opts, fake.NewSimpleClientset(), stub, false)
 
 	if err := handler.ConfigureStore(context.Background(), func(ksmtypes.BuilderInterface) error { return nil }); err != nil {
 		t.Fatal(err)
@@ -188,6 +197,7 @@ func TestConfigureStoreWaitsForAutosharding(t *testing.T) {
 	}
 
 	handler.ConfigureSharding(context.Background(), 1, 2)
+	waitForRebuildIdle(t, handler)
 
 	if got := stub.buildCount.Load(); got != 1 {
 		t.Fatalf("expected one build once sharding is configured, got %d", got)
@@ -261,5 +271,63 @@ func TestRunHonoursContextDuringStatefulSetLookup(t *testing.T) {
 	case <-statefulSetReached:
 	default:
 		t.Fatal("expected Run to reach the StatefulSet lookup")
+	}
+}
+
+func TestConfigureStoreAppliesConfigThenRebuilds(t *testing.T) {
+	stub := &stubStoreBuilder{
+		buildWriters: metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("configured")},
+	}
+	opts := options.NewOptions()
+	opts.StoreSyncTimeout = 0
+	h := New(opts, nil, stub, false)
+	h.mtx.Lock()
+	h.metricsWriters = metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("prev")}
+	h.mtx.Unlock()
+
+	var configured bool
+	if err := h.ConfigureStore(context.Background(), func(b ksmtypes.BuilderInterface) error {
+		if b != stub {
+			t.Fatalf("expected ConfigureStore to pass the handler store builder")
+		}
+		configured = true
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if !configured {
+		t.Fatal("expected ConfigureStore callback to run")
+	}
+	waitForRebuildIdle(t, h)
+	if stub.buildCount.Load() != 1 {
+		t.Fatalf("expected one rebuild after ConfigureStore, got %d", stub.buildCount.Load())
+	}
+	h.mtx.RLock()
+	got := h.metricsWriters
+	h.mtx.RUnlock()
+	if len(got) != 1 || got[0].ResourceName != "configured" {
+		t.Fatalf("expected writers swapped after ConfigureStore rebuild, got %+v", got)
+	}
+}
+
+func TestConfigureStoreSkipsRebuildOnConfigError(t *testing.T) {
+	stub := &stubStoreBuilder{
+		buildWriters: metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("next")},
+	}
+	opts := options.NewOptions()
+	opts.StoreSyncTimeout = 0
+	h := New(opts, nil, stub, false)
+	h.mtx.Lock()
+	h.metricsWriters = metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("prev")}
+	h.mtx.Unlock()
+
+	err := h.ConfigureStore(context.Background(), func(ksmtypes.BuilderInterface) error {
+		return errors.New("bad config")
+	})
+	if err == nil {
+		t.Fatal("expected ConfigureStore to return configuration error")
+	}
+	if stub.buildCount.Load() != 0 {
+		t.Fatalf("expected no rebuild on config error, got %d", stub.buildCount.Load())
 	}
 }

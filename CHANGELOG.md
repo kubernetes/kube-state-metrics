@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+* [CHANGE] `--store-sync-timeout` defaults to 30s and bounds **one** store-sync observation window per rebuild candidate after `Build()`. Writers install only after **all** enabled reflectors list successfully in that window. When a window expires, the candidate is canceled (including in-flight LIST/WATCH) and the handler waits one timeout duration before automatically building a fresh candidate; during that cooldown no candidate generation runs. Retries continue until sync succeeds, the candidate is superseded, or the owning context is canceled. `BuildWriters`, `ConfigureStore`, and `ConfigureSharding` wait for **one** attempt to finish (success, failure, supersession, or caller cancellation) and return without waiting for background retries. `ConfigureStoreAsync` and `ConfigureShardingAsync` schedule rebuilds without blocking (used by CRD discovery and autosharding). `store_sync_timeout=0` skips the wait and installs immediately. Startup may return from the first synchronous call still unready; `/metrics` and `/readyz` stay 503 until a later attempt succeeds.
+* [NOTE] **Permanent list/watch failures** (for example RBAC denial on one enabled resource): the candidate generation does not install, sync retries continue, and the prior generation keeps serving. That preserves metric completeness but can retain **two reflector generations indefinitely**, increase memory and apiserver watch load, and **delay or block resharding and config-driven rebuilds** until the failure is fixed, the candidate is superseded or canceled, or an operator sets `store_sync_timeout=0`. Partial install on timeout is **not** performed. Documenting this tradeoff records an accepted operational cost; it does not remove dual-generation overhead (reviewer comment #13).
+
 ## v2.20.0 / 2026-08-16
 
 NOTE: Custom Resource State (CRS) metrics are now feature-frozen; no new CRS features will be accepted going forward. See [#3050](https://github.com/kubernetes/kube-state-metrics/pull/3050) for details.

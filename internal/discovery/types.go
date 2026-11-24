@@ -61,9 +61,10 @@ type CRDiscoverer struct {
 	m sync.RWMutex
 	// ShouldUpdate is a flag that indicates whether the cache was updated.
 	WasUpdated bool
-	// cacheRevision changes whenever the discoverable GVK set changes. It lets
-	// reconciliation distinguish delete/re-add cycles that resolve to the same
-	// GVR strings but replace reflector stop channels.
+	// cacheRevision changes whenever the discoverable GVK set changes.
+	// Reconciliation uses it to keep WasUpdated set when the cache changes
+	// again while it reconciles, and to reset the backoff of a failed rebuild
+	// when the cache changes.
 	cacheRevision uint64
 }
 

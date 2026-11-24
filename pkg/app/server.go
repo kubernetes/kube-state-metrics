@@ -78,11 +78,11 @@ const (
 	readyzPath  = "/readyz"
 )
 
-// RunKubeStateMetricsWrapper runs KSM with context cancellation.
+// RunKubeStateMetricsWrapper runs KSM with context cancellation. Cancelling
+// ctx, for a config reload or on shutdown, stops the run without an error.
 func RunKubeStateMetricsWrapper(ctx context.Context, opts *options.Options) error {
 	err := RunKubeStateMetrics(ctx, opts)
 	if ctx.Err() == context.Canceled {
-		klog.Infoln("Restarting: kube-state-metrics, metrics will be reset")
 		return nil
 	}
 	return err

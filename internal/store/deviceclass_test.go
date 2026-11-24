@@ -22,6 +22,7 @@ import (
 
 	resourcev1 "k8s.io/api/resource/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -33,7 +34,6 @@ func TestDeviceClassStore(t *testing.T) {
 		# HELP kube_deviceclass_info Information about device class.
 		# TYPE kube_deviceclass_info gauge
 	`
-	extendedResourceName := "nvidia.com/gpu"
 
 	cases := []generateMetricsTestCase{
 		{
@@ -43,7 +43,7 @@ func TestDeviceClassStore(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				},
 				Spec: resourcev1.DeviceClassSpec{
-					ExtendedResourceName: &extendedResourceName,
+					ExtendedResourceName: ptr.To("nvidia.com/gpu"),
 				},
 			},
 			Want: metadata + `
@@ -55,11 +55,42 @@ func TestDeviceClassStore(t *testing.T) {
 				"kube_deviceclass_info",
 			},
 		},
+		{
+			Obj: &resourcev1.DeviceClass{
+				ObjectMeta: metav1.ObjectMeta{Name: "no-extended-resource"},
+			},
+			Want: `
+				# HELP kube_deviceclass_info Information about device class.
+				# TYPE kube_deviceclass_info gauge
+				kube_deviceclass_info{deviceclass="no-extended-resource",extended_resource_name=""} 1
+			`,
+			MetricNames: []string{"kube_deviceclass_info"},
+		},
+		{
+			AllowAnnotationsList: []string{"team"},
+			AllowLabelsList:      []string{"app"},
+			Obj: &resourcev1.DeviceClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "deviceclass-labels",
+					Annotations: map[string]string{"team": "gpu", "ignored": "x"},
+					Labels:      map[string]string{"app": "trainer", "ignored": "x"},
+				},
+			},
+			Want: `
+				# HELP kube_deviceclass_annotations Kubernetes annotations converted to Prometheus labels.
+				# TYPE kube_deviceclass_annotations gauge
+				# HELP kube_deviceclass_labels Kubernetes labels converted to Prometheus labels.
+				# TYPE kube_deviceclass_labels gauge
+				kube_deviceclass_annotations{annotation_team="gpu",deviceclass="deviceclass-labels"} 1
+				kube_deviceclass_labels{label_app="trainer",deviceclass="deviceclass-labels"} 1
+			`,
+			MetricNames: []string{"kube_deviceclass_annotations", "kube_deviceclass_labels"},
+		},
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(deviceClassMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(deviceClassMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(deviceClassMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(deviceClassMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %dth run:\n%v", i, err)
 		}

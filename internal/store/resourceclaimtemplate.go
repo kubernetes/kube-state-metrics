@@ -3,7 +3,7 @@ Copyright 2026 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
-you may obtain a copy of the License at
+You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
@@ -33,8 +33,14 @@ import (
 
 var (
 	descResourceClaimTemplateLabelsDefaultLabels = []string{"resourceclaimtemplate", "namespace"}
+	descResourceClaimTemplateAnnotationsName     = "kube_resourceclaimtemplate_annotations"
+	descResourceClaimTemplateAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
+	descResourceClaimTemplateLabelsName          = "kube_resourceclaimtemplate_labels" //nolint:gosec
+	descResourceClaimTemplateLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+)
 
-	resourceClaimTemplateMetricFamilies = []generator.FamilyGenerator{
+func resourceClaimTemplateMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_resourceclaimtemplate_created",
 			"Unix creation timestamp",
@@ -55,11 +61,55 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGeneratorWithStability(
+			descResourceClaimTemplateAnnotationsName,
+			descResourceClaimTemplateAnnotationsHelp,
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapResourceClaimTemplateFunc(func(rct *resourcev1.ResourceClaimTemplate) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
+				keys, values := createPrometheusLabelKeysValues("annotation", rct.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   keys,
+							LabelValues: values,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			descResourceClaimTemplateLabelsName,
+			descResourceClaimTemplateLabelsHelp,
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapResourceClaimTemplateFunc(func(rct *resourcev1.ResourceClaimTemplate) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
+				keys, values := createPrometheusLabelKeysValues("label", rct.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   keys,
+							LabelValues: values,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
-)
+}
 
-func wrapResourceClaimTemplateFunc(f func(*resourcev1.ResourceClaimTemplate) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapResourceClaimTemplateFunc(f func(*resourcev1.ResourceClaimTemplate) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		rct := obj.(*resourcev1.ResourceClaimTemplate)
 
 		metricFamily := f(rct)

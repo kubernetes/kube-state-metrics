@@ -620,6 +620,22 @@ func (b *Builder) buildIngressClassStores() []cache.Store {
 	return b.buildClusterScopedStores(ingressClassMetricFamilies(b.allowAnnotationsList["ingressclasses"], b.allowLabelsList["ingressclasses"]), &networkingv1.IngressClass{}, createIngressClassListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
+func (b *Builder) buildDeviceClassStores() []cache.Store {
+	return b.buildClusterScopedStores(deviceClassMetricFamilies(b.allowAnnotationsList["deviceclasses"], b.allowLabelsList["deviceclasses"]), &resourcev1.DeviceClass{}, createDeviceClassListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildResourceClaimStores() []cache.Store {
+	return b.buildStoresFunc(resourceClaimMetricFamilies(b.allowAnnotationsList["resourceclaims"], b.allowLabelsList["resourceclaims"]), &resourcev1.ResourceClaim{}, createResourceClaimListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildResourceClaimTemplateStores() []cache.Store {
+	return b.buildStoresFunc(resourceClaimTemplateMetricFamilies(b.allowAnnotationsList["resourceclaimtemplates"], b.allowLabelsList["resourceclaimtemplates"]), &resourcev1.ResourceClaimTemplate{}, createResourceClaimTemplateListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildResourceSliceStores() []cache.Store {
+	return b.buildClusterScopedStores(resourceSliceMetricFamilies(b.allowAnnotationsList["resourceslices"], b.allowLabelsList["resourceslices"]), &resourcev1.ResourceSlice{}, createResourceSliceListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
 // buildClusterScopedStores delegates to the configured buildStoresFunc (honouring
 // any custom function injected via WithGenerateStoresFunc) while guaranteeing that
 // cluster-scoped resources are watched exactly once across all namespaces.
@@ -770,22 +786,6 @@ func (b *Builder) startReflector(
 	} else {
 		go reflector.Run(b.ctx.Done())
 	}
-}
-
-func (b *Builder) buildDeviceClassStores() []cache.Store {
-	return b.buildClusterScopedStores(deviceClassMetricFamilies, &resourcev1.DeviceClass{}, createDeviceClassListWatch, b.useAPIServerCache, b.objectLimit)
-}
-
-func (b *Builder) buildResourceClaimStores() []cache.Store {
-	return b.buildStoresFunc(resourceClaimMetricFamilies, &resourcev1.ResourceClaim{}, createResourceClaimListWatch, b.useAPIServerCache, b.objectLimit)
-}
-
-func (b *Builder) buildResourceClaimTemplateStores() []cache.Store {
-	return b.buildStoresFunc(resourceClaimTemplateMetricFamilies, &resourcev1.ResourceClaimTemplate{}, createResourceClaimTemplateListWatch, b.useAPIServerCache, b.objectLimit)
-}
-
-func (b *Builder) buildResourceSliceStores() []cache.Store {
-	return b.buildClusterScopedStores(resourceSliceMetricFamilies, &resourcev1.ResourceSlice{}, createResourceSliceListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 // cacheStoresToMetricStores converts []cache.Store into []*metricsstore.MetricsStore

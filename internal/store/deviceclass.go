@@ -34,8 +34,14 @@ import (
 
 var (
 	descDeviceClassLabelsDefaultLabels = []string{"deviceclass"}
+	descDeviceClassAnnotationsName     = "kube_deviceclass_annotations"
+	descDeviceClassAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
+	descDeviceClassLabelsName          = "kube_deviceclass_labels" //nolint:gosec
+	descDeviceClassLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+)
 
-	deviceClassMetricFamilies = []generator.FamilyGenerator{
+func deviceClassMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_deviceclass_created",
 			"Unix creation timestamp",
@@ -74,11 +80,55 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGeneratorWithStability(
+			descDeviceClassAnnotationsName,
+			descDeviceClassAnnotationsHelp,
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDeviceClassFunc(func(dc *resourcev1.DeviceClass) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
+				keys, values := createPrometheusLabelKeysValues("annotation", dc.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   keys,
+							LabelValues: values,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			descDeviceClassLabelsName,
+			descDeviceClassLabelsHelp,
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapDeviceClassFunc(func(dc *resourcev1.DeviceClass) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
+				keys, values := createPrometheusLabelKeysValues("label", dc.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   keys,
+							LabelValues: values,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
-)
+}
 
-func wrapDeviceClassFunc(f func(*resourcev1.DeviceClass) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapDeviceClassFunc(f func(*resourcev1.DeviceClass) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		dc := obj.(*resourcev1.DeviceClass)
 
 		metricFamily := f(dc)
@@ -91,14 +141,12 @@ func wrapDeviceClassFunc(f func(*resourcev1.DeviceClass) *metric.Family) func(in
 	}
 }
 
-func createDeviceClassListWatch(kubeClient clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
+func createDeviceClassListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			opts.FieldSelector = fieldSelector
 			return kubeClient.ResourceV1().DeviceClasses().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			opts.FieldSelector = fieldSelector
 			return kubeClient.ResourceV1().DeviceClasses().Watch(context.TODO(), opts)
 		},
 	}

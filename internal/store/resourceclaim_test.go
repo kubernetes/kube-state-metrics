@@ -23,6 +23,7 @@ import (
 	resourcev1 "k8s.io/api/resource/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 )
@@ -47,7 +48,6 @@ func TestResourceClaimStore(t *testing.T) {
 					Namespace:         "ns-1",
 					CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
 				},
-				Spec: resourcev1.ResourceClaimSpec{},
 				Status: resourcev1.ResourceClaimStatus{
 					Allocation: &resourcev1.AllocationResult{
 						Devices: resourcev1.DeviceAllocationResult{
@@ -75,7 +75,7 @@ func TestResourceClaimStore(t *testing.T) {
 				kube_resourceclaim_created{namespace="ns-1",resourceclaim="claim-1"} 1.5e+09
 				kube_resourceclaim_status_allocated{namespace="ns-1",resourceclaim="claim-1"} 1
 				kube_resourceclaim_status_reserved_for{consumer_apigroup="apps",consumer_name="dep-1",consumer_resource="deployments",consumer_uid="uid-1",namespace="ns-1",resourceclaim="claim-1"} 1
-				kube_resourceclaim_allocation_device_info{driver="driver-1",device="device-1",namespace="ns-1",pool="pool-1",request="req-1",resourceclaim="claim-1"} 1
+				kube_resourceclaim_allocation_device_info{driver="driver-1",device="device-1",namespace="ns-1",pool="pool-1",request="req-1",resourceclaim="claim-1",share_id=""} 1
 			`,
 			MetricNames: []string{
 				"kube_resourceclaim_created",
@@ -84,11 +84,73 @@ func TestResourceClaimStore(t *testing.T) {
 				"kube_resourceclaim_allocation_device_info",
 			},
 		},
+		{
+			Obj: &resourcev1.ResourceClaim{
+				ObjectMeta: metav1.ObjectMeta{Name: "claim-unallocated", Namespace: "ns-1"},
+			},
+			Want: `
+				# HELP kube_resourceclaim_status_allocated Indicates whether the resource claim has been allocated.
+				# TYPE kube_resourceclaim_status_allocated gauge
+				# HELP kube_resourceclaim_status_reserved_for Indicates which consumers have currently reserved the resource claim.
+				# TYPE kube_resourceclaim_status_reserved_for gauge
+				# HELP kube_resourceclaim_allocation_device_info Allocation information about the devices allocated to the resource claim.
+				# TYPE kube_resourceclaim_allocation_device_info gauge
+				kube_resourceclaim_status_allocated{namespace="ns-1",resourceclaim="claim-unallocated"} 0
+			`,
+			MetricNames: []string{
+				"kube_resourceclaim_status_allocated",
+				"kube_resourceclaim_status_reserved_for",
+				"kube_resourceclaim_allocation_device_info",
+			},
+		},
+		{
+			Obj: &resourcev1.ResourceClaim{
+				ObjectMeta: metav1.ObjectMeta{Name: "claim-shared", Namespace: "ns-1"},
+				Status: resourcev1.ResourceClaimStatus{
+					Allocation: &resourcev1.AllocationResult{
+						Devices: resourcev1.DeviceAllocationResult{
+							Results: []resourcev1.DeviceRequestAllocationResult{
+								{Request: "req-1", Driver: "driver-1", Pool: "pool-1", Device: "device-1", ShareID: ptr.To(types.UID("share-a"))},
+								{Request: "req-1", Driver: "driver-1", Pool: "pool-1", Device: "device-1", ShareID: ptr.To(types.UID("share-b"))},
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_resourceclaim_allocation_device_info Allocation information about the devices allocated to the resource claim.
+				# TYPE kube_resourceclaim_allocation_device_info gauge
+				kube_resourceclaim_allocation_device_info{device="device-1",driver="driver-1",namespace="ns-1",pool="pool-1",request="req-1",resourceclaim="claim-shared",share_id="share-a"} 1
+				kube_resourceclaim_allocation_device_info{device="device-1",driver="driver-1",namespace="ns-1",pool="pool-1",request="req-1",resourceclaim="claim-shared",share_id="share-b"} 1
+			`,
+			MetricNames: []string{"kube_resourceclaim_allocation_device_info"},
+		},
+		{
+			AllowAnnotationsList: []string{"team"},
+			AllowLabelsList:      []string{"app"},
+			Obj: &resourcev1.ResourceClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "resourceclaim-labels",
+					Namespace:   "ns-1",
+					Annotations: map[string]string{"team": "gpu", "ignored": "x"},
+					Labels:      map[string]string{"app": "trainer", "ignored": "x"},
+				},
+			},
+			Want: `
+				# HELP kube_resourceclaim_annotations Kubernetes annotations converted to Prometheus labels.
+				# TYPE kube_resourceclaim_annotations gauge
+				# HELP kube_resourceclaim_labels Kubernetes labels converted to Prometheus labels.
+				# TYPE kube_resourceclaim_labels gauge
+				kube_resourceclaim_annotations{annotation_team="gpu",namespace="ns-1",resourceclaim="resourceclaim-labels"} 1
+				kube_resourceclaim_labels{label_app="trainer",namespace="ns-1",resourceclaim="resourceclaim-labels"} 1
+			`,
+			MetricNames: []string{"kube_resourceclaim_annotations", "kube_resourceclaim_labels"},
+		},
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(resourceClaimMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(resourceClaimMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(resourceClaimMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(resourceClaimMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %dth run:\n%v", i, err)
 		}

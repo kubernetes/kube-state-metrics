@@ -49,11 +49,32 @@ func TestResourceClaimTemplateStore(t *testing.T) {
 				"kube_resourceclaimtemplate_created",
 			},
 		},
+		{
+			AllowAnnotationsList: []string{"team"},
+			AllowLabelsList:      []string{"app"},
+			Obj: &resourcev1.ResourceClaimTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "resourceclaimtemplate-labels",
+					Namespace:   "ns-1",
+					Annotations: map[string]string{"team": "gpu", "ignored": "x"},
+					Labels:      map[string]string{"app": "trainer", "ignored": "x"},
+				},
+			},
+			Want: `
+				# HELP kube_resourceclaimtemplate_annotations Kubernetes annotations converted to Prometheus labels.
+				# TYPE kube_resourceclaimtemplate_annotations gauge
+				# HELP kube_resourceclaimtemplate_labels Kubernetes labels converted to Prometheus labels.
+				# TYPE kube_resourceclaimtemplate_labels gauge
+				kube_resourceclaimtemplate_annotations{annotation_team="gpu",namespace="ns-1",resourceclaimtemplate="resourceclaimtemplate-labels"} 1
+				kube_resourceclaimtemplate_labels{label_app="trainer",namespace="ns-1",resourceclaimtemplate="resourceclaimtemplate-labels"} 1
+			`,
+			MetricNames: []string{"kube_resourceclaimtemplate_annotations", "kube_resourceclaimtemplate_labels"},
+		},
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(resourceClaimTemplateMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(resourceClaimTemplateMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(resourceClaimTemplateMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(resourceClaimTemplateMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %dth run:\n%v", i, err)
 		}

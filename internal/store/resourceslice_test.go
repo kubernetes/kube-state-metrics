@@ -120,11 +120,31 @@ func TestResourceSliceStore(t *testing.T) {
 			`,
 			MetricNames: []string{"kube_resourceslice_info"},
 		},
+		{
+			AllowAnnotationsList: []string{"team"},
+			AllowLabelsList:      []string{"app"},
+			Obj: &resourcev1.ResourceSlice{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "resourceslice-labels",
+					Annotations: map[string]string{"team": "gpu", "ignored": "x"},
+					Labels:      map[string]string{"app": "trainer", "ignored": "x"},
+				},
+			},
+			Want: `
+				# HELP kube_resourceslice_annotations Kubernetes annotations converted to Prometheus labels.
+				# TYPE kube_resourceslice_annotations gauge
+				# HELP kube_resourceslice_labels Kubernetes labels converted to Prometheus labels.
+				# TYPE kube_resourceslice_labels gauge
+				kube_resourceslice_annotations{annotation_team="gpu",resourceslice="resourceslice-labels"} 1
+				kube_resourceslice_labels{label_app="trainer",resourceslice="resourceslice-labels"} 1
+			`,
+			MetricNames: []string{"kube_resourceslice_annotations", "kube_resourceslice_labels"},
+		},
 	}
 
 	for i, c := range cases {
-		c.Func = generator.ComposeMetricGenFuncs(resourceSliceMetricFamilies)
-		c.Headers = generator.ExtractMetricFamilyHeaders(resourceSliceMetricFamilies)
+		c.Func = generator.ComposeMetricGenFuncs(resourceSliceMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
+		c.Headers = generator.ExtractMetricFamilyHeaders(resourceSliceMetricFamilies(c.AllowAnnotationsList, c.AllowLabelsList))
 		if err := c.run(); err != nil {
 			t.Errorf("unexpected collecting result in %dth run:\n%v", i, err)
 		}

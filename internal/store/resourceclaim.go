@@ -26,6 +26,7 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	basemetrics "k8s.io/component-base/metrics"
+	"k8s.io/utils/ptr"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
@@ -33,8 +34,14 @@ import (
 
 var (
 	descResourceClaimLabelsDefaultLabels = []string{"resourceclaim", "namespace"}
+	descResourceClaimAnnotationsName     = "kube_resourceclaim_annotations"
+	descResourceClaimAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
+	descResourceClaimLabelsName          = "kube_resourceclaim_labels" //nolint:gosec
+	descResourceClaimLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+)
 
-	resourceClaimMetricFamilies = []generator.FamilyGenerator{
+func resourceClaimMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_resourceclaim_created",
 			"Unix creation timestamp",
@@ -62,11 +69,10 @@ var (
 			basemetrics.ALPHA,
 			"",
 			wrapResourceClaimFunc(func(rc *resourcev1.ResourceClaim) *metric.Family {
-				isAllocated := rc.Status.Allocation != nil
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							Value: boolFloat64(isAllocated),
+							Value: boolFloat64(rc.Status.Allocation != nil),
 						},
 					},
 				}
@@ -106,8 +112,8 @@ var (
 				ms := make([]*metric.Metric, len(results))
 				for i, res := range results {
 					ms[i] = &metric.Metric{
-						LabelKeys:   []string{"request", "driver", "pool", "device"},
-						LabelValues: []string{res.Request, res.Driver, res.Pool, res.Device},
+						LabelKeys:   []string{"request", "driver", "pool", "device", "share_id"},
+						LabelValues: []string{res.Request, res.Driver, res.Pool, res.Device, string(ptr.Deref(res.ShareID, ""))},
 						Value:       1,
 					}
 				}
@@ -116,11 +122,55 @@ var (
 				}
 			}),
 		),
+		*generator.NewFamilyGeneratorWithStability(
+			descResourceClaimAnnotationsName,
+			descResourceClaimAnnotationsHelp,
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapResourceClaimFunc(func(rc *resourcev1.ResourceClaim) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
+				keys, values := createPrometheusLabelKeysValues("annotation", rc.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   keys,
+							LabelValues: values,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			descResourceClaimLabelsName,
+			descResourceClaimLabelsHelp,
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapResourceClaimFunc(func(rc *resourcev1.ResourceClaim) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
+				keys, values := createPrometheusLabelKeysValues("label", rc.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   keys,
+							LabelValues: values,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
-)
+}
 
-func wrapResourceClaimFunc(f func(*resourcev1.ResourceClaim) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapResourceClaimFunc(f func(*resourcev1.ResourceClaim) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		rc := obj.(*resourcev1.ResourceClaim)
 
 		metricFamily := f(rc)

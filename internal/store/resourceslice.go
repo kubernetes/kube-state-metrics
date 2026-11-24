@@ -34,8 +34,14 @@ import (
 
 var (
 	descResourceSliceLabelsDefaultLabels = []string{"resourceslice"}
+	descResourceSliceAnnotationsName     = "kube_resourceslice_annotations"
+	descResourceSliceAnnotationsHelp     = "Kubernetes annotations converted to Prometheus labels."
+	descResourceSliceLabelsName          = "kube_resourceslice_labels" //nolint:gosec
+	descResourceSliceLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
+)
 
-	resourceSliceMetricFamilies = []generator.FamilyGenerator{
+func resourceSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
+	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
 			"kube_resourceslice_created",
 			"Unix creation timestamp",
@@ -67,7 +73,7 @@ var (
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"driver", "pool", "node", "node_selection"},
-							LabelValues: []string{rs.Spec.Driver, rs.Spec.Pool.Name, ptr.Deref(rs.Spec.NodeName, ""), resourceSliceNodeSelection(rs)},
+							LabelValues: []string{rs.Spec.Driver, rs.Spec.Pool.Name, resourceSliceNodeName(rs), resourceSliceNodeSelection(rs)},
 							Value:       1,
 						},
 					},
@@ -85,18 +91,62 @@ var (
 					Metrics: []*metric.Metric{
 						{
 							LabelKeys:   []string{"driver", "pool", "node"},
-							LabelValues: []string{rs.Spec.Driver, rs.Spec.Pool.Name, ptr.Deref(rs.Spec.NodeName, "")},
+							LabelValues: []string{rs.Spec.Driver, rs.Spec.Pool.Name, resourceSliceNodeName(rs)},
 							Value:       float64(len(rs.Spec.Devices)),
 						},
 					},
 				}
 			}),
 		),
+		*generator.NewFamilyGeneratorWithStability(
+			descResourceSliceAnnotationsName,
+			descResourceSliceAnnotationsHelp,
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapResourceSliceFunc(func(rs *resourcev1.ResourceSlice) *metric.Family {
+				if len(allowAnnotationsList) == 0 {
+					return &metric.Family{}
+				}
+				keys, values := createPrometheusLabelKeysValues("annotation", rs.Annotations, allowAnnotationsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   keys,
+							LabelValues: values,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
+		*generator.NewFamilyGeneratorWithStability(
+			descResourceSliceLabelsName,
+			descResourceSliceLabelsHelp,
+			metric.Gauge,
+			basemetrics.ALPHA,
+			"",
+			wrapResourceSliceFunc(func(rs *resourcev1.ResourceSlice) *metric.Family {
+				if len(allowLabelsList) == 0 {
+					return &metric.Family{}
+				}
+				keys, values := createPrometheusLabelKeysValues("label", rs.Labels, allowLabelsList)
+				return &metric.Family{
+					Metrics: []*metric.Metric{
+						{
+							LabelKeys:   keys,
+							LabelValues: values,
+							Value:       1,
+						},
+					},
+				}
+			}),
+		),
 	}
-)
+}
 
-func wrapResourceSliceFunc(f func(*resourcev1.ResourceSlice) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapResourceSliceFunc(f func(*resourcev1.ResourceSlice) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		rs := obj.(*resourcev1.ResourceSlice)
 
 		metricFamily := f(rs)
@@ -109,11 +159,16 @@ func wrapResourceSliceFunc(f func(*resourcev1.ResourceSlice) *metric.Family) fun
 	}
 }
 
+// resourceSliceNodeName returns the node the slice is local to, if any.
+func resourceSliceNodeName(rs *resourcev1.ResourceSlice) string {
+	return ptr.Deref(rs.Spec.NodeName, "")
+}
+
 // resourceSliceNodeSelection reports which of the mutually exclusive node
 // selection fields is set on the slice.
 func resourceSliceNodeSelection(rs *resourcev1.ResourceSlice) string {
 	switch {
-	case ptr.Deref(rs.Spec.NodeName, "") != "":
+	case resourceSliceNodeName(rs) != "":
 		return "node_name"
 	case rs.Spec.NodeSelector != nil:
 		return "node_selector"
@@ -126,14 +181,12 @@ func resourceSliceNodeSelection(rs *resourcev1.ResourceSlice) string {
 	}
 }
 
-func createResourceSliceListWatch(kubeClient clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
+func createResourceSliceListWatch(kubeClient clientset.Interface, _ string, _ string) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			opts.FieldSelector = fieldSelector
 			return kubeClient.ResourceV1().ResourceSlices().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			opts.FieldSelector = fieldSelector
 			return kubeClient.ResourceV1().ResourceSlices().Watch(context.TODO(), opts)
 		},
 	}

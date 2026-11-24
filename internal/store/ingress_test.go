@@ -136,6 +136,18 @@ func TestIngressStore(t *testing.T) {
 										PathType: ptr.To(networkingv1.PathTypeExact),
 									},
 									{
+										Path: "/named-port",
+										Backend: networkingv1.IngressBackend{
+											Service: &networkingv1.IngressServiceBackend{
+												Name: "someservice",
+												Port: networkingv1.ServiceBackendPort{
+													Name: "http",
+												},
+											},
+										},
+										PathType: ptr.To(networkingv1.PathTypePrefix),
+									},
+									{
 										Path: "/somepath2",
 										Backend: networkingv1.IngressBackend{
 											Resource: &v1.TypedLocalObjectReference{
@@ -157,6 +169,7 @@ func TestIngressStore(t *testing.T) {
 				kube_ingress_info{namespace="ns4",ingress="ingress4",ingressclass="_default"} 1
 				kube_ingress_created{namespace="ns4",ingress="ingress4"} 1.501569018e+09
 				kube_ingress_path{namespace="ns4",ingress="ingress4",host="somehost",path="/somepath",path_type="Exact",service_name="someservice",service_port="1234"} 1
+				kube_ingress_path{namespace="ns4",ingress="ingress4",host="somehost",path="/named-port",path_type="Prefix",service_name="someservice",service_port="http"} 1
 				kube_ingress_path{namespace="ns4",ingress="ingress4",host="somehost",path="/somepath2",path_type="",resource_api_group="",resource_kind="somekind",resource_name="somename"} 1
 `,
 			MetricNames: []string{"kube_ingress_info", "kube_ingress_metadata_resource_version", "kube_ingress_created", "kube_ingress_labels", "kube_ingress_path", "kube_ingress_tls"},

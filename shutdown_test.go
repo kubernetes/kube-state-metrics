@@ -105,12 +105,21 @@ func TestShutdownOnSIGTERM(t *testing.T) {
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
+	// done carries the Wait result for the assertions; exited is closed once
+	// Wait has returned, so cleanup stays synchronized with the process even
+	// after the test has consumed the result from done.
 	done := make(chan error, 1)
-	go func() { done <- cmd.Wait() }()
+	exited := make(chan struct{})
+	go func() {
+		done <- cmd.Wait()
+		close(exited)
+	}()
 	defer func() {
-		if cmd.ProcessState == nil {
+		select {
+		case <-exited:
+		default:
 			_ = cmd.Process.Kill()
-			<-done
+			<-exited
 		}
 	}()
 
@@ -152,5 +161,82 @@ func TestShutdownOnSIGTERM(t *testing.T) {
 
 	if !strings.Contains(output.String(), "shutting down") {
 		t.Fatalf("kube-state-metrics did not go through the shutdown path\n%s", output.String())
+	}
+}
+
+// TestShutdownOnSIGTERMDuringStartup checks that SIGTERM interrupts the startup
+// request to an unresponsive API server, so the process exits promptly with code
+// 0 instead of waiting for the client timeout, which can outlast the default
+// termination grace period.
+func TestShutdownOnSIGTERMDuringStartup(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds and runs the binary")
+	}
+
+	versionRequested := make(chan struct{})
+	var once sync.Once
+	apiserver := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/version" {
+			once.Do(func() { close(versionRequested) })
+		}
+		// Never answer: hold the request until the client gives up.
+		<-r.Context().Done()
+	}))
+	defer apiserver.Close()
+
+	bin := filepath.Join(t.TempDir(), "kube-state-metrics")
+	build := exec.Command("go", "build", "-o", bin, ".") //nolint:gosec // test binary path
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("go build: %v\n%s", err, out)
+	}
+
+	var output syncBuffer
+	cmd := exec.Command(bin, //nolint:gosec // the binary built above
+		"--apiserver="+apiserver.URL,
+		"--resources=configmaps",
+		"--host=127.0.0.1",
+		"--port="+strconv.Itoa(freePort(t)),
+		"--telemetry-host=127.0.0.1",
+		"--telemetry-port="+strconv.Itoa(freePort(t)),
+	)
+	cmd.Stdout = &output
+	cmd.Stderr = &output
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	exited := make(chan struct{})
+	go func() {
+		done <- cmd.Wait()
+		close(exited)
+	}()
+	defer func() {
+		select {
+		case <-exited:
+		default:
+			_ = cmd.Process.Kill()
+			<-exited
+		}
+	}()
+
+	select {
+	case <-versionRequested:
+	case err := <-done:
+		t.Fatalf("kube-state-metrics exited before contacting the API server: %v\n%s", err, output.String())
+	case <-time.After(30 * time.Second):
+		t.Fatalf("kube-state-metrics did not contact the API server\n%s", output.String())
+	}
+
+	if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
+		t.Fatal(err)
+	}
+
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("kube-state-metrics did not exit cleanly on SIGTERM during startup: %v\n%s", err, output.String())
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatalf("kube-state-metrics did not exit within 10s of SIGTERM during startup\n%s", output.String())
 	}
 }

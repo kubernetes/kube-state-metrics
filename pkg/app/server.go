@@ -283,7 +283,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 	proc.StartReaper()
 
 	storeBuilder.WithUtilOptions(opts)
-	kubeClient, err := util.CreateKubeClient(opts.Apiserver, opts.Kubeconfig)
+	kubeClient, err := util.CreateKubeClientWithContext(ctx, opts.Apiserver, opts.Kubeconfig)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}

@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"strconv"
 
 	resourcev1 "k8s.io/api/resource/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -99,7 +100,7 @@ func resourceClaimMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
-			"kube_resourceclaim_allocation_device_info",
+			"kube_resourceclaim_status_allocation_device_info",
 			"Allocation information about the devices allocated to the resource claim.",
 			metric.Gauge,
 			basemetrics.ALPHA,
@@ -112,8 +113,8 @@ func resourceClaimMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 				ms := make([]*metric.Metric, len(results))
 				for i, res := range results {
 					ms[i] = &metric.Metric{
-						LabelKeys:   []string{"request", "driver", "pool", "device", "share_id"},
-						LabelValues: []string{res.Request, res.Driver, res.Pool, res.Device, string(ptr.Deref(res.ShareID, ""))},
+						LabelKeys:   []string{"request", "driver", "pool", "device", "share_id", "admin_access"},
+						LabelValues: []string{res.Request, res.Driver, res.Pool, res.Device, string(ptr.Deref(res.ShareID, "")), strconv.FormatBool(ptr.Deref(res.AdminAccess, false))},
 						Value:       1,
 					}
 				}

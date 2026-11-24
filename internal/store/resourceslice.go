@@ -18,6 +18,7 @@ package store
 
 import (
 	"context"
+	"strconv"
 
 	resourcev1 "k8s.io/api/resource/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,8 +73,8 @@ func resourceSliceMetricFamilies(allowAnnotationsList, allowLabelsList []string)
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"driver", "pool", "node", "node_selection"},
-							LabelValues: []string{rs.Spec.Driver, rs.Spec.Pool.Name, resourceSliceNodeName(rs), resourceSliceNodeSelection(rs)},
+							LabelKeys:   []string{"driver", "pool", "pool_generation", "pool_resource_slice_count", "node", "node_selection"},
+							LabelValues: []string{rs.Spec.Driver, rs.Spec.Pool.Name, strconv.FormatInt(rs.Spec.Pool.Generation, 10), strconv.FormatInt(rs.Spec.Pool.ResourceSliceCount, 10), resourceSliceNodeName(rs), resourceSliceNodeSelection(rs)},
 							Value:       1,
 						},
 					},

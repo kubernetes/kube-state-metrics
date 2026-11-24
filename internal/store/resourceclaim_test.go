@@ -36,8 +36,8 @@ func TestResourceClaimStore(t *testing.T) {
 		# TYPE kube_resourceclaim_status_allocated gauge
 		# HELP kube_resourceclaim_status_reserved_for Indicates which consumers have currently reserved the resource claim.
 		# TYPE kube_resourceclaim_status_reserved_for gauge
-		# HELP kube_resourceclaim_allocation_device_info Allocation information about the devices allocated to the resource claim.
-		# TYPE kube_resourceclaim_allocation_device_info gauge
+		# HELP kube_resourceclaim_status_allocation_device_info Allocation information about the devices allocated to the resource claim.
+		# TYPE kube_resourceclaim_status_allocation_device_info gauge
 	`
 
 	cases := []generateMetricsTestCase{
@@ -58,6 +58,13 @@ func TestResourceClaimStore(t *testing.T) {
 									Pool:    "pool-1",
 									Device:  "device-1",
 								},
+								{
+									Request:     "req-monitor",
+									Driver:      "driver-1",
+									Pool:        "pool-1",
+									Device:      "device-1",
+									AdminAccess: ptr.To(true),
+								},
 							},
 						},
 					},
@@ -75,13 +82,14 @@ func TestResourceClaimStore(t *testing.T) {
 				kube_resourceclaim_created{namespace="ns-1",resourceclaim="claim-1"} 1.5e+09
 				kube_resourceclaim_status_allocated{namespace="ns-1",resourceclaim="claim-1"} 1
 				kube_resourceclaim_status_reserved_for{consumer_apigroup="apps",consumer_name="dep-1",consumer_resource="deployments",consumer_uid="uid-1",namespace="ns-1",resourceclaim="claim-1"} 1
-				kube_resourceclaim_allocation_device_info{driver="driver-1",device="device-1",namespace="ns-1",pool="pool-1",request="req-1",resourceclaim="claim-1",share_id=""} 1
+				kube_resourceclaim_status_allocation_device_info{admin_access="false",driver="driver-1",device="device-1",namespace="ns-1",pool="pool-1",request="req-1",resourceclaim="claim-1",share_id=""} 1
+				kube_resourceclaim_status_allocation_device_info{admin_access="true",device="device-1",driver="driver-1",namespace="ns-1",pool="pool-1",request="req-monitor",resourceclaim="claim-1",share_id=""} 1
 			`,
 			MetricNames: []string{
 				"kube_resourceclaim_created",
 				"kube_resourceclaim_status_allocated",
 				"kube_resourceclaim_status_reserved_for",
-				"kube_resourceclaim_allocation_device_info",
+				"kube_resourceclaim_status_allocation_device_info",
 			},
 		},
 		{
@@ -93,14 +101,14 @@ func TestResourceClaimStore(t *testing.T) {
 				# TYPE kube_resourceclaim_status_allocated gauge
 				# HELP kube_resourceclaim_status_reserved_for Indicates which consumers have currently reserved the resource claim.
 				# TYPE kube_resourceclaim_status_reserved_for gauge
-				# HELP kube_resourceclaim_allocation_device_info Allocation information about the devices allocated to the resource claim.
-				# TYPE kube_resourceclaim_allocation_device_info gauge
+				# HELP kube_resourceclaim_status_allocation_device_info Allocation information about the devices allocated to the resource claim.
+				# TYPE kube_resourceclaim_status_allocation_device_info gauge
 				kube_resourceclaim_status_allocated{namespace="ns-1",resourceclaim="claim-unallocated"} 0
 			`,
 			MetricNames: []string{
 				"kube_resourceclaim_status_allocated",
 				"kube_resourceclaim_status_reserved_for",
-				"kube_resourceclaim_allocation_device_info",
+				"kube_resourceclaim_status_allocation_device_info",
 			},
 		},
 		{
@@ -118,12 +126,12 @@ func TestResourceClaimStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_resourceclaim_allocation_device_info Allocation information about the devices allocated to the resource claim.
-				# TYPE kube_resourceclaim_allocation_device_info gauge
-				kube_resourceclaim_allocation_device_info{device="device-1",driver="driver-1",namespace="ns-1",pool="pool-1",request="req-1",resourceclaim="claim-shared",share_id="share-a"} 1
-				kube_resourceclaim_allocation_device_info{device="device-1",driver="driver-1",namespace="ns-1",pool="pool-1",request="req-1",resourceclaim="claim-shared",share_id="share-b"} 1
+				# HELP kube_resourceclaim_status_allocation_device_info Allocation information about the devices allocated to the resource claim.
+				# TYPE kube_resourceclaim_status_allocation_device_info gauge
+				kube_resourceclaim_status_allocation_device_info{admin_access="false",device="device-1",driver="driver-1",namespace="ns-1",pool="pool-1",request="req-1",resourceclaim="claim-shared",share_id="share-a"} 1
+				kube_resourceclaim_status_allocation_device_info{admin_access="false",device="device-1",driver="driver-1",namespace="ns-1",pool="pool-1",request="req-1",resourceclaim="claim-shared",share_id="share-b"} 1
 			`,
-			MetricNames: []string{"kube_resourceclaim_allocation_device_info"},
+			MetricNames: []string{"kube_resourceclaim_status_allocation_device_info"},
 		},
 		{
 			AllowAnnotationsList: []string{"team"},

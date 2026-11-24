@@ -49,7 +49,9 @@ func TestResourceSliceStore(t *testing.T) {
 					Driver:   "driver-1",
 					NodeName: ptr.To("node-1"),
 					Pool: resourcev1.ResourcePool{
-						Name: "pool-1",
+						Name:               "pool-1",
+						Generation:         3,
+						ResourceSliceCount: 2,
 					},
 					Devices: []resourcev1.Device{
 						{
@@ -63,7 +65,7 @@ func TestResourceSliceStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_resourceslice_created{resourceslice="slice-1"} 1.5e+09
-				kube_resourceslice_info{driver="driver-1",node="node-1",node_selection="node_name",pool="pool-1",resourceslice="slice-1"} 1
+				kube_resourceslice_info{driver="driver-1",node="node-1",node_selection="node_name",pool="pool-1",pool_generation="3",pool_resource_slice_count="2",resourceslice="slice-1"} 1
 				kube_resourceslice_devices{driver="driver-1",node="node-1",pool="pool-1",resourceslice="slice-1"} 2
 			`,
 			MetricNames: []string{
@@ -84,7 +86,7 @@ func TestResourceSliceStore(t *testing.T) {
 			Want: `
 				# HELP kube_resourceslice_info Information about resource slice.
 				# TYPE kube_resourceslice_info gauge
-				kube_resourceslice_info{driver="driver-1",node="",node_selection="node_selector",pool="pool-1",resourceslice="slice-selector"} 1
+				kube_resourceslice_info{driver="driver-1",node="",node_selection="node_selector",pool="pool-1",pool_generation="0",pool_resource_slice_count="0",resourceslice="slice-selector"} 1
 			`,
 			MetricNames: []string{"kube_resourceslice_info"},
 		},
@@ -100,7 +102,7 @@ func TestResourceSliceStore(t *testing.T) {
 			Want: `
 				# HELP kube_resourceslice_info Information about resource slice.
 				# TYPE kube_resourceslice_info gauge
-				kube_resourceslice_info{driver="driver-1",node="",node_selection="all_nodes",pool="pool-1",resourceslice="slice-all"} 1
+				kube_resourceslice_info{driver="driver-1",node="",node_selection="all_nodes",pool="pool-1",pool_generation="0",pool_resource_slice_count="0",resourceslice="slice-all"} 1
 			`,
 			MetricNames: []string{"kube_resourceslice_info"},
 		},
@@ -116,7 +118,7 @@ func TestResourceSliceStore(t *testing.T) {
 			Want: `
 				# HELP kube_resourceslice_info Information about resource slice.
 				# TYPE kube_resourceslice_info gauge
-				kube_resourceslice_info{driver="driver-1",node="",node_selection="per_device",pool="pool-1",resourceslice="slice-per-device"} 1
+				kube_resourceslice_info{driver="driver-1",node="",node_selection="per_device",pool="pool-1",pool_generation="0",pool_resource_slice_count="0",resourceslice="slice-per-device"} 1
 			`,
 			MetricNames: []string{"kube_resourceslice_info"},
 		},

@@ -166,6 +166,9 @@ func TestEndpointSliceStore(t *testing.T) {
 							ForZones: []discoveryv1.ForZone{
 								{Name: "zone1"},
 							},
+							ForNodes: []discoveryv1.ForNode{
+								{Name: "node1"},
+							},
 						},
 					},
 				},
@@ -175,13 +178,41 @@ func TestEndpointSliceStore(t *testing.T) {
 					# HELP kube_endpointslice_endpoints_hints Topology routing hints attached to endpoints
 					# TYPE kube_endpointslice_endpoints gauge
         			# TYPE kube_endpointslice_endpoints_hints gauge
-         			kube_endpointslice_endpoints_hints{address="10.0.0.1",endpointslice="test_endpointslice-endpoints",for_zone="zone1",namespace="test"} 1
+         			kube_endpointslice_endpoints_hints{address="10.0.0.1",endpointslice="test_endpointslice-endpoints",for_node="",for_zone="zone1",namespace="test"} 1
+					kube_endpointslice_endpoints_hints{address="10.0.0.1",endpointslice="test_endpointslice-endpoints",for_node="node1",for_zone="",namespace="test"} 1
          			kube_endpointslice_endpoints{address="10.0.0.1",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="host",namespace="test",ready="true",serving="true",targetref_kind="",targetref_name="",targetref_namespace="",terminating="false"} 1
 					kube_endpointslice_endpoints{address="192.168.1.10",endpoint_nodename="node",endpoint_zone="west",endpointslice="test_endpointslice-endpoints",hostname="host",namespace="test",ready="true",serving="true",targetref_kind="",targetref_name="",targetref_namespace="",terminating="false"} 1
 				`,
 
 			MetricNames: []string{
 				"kube_endpointslice_endpoints",
+				"kube_endpointslice_endpoints_hints",
+			},
+		},
+		{
+			// An endpoint carrying only node hints must still be reported.
+			Obj: &discoveryv1.EndpointSlice{
+				Name:        "test_endpointslice-node-hints",
+				Namespace:   "test",
+				AddressType: "IPv4",
+				Endpoints: []discoveryv1.Endpoint{
+					{
+						Addresses: []string{"10.0.0.2"},
+						Hints: &discoveryv1.EndpointHints{
+							ForNodes: []discoveryv1.ForNode{
+								{Name: "node2"},
+							},
+						},
+					},
+				},
+			},
+			Want: `
+					# HELP kube_endpointslice_endpoints_hints Topology routing hints attached to endpoints
+					# TYPE kube_endpointslice_endpoints_hints gauge
+					kube_endpointslice_endpoints_hints{address="10.0.0.2",endpointslice="test_endpointslice-node-hints",for_node="node2",for_zone="",namespace="test"} 1
+				`,
+			MetricNames: []string{
+				"kube_endpointslice_endpoints_hints",
 			},
 		},
 		{

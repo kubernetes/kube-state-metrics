@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/md5" //nolint:gosec
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -31,6 +32,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -173,15 +175,17 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		}
 	}
 
+	sLogger := slog.New(logr.ToSlogHandler(klog.Background()))
+
 	if opts.AutoGoMemlimit {
+		// Stops this run's refresh when it returns, including on an error or a config reload.
+		refreshCtx, cancelRefresh := context.WithCancel(ctx)
+		defer cancelRefresh()
 		if _, err := memlimit.Set(
 			memlimit.WithRatio(opts.AutoGoMemlimitRatio),
-			memlimit.WithProvider(
-				memlimit.ApplyFallback(
-					memlimit.FromCgroup,
-					memlimit.FromSystem,
-				),
-			),
+			memlimit.WithProvider(cgroupLimitWithFallback(memlimit.FromCgroup, memlimit.FromSystem)),
+			memlimit.WithRefreshInterval(refreshCtx, opts.AutoGoMemlimitRefreshInterval),
+			memlimit.WithLogger(sLogger),
 		); err != nil {
 			return fmt.Errorf("failed to set GOMEMLIMIT automatically: %w", err)
 		}
@@ -373,9 +377,6 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		WebConfigFile:      &tlsConfig,
 	}
 
-	handler := logr.ToSlogHandler(klog.Background())
-	sLogger := slog.New(handler)
-
 	// Run Telemetry server
 	{
 		g.Add(func() error {
@@ -411,6 +412,23 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 
 	klog.InfoS("Exited")
 	return nil
+}
+
+// cgroupLimitWithFallback falls back to system memory when no cgroup limit applies or none has been
+// read yet. Later cgroup read errors are returned, so a refresh keeps the previous GOMEMLIMIT.
+func cgroupLimitWithFallback(cgroup, system memlimit.Provider) memlimit.Provider {
+	var readCgroupLimit atomic.Bool
+	return func() (uint64, error) {
+		limit, err := cgroup()
+		if err == nil {
+			readCgroupLimit.Store(true)
+			return limit, nil
+		}
+		if errors.Is(err, memlimit.ErrNoLimit) || !readCgroupLimit.Load() {
+			return system()
+		}
+		return 0, err
+	}
 }
 
 func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *options.Options {

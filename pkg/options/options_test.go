@@ -22,6 +22,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -168,6 +169,15 @@ func TestValidate(t *testing.T) {
 		{
 			name:    "gomemlimit ratio of NaN",
 			mutate:  func(o *Options) { o.AutoGoMemlimitRatio = math.NaN() },
+			wantErr: true,
+		},
+		{
+			name:   "gomemlimit refresh interval",
+			mutate: func(o *Options) { o.AutoGoMemlimitRefreshInterval = time.Minute },
+		},
+		{
+			name:    "negative gomemlimit refresh interval",
+			mutate:  func(o *Options) { o.AutoGoMemlimitRefreshInterval = -time.Second },
 			wantErr: true,
 		},
 		{

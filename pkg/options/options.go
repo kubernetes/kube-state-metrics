@@ -82,6 +82,8 @@ type Options struct {
 	ServerIdleTimeout       time.Duration `yaml:"server_idle_timeout"`
 	ServerReadHeaderTimeout time.Duration `yaml:"server_read_header_timeout"`
 
+	AutoGoMemlimitRefreshInterval time.Duration `yaml:"auto-gomemlimit-refresh-interval"`
+
 	Shard                int32 `yaml:"shard"`
 	AutoGoMemlimit       bool  `yaml:"auto-gomemlimit"`
 	CustomResourcesOnly  bool  `yaml:"custom_resources_only"`
@@ -203,6 +205,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	o.cmd.Flags().BoolVar(&o.AuthFilter, "auth-filter", false, "If true, requires authentication and authorization through Kubernetes API to access metrics endpoints")
 	o.cmd.Flags().BoolVar(&o.AutoGoMemlimit, "auto-gomemlimit", false, "Automatically set GOMEMLIMIT to match container or system memory limit. (experimental)")
 	o.cmd.Flags().Float64Var(&o.AutoGoMemlimitRatio, "auto-gomemlimit-ratio", float64(0.9), "The ratio of reserved GOMEMLIMIT memory to the detected maximum container or system memory. (experimental)")
+	o.cmd.Flags().DurationVar(&o.AutoGoMemlimitRefreshInterval, "auto-gomemlimit-refresh-interval", 0, "Interval at which to re-detect the container or system memory limit and update GOMEMLIMIT, for limits that change at runtime such as with in-place pod resize. 0 detects the limit only once at startup. Only used with --auto-gomemlimit. (experimental)")
 	o.cmd.Flags().StringVar(&o.CustomResourceConfig, "custom-resource-state-config", "", "Inline Custom Resource State Metrics config YAML (experimental)")
 	o.cmd.Flags().StringVar(&o.CustomResourceConfigFile, "custom-resource-state-config-file", "", "Path to a Custom Resource State Metrics config file (experimental)")
 	o.cmd.Flags().BoolVar(&o.ContinueWithoutCustomResourceConfigFile, "continue-without-custom-resource-state-config-file", false, "If true, Kube-state-metrics continues to run even if the config file specified by --custom-resource-state-config-file is not present. This is useful for scenarios where config file is not provided at startup but is provided later, for e.g., via configmap. Kube-state-metrics will not exit with an error if the custom-resource-state-config file is not found, instead watches and reloads when it is created.")
@@ -255,6 +258,10 @@ func (o *Options) Validate() error {
 	// NaN compares false against every bound, so reject it explicitly.
 	if math.IsNaN(o.AutoGoMemlimitRatio) || o.AutoGoMemlimitRatio <= 0.0 || o.AutoGoMemlimitRatio > 1.0 {
 		return fmt.Errorf("value for --auto-gomemlimit-ratio=%f must be greater than 0 and less than or equal to 1", o.AutoGoMemlimitRatio)
+	}
+
+	if o.AutoGoMemlimitRefreshInterval < 0 {
+		return fmt.Errorf("value for --auto-gomemlimit-refresh-interval=%s must be equal or greater than 0", o.AutoGoMemlimitRefreshInterval)
 	}
 
 	if o.ObjectLimit < 0 {

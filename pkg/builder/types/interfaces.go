@@ -31,6 +31,13 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
+// ApiextensionsClientSetter is implemented by builders that can build the
+// customresourcedefinitions store. It is kept out of BuilderInterface so that
+// adding it does not break existing BuilderInterface implementations.
+type ApiextensionsClientSetter interface {
+	WithApiextensionsClient(c apiextensionsclientset.Interface)
+}
+
 // BuilderInterface represent all methods that a Builder should implements
 type BuilderInterface interface {
 	WithMetrics(r prometheus.Registerer)
@@ -40,7 +47,6 @@ type BuilderInterface interface {
 	WithSharding(shard int32, totalShards int)
 	WithContext(ctx context.Context)
 	WithKubeClient(c clientset.Interface)
-	WithApiextensionsClient(c apiextensionsclientset.Interface)
 	WithCustomResourceClients(cs map[string]any)
 	WithUsingAPIServerCache(u bool)
 	WithFamilyGeneratorFilter(l generator.FamilyGeneratorFilter)

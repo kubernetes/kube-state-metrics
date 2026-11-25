@@ -37,6 +37,9 @@ import (
 // New internal Builder methods should be added to the public BuilderInterface.
 var _ ksmtypes.BuilderInterface = &Builder{}
 
+// The public Builder can also build the customresourcedefinitions store.
+var _ ksmtypes.ApiextensionsClientSetter = &Builder{}
+
 // Builder helps to build store. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
 type Builder struct {
@@ -98,7 +101,9 @@ func (b *Builder) WithKubeClient(c clientset.Interface) {
 
 // WithApiextensionsClient sets the apiextensionsClient property of a Builder.
 func (b *Builder) WithApiextensionsClient(c apiextensionsclientset.Interface) {
-	b.internal.WithApiextensionsClient(c)
+	if s, ok := b.internal.(ksmtypes.ApiextensionsClientSetter); ok {
+		s.WithApiextensionsClient(c)
+	}
 }
 
 // WithCustomResourceClients sets the customResourceClients property of a Builder.

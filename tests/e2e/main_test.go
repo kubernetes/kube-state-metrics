@@ -280,14 +280,15 @@ func TestDefaultCollectorMetricsAvailable(t *testing.T) {
 
 	resources := map[string]struct{}{}
 	nonDefaultResources := map[string]bool{
-		"clusterrole":           true,
-		"clusterrolebinding":    true,
-		"endpoint":              true,
-		"ingressclass":          true,
-		"role":                  true,
-		"rolebinding":           true,
-		"serviceaccount":        true,
-		"volumeattributesclass": true,
+		"clusterrole":              true,
+		"clusterrolebinding":       true,
+		"customresourcedefinition": true,
+		"endpoint":                 true,
+		"ingressclass":             true,
+		"role":                     true,
+		"rolebinding":              true,
+		"serviceaccount":           true,
+		"volumeattributesclass":    true,
 	}
 	nonResources := map[string]bool{
 		"builder":   true,

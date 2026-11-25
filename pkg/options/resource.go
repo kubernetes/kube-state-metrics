@@ -29,7 +29,6 @@ var (
 		"certificatesigningrequests":        struct{}{},
 		"configmaps":                        struct{}{},
 		"cronjobs":                          struct{}{},
-		"customresourcedefinitions":         struct{}{},
 		"daemonsets":                        struct{}{},
 		"deployments":                       struct{}{},
 		"endpointslices":                    struct{}{},

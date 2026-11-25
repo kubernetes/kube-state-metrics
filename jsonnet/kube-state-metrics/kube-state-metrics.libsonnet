@@ -402,7 +402,7 @@
       // extending the default container from above
       local c = ksm.deployment.spec.template.spec.containers[0] {
         args: [
-          '--resources=certificatesigningrequests,configmaps,cronjobs,customresourcedefinitions,daemonsets,deployments,endpointslices,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingadmissionpolicies,mutatingadmissionpolicybindings,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingadmissionpolicies,validatingadmissionpolicybindings,validatingwebhookconfigurations,volumeattachments',
+          '--resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpointslices,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingadmissionpolicies,mutatingadmissionpolicybindings,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingadmissionpolicies,validatingadmissionpolicybindings,validatingwebhookconfigurations,volumeattachments',
         ],
       };
       std.mergePatch(

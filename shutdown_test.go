@@ -202,10 +202,14 @@ func (p *ksmProcess) metricsAddr() string {
 	return net.JoinHostPort("127.0.0.1", strconv.Itoa(p.port))
 }
 
+// scrapeClient bounds each scrape, including reading the body, so a stalled
+// server fails the test instead of blocking past the polling deadline.
+var scrapeClient = &http.Client{Timeout: 10 * time.Second}
+
 // scrape fetches /metrics and returns an error unless it is served in full,
 // including the series of the fake API server's ConfigMap.
 func (p *ksmProcess) scrape() error {
-	resp, err := http.Get("http://" + p.metricsAddr() + "/metrics") //nolint:gosec // local test server
+	resp, err := scrapeClient.Get("http://" + p.metricsAddr() + "/metrics") //nolint:gosec // local test server
 	if err != nil {
 		return err
 	}

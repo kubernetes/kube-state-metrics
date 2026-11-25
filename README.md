@@ -407,9 +407,10 @@ On `SIGTERM`, kube-state-metrics first keeps serving for `--shutdown-delay`
 (default `0s`), so that Prometheus' service discovery stops scraping the pod
 before it goes away. It then stops accepting connections, gives in-flight
 scrapes up to 3 seconds to finish, and only then stops its informers. The
-example manifests set `--shutdown-delay=5s`; keep the delay plus those 3
-seconds below the pod's `terminationGracePeriodSeconds` (30 seconds by
-default). Configuration reloads do not wait for the delay.
+delay is off by default; a few seconds, for example `--shutdown-delay=5s`,
+is usually enough. Keep the delay plus those 3 seconds below the pod's
+`terminationGracePeriodSeconds` (30 seconds by default). Configuration
+reloads do not wait for the delay.
 
 #### Limited privileges environment
 

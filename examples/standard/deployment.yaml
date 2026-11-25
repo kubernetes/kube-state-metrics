@@ -21,9 +21,7 @@ spec:
     spec:
       automountServiceAccountToken: true
       containers:
-        - args:
-            - --shutdown-delay=5s
-          image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.20.0
+        - image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.20.0
           livenessProbe:
             httpGet:
               path: /livez

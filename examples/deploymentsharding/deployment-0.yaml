@@ -25,7 +25,6 @@ spec:
       automountServiceAccountToken: true
       containers:
         - args:
-            - --shutdown-delay=5s
             - --shard=0
             - --total-shards=3
           image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.20.0

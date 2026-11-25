@@ -258,7 +258,8 @@ func (c *compiledGauge) Values(v any) (result []eachValue, errs []error) {
 				// "[...]" and not "[]".
 				len(sValueFrom) > 2 {
 				extractedValueFrom := sValueFrom[1 : len(sValueFrom)-1]
-				if key == extractedValueFrom {
+				// A nil entry is handled by the fallback below like any other unresolved value.
+				if key == extractedValueFrom && it != nil {
 					gotFloat, err := toFloat64(it, c.NilIsZero)
 					if err != nil {
 						onError(fmt.Errorf("[%s]: %w", key, err))
@@ -475,21 +476,10 @@ func compareLabels(a, b map[string]string) int {
 }
 
 func (c compiledGauge) value(it any) (*eachValue, error) {
-	labels := make(map[string]string)
 	got := c.ValueFrom.Get(it)
-	// If `valueFrom` was not resolved, respect `NilIsZero` and return.
-	if got == nil {
-		if c.NilIsZero {
-			return &eachValue{
-				Labels: labels,
-				Value:  0,
-			}, nil
-		}
-		// no it means no iterables were passed down, meaning that the path resolution never happened
-		if it == nil {
-			return nil, fmt.Errorf("got nil while resolving path")
-		}
-		// Don't error if there was not a type-casting issue (`toFloat64`).
+	// An unresolved `path` or `valueFrom` (e.g. a status field that is not
+	// populated yet) produces no metric and no error, unless `NilIsZero` is set.
+	if got == nil && !c.NilIsZero {
 		return nil, nil
 	}
 	value, err := toFloat64(got, c.NilIsZero)
@@ -497,7 +487,7 @@ func (c compiledGauge) value(it any) (*eachValue, error) {
 		return nil, fmt.Errorf("%s: %w", c.ValueFrom, err)
 	}
 	return &eachValue{
-		Labels: labels,
+		Labels: make(map[string]string),
 		Value:  value,
 	}, nil
 }

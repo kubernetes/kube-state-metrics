@@ -54,7 +54,11 @@ func init() {
 				"type-a": 1,
 				"type-b": 3,
 			},
-			"phase": "foo",
+			"phase":  "foo",
+			"sparse": Array{nil, 2},
+			"nullable": Obj{
+				"value": nil,
+			},
 			"sub": Obj{
 				"type-a": Obj{
 					"active": 1,
@@ -299,9 +303,37 @@ func Test_values(t *testing.T) {
 				"name": mustCompilePath(t, "name"),
 			},
 			ValueFrom: mustCompilePath(t, "creationTimestamp"),
+		}, wantResult: nil, wantErrors: nil},
+		{name: "non-numeric value", each: &compiledGauge{
+			path: mustCompilePath(t, "metadata", "name"),
 		}, wantResult: nil, wantErrors: []error{
-			errors.New("[foo]: got nil while resolving path"),
+			errors.New("[metadata,name]: []: strconv.ParseFloat: parsing \"foo\": invalid syntax"),
 		}},
+		{name: "nil element in array", each: &compiledGauge{
+			path: mustCompilePath(t, "status", "sparse"),
+		}, wantResult: []eachValue{
+			newEachValue(t, 2),
+		}, wantErrors: nil},
+		{name: "non-existent path with nilIsZero", each: &compiledGauge{
+			path:      mustCompilePath(t, "status", "non-existent"),
+			ValueFrom: mustCompilePath(t, "value"),
+			NilIsZero: true,
+		}, wantResult: []eachValue{
+			newEachValue(t, 0),
+		}, wantErrors: nil},
+		{name: "nil value at valueFrom key in map", each: &compiledGauge{
+			path:         mustCompilePath(t, "status", "nullable"),
+			labelFromKey: "key",
+			ValueFrom:    mustCompilePath(t, "value"),
+		}, wantResult: nil, wantErrors: nil},
+		{name: "nil value at valueFrom key in map with nilIsZero", each: &compiledGauge{
+			path:         mustCompilePath(t, "status", "nullable"),
+			labelFromKey: "key",
+			ValueFrom:    mustCompilePath(t, "value"),
+			NilIsZero:    true,
+		}, wantResult: []eachValue{
+			newEachValue(t, 0, "key", "value"),
+		}, wantErrors: nil},
 		{name: "exist path but valueFrom path is non-existent single", each: &compiledGauge{
 			path:      mustCompilePath(t, "spec", "replicas"),
 			ValueFrom: mustCompilePath(t, "non-existent"),

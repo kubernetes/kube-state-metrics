@@ -22,6 +22,7 @@ spec:
       automountServiceAccountToken: true
       containers:
         - args:
+            - --shutdown-delay=5s
             - --resources=pods
             - --track-unscheduled-pods
           image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.20.0

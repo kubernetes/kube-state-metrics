@@ -58,8 +58,10 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 
 	// runs tracks the current run, so shutdown can wait for it to finish.
 	var runs sync.WaitGroup
-	ctx, cancel := context.WithCancel(sigCtx)
-	defer cancel()
+	// A run cancelled for a reload is told so by its cancel cause, so it skips
+	// the shutdown delay that applies on termination.
+	ctx, cancel := context.WithCancelCause(sigCtx)
+	defer cancel(nil)
 
 	// The custom resource config file and the kubeconfig can be set by the
 	// options config file, so the files in effect can change with each reload.
@@ -90,7 +92,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 			crcWatch.watch(next.CustomResourceConfigFile, restart)
 			kubeconfigWatch.watch(next.Kubeconfig, restart)
 		}
-		cancel()
+		cancel(app.ErrConfigReload)
 		// Wait for the ports to be released.
 		select {
 		case <-time.After(3 * time.Second):
@@ -98,7 +100,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 			return
 		}
 		klog.InfoS("Restarting kube-state-metrics, metrics will be reset")
-		ctx, cancel = context.WithCancel(sigCtx)
+		ctx, cancel = context.WithCancelCause(sigCtx)
 		runCtx := ctx
 		runs.Go(func() { KSMRunOrDie(runCtx) })
 	}

@@ -21,6 +21,7 @@ spec:
       automountServiceAccountToken: true
       containers:
         - args:
+            - --shutdown-delay=5s
             - --resources=pods
             - --node=$(NODE_NAME)
           env:

@@ -32,6 +32,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -77,6 +78,16 @@ const (
 	livezPath   = "/livez"
 	readyzPath  = "/readyz"
 )
+
+// ErrConfigReload is the cause to cancel the run context with, using
+// context.WithCancelCause, when the run is stopped to restart it with a
+// reloaded configuration. Such a run stops without waiting for the shutdown
+// delay, so reloads stay fast.
+var ErrConfigReload = errors.New("configuration reload")
+
+// serverShutdownTimeout bounds how long in-flight requests are given to finish
+// once the servers shut down.
+const serverShutdownTimeout = 3 * time.Second
 
 // RunKubeStateMetricsWrapper runs KSM with context cancellation. Cancelling
 // ctx, for a config reload or on shutdown, stops the run without an error.
@@ -313,14 +324,11 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		storeBuilder,
 		opts.EnableGZIPEncoding,
 	)
-	// Run MetricsHandler
-	ctxMetricsHandler, cancel := context.WithCancel(ctx)
-	defer cancel()
-	g.Add(func() error {
-		return m.Run(ctxMetricsHandler)
-	}, func(error) {
-		cancel()
-	})
+	// The stores, and the CRD discovery feeding them, are not stopped with
+	// ctx but only once the servers have drained, so that scrapes still in
+	// flight at shutdown are served from live stores.
+	storesCtx, stopStores := context.WithCancel(context.WithoutCancel(ctx))
+	defer stopStores()
 
 	tlsConfig := opts.TLSConfig
 
@@ -335,7 +343,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		// storeBuilder starts reflectors for the discovered GVKs, and as such, should close them too.
 		storeBuilder.GetGVKStopChan = discovererInstance.GetStopChanForGVK
 		// This starts a goroutine that will watch for any new GVKs to extract from CRDs.
-		err = discovererInstance.StartDiscovery(ctx, kubeConfig)
+		err = discovererInstance.StartDiscovery(storesCtx, kubeConfig)
 		if err != nil {
 			return err
 		}
@@ -346,7 +354,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		}
 		// This starts a goroutine that will keep the cache up to date.
 		discovererInstance.PollForCacheUpdates(
-			ctx,
+			storesCtx,
 			opts,
 			m,
 			fn,
@@ -377,34 +385,30 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		WebConfigFile:      &tlsConfig,
 	}
 
+	// shutdown is the interrupt of every actor below, so whichever of them
+	// ends the group, the servers stop before the stores they serve from.
+	shutdown := drainThenStop(stopStores, &telemetryServer, &metricsServer)
+	g.Add(shutdownTrigger(ctx, opts.ShutdownDelay))
+	// Run MetricsHandler
+	g.Add(func() error {
+		return m.Run(storesCtx)
+	}, func(error) {
+		shutdown()
+	})
 	// Run Telemetry server
-	{
-		g.Add(func() error {
-			klog.InfoS("Started kube-state-metrics self metrics server", "telemetryAddress", telemetryListenAddress)
-			return web.ListenAndServe(&telemetryServer, &telemetryFlags, sLogger)
-		}, func(error) {
-			// Not derived from ctx: the interrupt handler runs because ctx was
-			// cancelled, so a child of it is already done and Shutdown would
-			// return immediately instead of draining in-flight scrapes.
-			ctxShutDown, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-			defer cancel()
-			telemetryServer.Shutdown(ctxShutDown)
-		})
-	}
+	g.Add(func() error {
+		klog.InfoS("Started kube-state-metrics self metrics server", "telemetryAddress", telemetryListenAddress)
+		return web.ListenAndServe(&telemetryServer, &telemetryFlags, sLogger)
+	}, func(error) {
+		shutdown()
+	})
 	// Run Metrics server
-	{
-		g.Add(func() error {
-			klog.InfoS("Started metrics server", "metricsServerAddress", metricsServerListenAddress)
-			return web.ListenAndServe(&metricsServer, &metricsFlags, sLogger)
-		}, func(error) {
-			// Not derived from ctx: the interrupt handler runs because ctx was
-			// cancelled, so a child of it is already done and Shutdown would
-			// return immediately instead of draining in-flight scrapes.
-			ctxShutDown, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-			defer cancel()
-			metricsServer.Shutdown(ctxShutDown)
-		})
-	}
+	g.Add(func() error {
+		klog.InfoS("Started metrics server", "metricsServerAddress", metricsServerListenAddress)
+		return web.ListenAndServe(&metricsServer, &metricsFlags, sLogger)
+	}, func(error) {
+		shutdown()
+	})
 
 	if err := g.Run(); err != nil {
 		return fmt.Errorf("run server group error: %w", err)
@@ -429,6 +433,61 @@ func cgroupLimitWithFallback(cgroup, system memlimit.Provider) memlimit.Provider
 		}
 		return 0, err
 	}
+}
+
+// shutdownTrigger returns the execute and interrupt functions of a run group
+// actor that ends the group once ctx is done, after serving on for delay unless
+// the run is stopped for a config reload.
+func shutdownTrigger(ctx context.Context, delay time.Duration) (func() error, func(error)) {
+	interrupted := make(chan struct{})
+	execute := func() error {
+		select {
+		case <-ctx.Done():
+		case <-interrupted:
+			return nil
+		}
+		if delay := shutdownDelay(ctx, delay); delay > 0 {
+			klog.InfoS("Delaying shutdown, so service discovery can stop sending scrapes first", "delay", delay)
+			select {
+			case <-time.After(delay):
+			case <-interrupted:
+			}
+		}
+		return nil
+	}
+	return execute, func(error) { close(interrupted) }
+}
+
+// drainThenStop returns a function, safe to call more than once, that shuts
+// the servers down concurrently, giving in-flight requests up to
+// serverShutdownTimeout to finish, and then calls stopStores.
+func drainThenStop(stopStores func(), servers ...*http.Server) func() {
+	return sync.OnceFunc(func() {
+		// Not derived from the run's ctx: it is already done, so Shutdown
+		// would return immediately instead of draining in-flight scrapes.
+		ctx, cancel := context.WithTimeout(context.Background(), serverShutdownTimeout)
+		defer cancel()
+		var wg sync.WaitGroup
+		for _, server := range servers {
+			wg.Go(func() {
+				if err := server.Shutdown(ctx); err != nil {
+					klog.ErrorS(err, "Failed to drain in-flight requests before shutting down the server")
+				}
+			})
+		}
+		wg.Wait()
+		stopStores()
+	})
+}
+
+// shutdownDelay returns how long a run whose ctx is done keeps serving before
+// it shuts down: delay on termination, and none when it was stopped for a
+// config reload.
+func shutdownDelay(ctx context.Context, delay time.Duration) time.Duration {
+	if errors.Is(context.Cause(ctx), ErrConfigReload) {
+		return 0
+	}
+	return delay
 }
 
 func configureResourcesAndMetrics(opts *options.Options, configFile []byte) *options.Options {

@@ -80,6 +80,7 @@ Flags:
       --server-read-timeout duration                         The maximum duration for reading the entire request, including the body. Align with the scrape interval or timeout of scraping clients.  (default 1m0s)
       --server-write-timeout duration                        The maximum duration before timing out writes of the response. Align with the scrape interval or timeout of scraping clients.. (default 1m0s)
       --shard int32                                          The instances shard nominal (zero indexed) within the total number of shards. (default 0)
+      --shutdown-delay duration                              How long to keep serving after receiving SIGTERM before shutting down, so that service discovery can stop sending scrapes to this instance first. In-flight requests are then given up to 3s to finish. Keep it below the pod's terminationGracePeriodSeconds minus those 3s.
       --skip_headers                                         If true, avoid header prefixes in the log messages
       --skip_log_headers                                     If true, avoid headers when opening log files (no effect when -logtostderr=true)
       --stderrthreshold severity                             logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true unless -legacy_stderr_threshold_behavior=false) (default 2)

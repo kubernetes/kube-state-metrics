@@ -23,6 +23,7 @@ spec:
       automountServiceAccountToken: true
       containers:
         - args:
+            - --shutdown-delay=5s
             - --pod=$(POD_NAME)
             - --pod-namespace=$(POD_NAMESPACE)
           env:

@@ -184,6 +184,11 @@
     local c = {
       name: 'kube-state-metrics',
       image: ksm.image,
+      // Keep serving for a while after SIGTERM, until the endpoint removal
+      // has reached Prometheus' service discovery. Together with the 3s it
+      // takes at most to drain in-flight scrapes, this has to fit into the
+      // pod's terminationGracePeriodSeconds (30s by default).
+      args: ['--shutdown-delay=5s'],
       ports: [
         { name: 'http-metrics', containerPort: 8080 },
         { name: 'telemetry', containerPort: 8081 },
@@ -307,7 +312,7 @@
     statefulset:
       // extending the default container from above
       local c = ksm.deployment.spec.template.spec.containers[0] {
-        args: [
+        args+: [
           '--pod=$(POD_NAME)',
           '--pod-namespace=$(POD_NAMESPACE)',
         ],
@@ -394,7 +399,7 @@
     deployment:
       // extending the default container from above
       local c = ksm.deployment.spec.template.spec.containers[0] {
-        args: [
+        args+: [
           '--resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpointslices,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingadmissionpolicies,mutatingadmissionpolicybindings,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingadmissionpolicies,validatingadmissionpolicybindings,validatingwebhookconfigurations,volumeattachments',
         ],
       };
@@ -414,7 +419,7 @@
     deploymentUnscheduledPodsFetching:
       local shardksmname = ksm.name + '-unscheduled-pods-fetching';
       local c = ksm.deployment.spec.template.spec.containers[0] {
-        args: [
+        args+: [
           '--resources=pods',
           '--track-unscheduled-pods',
         ],
@@ -448,7 +453,7 @@
 
     deploymentUnscheduledPodsFetchingService:
       local c = ksm.deployment.spec.template.spec.containers[0] {
-        args: [
+        args+: [
           '--resources=pods',
           '--track-unscheduled-pods',
         ],
@@ -471,7 +476,7 @@
     daemonset:
       // extending the default container from above
       local c0 = ksm.deployment.spec.template.spec.containers[0] {
-        args: [
+        args+: [
           '--resources=pods',
           '--node=$(NODE_NAME)',
         ],
@@ -519,7 +524,7 @@
     local deploymentShard(shard) =
       local shardName = std.toString(ksm.name) + '-' + std.toString(shard);
       local c = ksm.deployment.spec.template.spec.containers[0] {
-        args: [
+        args+: [
           '--shard=' + std.toString(shard),
           '--total-shards=' + std.toString(totalShards),
         ],

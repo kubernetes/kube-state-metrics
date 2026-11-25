@@ -1398,3 +1398,33 @@ func TestCgroupLimitWithFallback(t *testing.T) {
 		}
 	}
 }
+
+func TestShutdownDelaySkippedOnReload(t *testing.T) {
+	const delay = 5 * time.Second
+
+	running, stop := context.WithCancel(context.Background())
+	defer stop()
+	terminated, terminate := context.WithCancel(context.Background())
+	terminate()
+	reloaded, reload := context.WithCancelCause(context.Background())
+	reload(ErrConfigReload)
+	wrapped, cancelWrapped := context.WithCancelCause(context.Background())
+	cancelWrapped(fmt.Errorf("restart: %w", ErrConfigReload))
+
+	for _, tc := range []struct {
+		name string
+		ctx  context.Context
+		want time.Duration
+	}{
+		{"running", running, delay},
+		{"terminated", terminated, delay},
+		{"reloaded", reloaded, 0},
+		{"reload cause wrapped", wrapped, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := shutdownDelay(tc.ctx, delay); got != tc.want {
+				t.Fatalf("shutdownDelay() = %s, want %s", got, tc.want)
+			}
+		})
+	}
+}

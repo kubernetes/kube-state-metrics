@@ -21,8 +21,10 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -48,8 +50,18 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		}
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	// SIGTERM is what Kubernetes sends to stop a container. Cancelling the
+	// runs on it shuts their servers down and drains in-flight scrapes,
+	// instead of the default signal action killing the process.
+	sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	// runs tracks the current run, so shutdown can wait for it to finish.
+	var runs sync.WaitGroup
+	// A run cancelled for a reload is told so by its cancel cause, so it skips
+	// the shutdown delay that applies on termination.
+	ctx, cancel := context.WithCancelCause(sigCtx)
+	defer cancel(nil)
 
 	// The custom resource config file and the kubeconfig can be set by the
 	// options config file, so the files in effect can change with each reload.
@@ -67,6 +79,10 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	restart = func(e fsnotify.Event) {
 		reloadMu.Lock()
 		defer reloadMu.Unlock()
+		if sigCtx.Err() != nil {
+			// Shutting down: do not start another run.
+			return
+		}
 
 		klog.InfoS("Changes detected", "name", e.Name)
 		// Follow the files the restarted run will use. An options config file
@@ -76,11 +92,17 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 			crcWatch.watch(next.CustomResourceConfigFile, restart)
 			kubeconfigWatch.watch(next.Kubeconfig, restart)
 		}
-		cancel()
+		cancel(app.ErrConfigReload)
 		// Wait for the ports to be released.
-		<-time.After(3 * time.Second)
-		ctx, cancel = context.WithCancel(context.Background())
-		go KSMRunOrDie(ctx)
+		select {
+		case <-time.After(3 * time.Second):
+		case <-sigCtx.Done():
+			return
+		}
+		klog.InfoS("Restarting kube-state-metrics, metrics will be reset")
+		ctx, cancel = context.WithCancelCause(sigCtx)
+		runCtx := ctx
+		runs.Go(func() { KSMRunOrDie(runCtx) })
 	}
 
 	if file := options.GetConfigFile(*opts); file != "" {
@@ -140,8 +162,20 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		reloadMu.Unlock()
 	}
 	klog.InfoS("Starting kube-state-metrics")
-	KSMRunOrDie(ctx)
-	select {}
+	reloadMu.Lock()
+	runCtx := ctx
+	runs.Go(func() { KSMRunOrDie(runCtx) })
+	reloadMu.Unlock()
+
+	<-sigCtx.Done()
+	// Restore the default action, so a second signal stops the process at once.
+	stop()
+	klog.InfoS("Received termination signal, shutting down kube-state-metrics")
+	// Wait for a restart in progress to return. It sees sigCtx is done and
+	// starts no new run, so runs.Wait does not race a runs.Go.
+	reloadMu.Lock()
+	defer reloadMu.Unlock()
+	runs.Wait()
 }
 
 // movableWatch watches one file whose path can change between runs.

@@ -401,6 +401,17 @@ The following healthcheck endpoints are available (`self` refers to the telemetr
 
 Note that it is discouraged to use the telemetry metrics endpoint for any probe when proxying the exposition data.
 
+#### Graceful shutdown
+
+On `SIGTERM`, kube-state-metrics first keeps serving for `--shutdown-delay`
+(default `0s`), so that Prometheus' service discovery stops scraping the pod
+before it goes away. It then stops accepting connections, gives in-flight
+scrapes up to 3 seconds to finish, and only then stops its informers. The
+delay is off by default; a few seconds, for example `--shutdown-delay=5s`,
+is usually enough. Keep the delay plus those 3 seconds below the pod's
+`terminationGracePeriodSeconds` (30 seconds by default). Configuration
+reloads do not wait for the delay.
+
 #### Limited privileges environment
 
 If you want to run kube-state-metrics in an environment where you don't have cluster-reader role, you can:

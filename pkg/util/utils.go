@@ -17,12 +17,14 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	"fmt"
 	"runtime"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -53,7 +55,14 @@ func buildConfig(apiserver string, kubeconfig string) (*rest.Config, error) {
 }
 
 // CreateKubeClient creates a Kubernetes clientset and a custom resource clientset.
+// It is equivalent to CreateKubeClientWithContext with context.Background().
 func CreateKubeClient(apiserver string, kubeconfig string) (clientset.Interface, error) {
+	return CreateKubeClientWithContext(context.Background(), apiserver, kubeconfig)
+}
+
+// CreateKubeClientWithContext creates a Kubernetes client and checks that the API server is
+// reachable. Cancelling ctx aborts the API server version request.
+func CreateKubeClientWithContext(ctx context.Context, apiserver string, kubeconfig string) (clientset.Interface, error) {
 	config, err := buildConfig(apiserver, kubeconfig)
 	if err != nil {
 		return nil, err
@@ -68,7 +77,7 @@ func CreateKubeClient(apiserver string, kubeconfig string) (clientset.Interface,
 	// can't reach the server, making debugging hard. This makes it easier to
 	// figure out if apiserver is configured incorrectly.
 	klog.InfoS("Tested communication with server")
-	v, err := kubeClient.Discovery().ServerVersion()
+	v, err := discovery.ToDiscoveryInterfaceWithContext(kubeClient.Discovery()).ServerVersionWithContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error while trying to communicate with apiserver: %w", err)
 	}

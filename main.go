@@ -36,4 +36,7 @@ func main() {
 		klog.ErrorS(err, "Running kube-state-metrics failed")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
+	// A graceful shutdown returns from main, which does not flush buffered
+	// log output, such as with --log_file.
+	klog.Flush()
 }

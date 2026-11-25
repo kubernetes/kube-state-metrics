@@ -33,8 +33,8 @@ func TestDeviceTaintRuleStore(t *testing.T) {
 		# TYPE kube_devicetaintrule_created gauge
 		# HELP kube_devicetaintrule_info Information about device taint rule.
 		# TYPE kube_devicetaintrule_info gauge
-		# HELP kube_devicetaintrule_taint_time_added Unix timestamp at which the taint was added or its effect was last modified.
-		# TYPE kube_devicetaintrule_taint_time_added gauge
+		# HELP kube_devicetaintrule_taint_time_added_timestamp_seconds Unix timestamp at which the taint was added or its effect was last modified.
+		# TYPE kube_devicetaintrule_taint_time_added_timestamp_seconds gauge
 		# HELP kube_devicetaintrule_metadata_generation Sequence number representing a specific generation of the desired state.
 		# TYPE kube_devicetaintrule_metadata_generation gauge
 		# HELP kube_devicetaintrule_status_condition The condition of a device taint rule.
@@ -43,7 +43,7 @@ func TestDeviceTaintRuleStore(t *testing.T) {
 	metricNames := []string{
 		"kube_devicetaintrule_created",
 		"kube_devicetaintrule_info",
-		"kube_devicetaintrule_taint_time_added",
+		"kube_devicetaintrule_taint_time_added_timestamp_seconds",
 		"kube_devicetaintrule_metadata_generation",
 		"kube_devicetaintrule_status_condition",
 	}
@@ -83,7 +83,7 @@ func TestDeviceTaintRuleStore(t *testing.T) {
 			Want: metadata + `
 				kube_devicetaintrule_created{devicetaintrule="rule-1"} 1.5e+09
 				kube_devicetaintrule_info{device="device-1",device_selector="filtered",devicetaintrule="rule-1",driver="driver-1",pool="pool-1",taint_effect="NoExecute",taint_key="example.com/unhealthy",taint_value="ecc"} 1
-				kube_devicetaintrule_taint_time_added{devicetaintrule="rule-1"} 1.6e+09
+				kube_devicetaintrule_taint_time_added_timestamp_seconds{devicetaintrule="rule-1"} 1.6e+09
 				kube_devicetaintrule_metadata_generation{devicetaintrule="rule-1"} 2
 				kube_devicetaintrule_status_condition{condition="EvictionInProgress",devicetaintrule="rule-1",status="false"} 0
 				kube_devicetaintrule_status_condition{condition="EvictionInProgress",devicetaintrule="rule-1",status="true"} 1

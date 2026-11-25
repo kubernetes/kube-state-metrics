@@ -55,10 +55,10 @@ func TestPodStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_pod_resourceclaim_info Information about a DRA ResourceClaim referenced by a pod, one series per pod.spec.resourceClaims entry; claim_name is the pod-local reference and resourceclaim_name is the resolved ResourceClaim object name.
+				# HELP kube_pod_resourceclaim_info Information about a DRA ResourceClaim referenced by a pod, one series per pod.spec.resourceClaims entry; claim_name is the pod-local reference and resourceclaim is the resolved ResourceClaim object name.
 				# TYPE kube_pod_resourceclaim_info gauge
-				kube_pod_resourceclaim_info{claim_name="gpu",namespace="ns1",pod="pod1",resourceclaim_name="shared-gpu-claim",resourceclaim_template_name="",uid="uid1"} 1
-				kube_pod_resourceclaim_info{claim_name="gpu-tmpl",namespace="ns1",pod="pod1",resourceclaim_name="pod1-gpu-tmpl-abcde",resourceclaim_template_name="gpu-template",uid="uid1"} 1
+				kube_pod_resourceclaim_info{claim_name="gpu",namespace="ns1",pod="pod1",resourceclaim="shared-gpu-claim",resourceclaimtemplate="",uid="uid1"} 1
+				kube_pod_resourceclaim_info{claim_name="gpu-tmpl",namespace="ns1",pod="pod1",resourceclaim="pod1-gpu-tmpl-abcde",resourceclaimtemplate="gpu-template",uid="uid1"} 1
 			`,
 			MetricNames: []string{"kube_pod_resourceclaim_info"},
 		},
@@ -70,7 +70,7 @@ func TestPodStore(t *testing.T) {
 				Spec: v1.PodSpec{
 					ResourceClaims: []v1.PodResourceClaim{
 						// Template-backed claim with no status resolution yet (pending):
-						// resourceclaim_name stays empty but the series is still emitted.
+						// resourceclaim stays empty but the series is still emitted.
 						{Name: "pending", ResourceClaimTemplateName: new("gpu-template")},
 						// Malformed entry with neither name nor template set -> skipped.
 						{Name: "bad"},
@@ -78,9 +78,9 @@ func TestPodStore(t *testing.T) {
 				},
 			},
 			Want: `
-				# HELP kube_pod_resourceclaim_info Information about a DRA ResourceClaim referenced by a pod, one series per pod.spec.resourceClaims entry; claim_name is the pod-local reference and resourceclaim_name is the resolved ResourceClaim object name.
+				# HELP kube_pod_resourceclaim_info Information about a DRA ResourceClaim referenced by a pod, one series per pod.spec.resourceClaims entry; claim_name is the pod-local reference and resourceclaim is the resolved ResourceClaim object name.
 				# TYPE kube_pod_resourceclaim_info gauge
-				kube_pod_resourceclaim_info{claim_name="pending",namespace="ns2",pod="pod2",resourceclaim_name="",resourceclaim_template_name="gpu-template",uid="uid2"} 1
+				kube_pod_resourceclaim_info{claim_name="pending",namespace="ns2",pod="pod2",resourceclaim="",resourceclaimtemplate="gpu-template",uid="uid2"} 1
 			`,
 			MetricNames: []string{"kube_pod_resourceclaim_info"},
 		},

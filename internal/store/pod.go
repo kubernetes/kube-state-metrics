@@ -673,7 +673,7 @@ func createPodInfoFamilyGenerator() generator.FamilyGenerator {
 func createPodResourceClaimInfoFamilyGenerator() generator.FamilyGenerator {
 	return *generator.NewFamilyGeneratorWithStability(
 		"kube_pod_resourceclaim_info",
-		"Information about a DRA ResourceClaim referenced by a pod, one series per pod.spec.resourceClaims entry; claim_name is the pod-local reference and resourceclaim_name is the resolved ResourceClaim object name.",
+		"Information about a DRA ResourceClaim referenced by a pod, one series per pod.spec.resourceClaims entry; claim_name is the pod-local reference and resourceclaim is the resolved ResourceClaim object name.",
 		metric.Gauge,
 		basemetrics.ALPHA,
 		"",
@@ -713,7 +713,7 @@ func createPodResourceClaimInfoFamilyGenerator() generator.FamilyGenerator {
 				}
 
 				ms = append(ms, &metric.Metric{
-					LabelKeys:   []string{"claim_name", "resourceclaim_name", "resourceclaim_template_name"},
+					LabelKeys:   []string{"claim_name", "resourceclaim", "resourceclaimtemplate"},
 					LabelValues: []string{rc.Name, resourceClaimName, resourceClaimTemplateName},
 					Value:       1,
 				})

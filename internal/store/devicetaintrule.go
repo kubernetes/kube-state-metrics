@@ -95,7 +95,7 @@ func deviceTaintRuleMetricFamilies(allowAnnotationsList, allowLabelsList []strin
 			}),
 		),
 		*generator.NewFamilyGeneratorWithStability(
-			"kube_devicetaintrule_taint_time_added",
+			"kube_devicetaintrule_taint_time_added_timestamp_seconds",
 			"Unix timestamp at which the taint was added or its effect was last modified.",
 			metric.Gauge,
 			basemetrics.ALPHA,

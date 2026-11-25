@@ -112,6 +112,8 @@
         apiGroups: ['certificates.k8s.io'],
         resources: [
           'certificatesigningrequests',
+          'clustertrustbundles',
+          'podcertificaterequests',
         ],
         verbs: ['list', 'watch'],
       },

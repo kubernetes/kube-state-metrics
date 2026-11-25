@@ -787,7 +787,8 @@ uptime{customresource_group="myteam.io", customresource_kind="Foo", customresour
 ### Logging
 
 If a metric path resolves to a value that cannot be used, for example a Gauge value that cannot be converted to float64
-or a StateSet value that is not a string, an error will be logged. A path that does not resolve produces no metrics and no error.
+or a StateSet value that is not a string, an error will be logged. A path that does not resolve produces no error
+(and no metric, unless `nilIsZero` is set on a Gauge).
 For some resources, these errors may produce a lot of noise. The error log [verbosity][vlog] for a metric or resource can be set with `errorLogV` on
 the resource or metric:
 

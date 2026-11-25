@@ -54,6 +54,9 @@ func init() {
 			},
 			"phase":  "foo",
 			"sparse": Array{nil, 2},
+			"nullable": Obj{
+				"value": nil,
+			},
 			"sub": Obj{
 				"type-a": Obj{
 					"active": 1,
@@ -249,6 +252,26 @@ func Test_values(t *testing.T) {
 			path: mustCompilePath(t, "status", "sparse"),
 		}, wantResult: []eachValue{
 			newEachValue(t, 2),
+		}, wantErrors: nil},
+		{name: "non-existent path with nilIsZero", each: &compiledGauge{
+			path:      mustCompilePath(t, "status", "non-existent"),
+			ValueFrom: mustCompilePath(t, "value"),
+			NilIsZero: true,
+		}, wantResult: []eachValue{
+			newEachValue(t, 0),
+		}, wantErrors: nil},
+		{name: "nil value at valueFrom key in map", each: &compiledGauge{
+			path:         mustCompilePath(t, "status", "nullable"),
+			labelFromKey: "key",
+			ValueFrom:    mustCompilePath(t, "value"),
+		}, wantResult: nil, wantErrors: nil},
+		{name: "nil value at valueFrom key in map with nilIsZero", each: &compiledGauge{
+			path:         mustCompilePath(t, "status", "nullable"),
+			labelFromKey: "key",
+			ValueFrom:    mustCompilePath(t, "value"),
+			NilIsZero:    true,
+		}, wantResult: []eachValue{
+			newEachValue(t, 0, "key", "value"),
 		}, wantErrors: nil},
 		{name: "exist path but valueFrom path is non-existent single", each: &compiledGauge{
 			path:      mustCompilePath(t, "spec", "replicas"),

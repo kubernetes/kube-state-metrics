@@ -568,8 +568,8 @@ func (b *Builder) buildCustomResourceDefinitionStores() []cache.Store {
 	return b.buildClusterScopedStores(
 		customResourceDefinitionMetricFamilies(b.allowAnnotationsList["customresourcedefinitions"], b.allowLabelsList["customresourcedefinitions"]),
 		&apiextensionsv1.CustomResourceDefinition{},
-		func(_ clientset.Interface, _ string, fieldSelector string) cache.ListerWatcher {
-			return createCustomResourceDefinitionListWatch(b.apiextensionsClient, fieldSelector)
+		func(clientset.Interface, string, string) cache.ListerWatcher {
+			return createCustomResourceDefinitionListWatch(b.apiextensionsClient)
 		},
 		b.useAPIServerCache,
 		b.objectLimit,

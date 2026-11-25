@@ -119,8 +119,8 @@ func customResourceDefinitionMetricFamilies(allowAnnotationsList, allowLabelsLis
 	}
 }
 
-func wrapCustomResourceDefinitionFunc(f func(*apiextensionsv1.CustomResourceDefinition) *metric.Family) func(interface{}) *metric.Family {
-	return func(obj interface{}) *metric.Family {
+func wrapCustomResourceDefinitionFunc(f func(*apiextensionsv1.CustomResourceDefinition) *metric.Family) func(any) *metric.Family {
+	return func(obj any) *metric.Family {
 		crd := obj.(*apiextensionsv1.CustomResourceDefinition)
 
 		metricFamily := f(crd)
@@ -133,14 +133,16 @@ func wrapCustomResourceDefinitionFunc(f func(*apiextensionsv1.CustomResourceDefi
 	}
 }
 
-func createCustomResourceDefinitionListWatch(apiextensionsClient apiextensionsclientset.Interface, fieldSelector string) cache.ListerWatcher {
+// createCustomResourceDefinitionListWatch ignores the builder's field selector,
+// like the other cluster-scoped stores: it carries namespace and node selectors
+// (--namespaces-denylist, --node) that do not apply to CustomResourceDefinitions,
+// and spec.nodeName is rejected by the API server for this resource.
+func createCustomResourceDefinitionListWatch(apiextensionsClient apiextensionsclientset.Interface) cache.ListerWatcher {
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			opts.FieldSelector = fieldSelector
 			return apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(context.TODO(), opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			opts.FieldSelector = fieldSelector
 			return apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Watch(context.TODO(), opts)
 		},
 	}

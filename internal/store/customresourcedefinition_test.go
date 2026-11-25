@@ -14,18 +14,22 @@ limitations under the License.
 package store
 
 import (
-	"context"
 	"testing"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes/fake"
 	clienttesting "k8s.io/client-go/testing"
-	"k8s.io/client-go/tools/cache"
 
+	"k8s.io/kube-state-metrics/v2/pkg/allowdenylist"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
 func TestCustomResourceDefinitionStore(t *testing.T) {
@@ -104,35 +108,54 @@ func TestCustomResourceDefinitionStore(t *testing.T) {
 	}
 }
 
-func TestCreateCustomResourceDefinitionListWatchFieldSelector(t *testing.T) {
+// The builder's field selector carries namespace and node selectors that do not
+// apply to CustomResourceDefinitions (the API server rejects spec.nodeName for
+// them), so the cluster-scoped list-watch must drop it and the namespace, and
+// build a single store regardless of how many namespaces are configured.
+func TestCustomResourceDefinitionStoresAreClusterScoped(t *testing.T) {
+	l, err := allowdenylist.New(map[string]struct{}{}, map[string]struct{}{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	client := apiextensionsfake.NewSimpleClientset()
-	var gotFieldSelector string
+	listed := make(chan clienttesting.ListAction, 1)
 	client.PrependReactor("list", "customresourcedefinitions", func(action clienttesting.Action) (bool, runtime.Object, error) {
-		gotFieldSelector = action.(clienttesting.ListAction).GetListRestrictions().Fields.String()
+		select {
+		case listed <- action.(clienttesting.ListAction):
+		default:
+		}
 		return false, nil, nil
 	})
 
-	var gotWatchFieldSelector string
-	client.PrependWatchReactor("customresourcedefinitions", func(action clienttesting.Action) (bool, watch.Interface, error) {
-		gotWatchFieldSelector = action.(clienttesting.WatchAction).GetWatchRestrictions().Fields.String()
-		return false, nil, nil
-	})
+	b := NewBuilder()
+	b.WithMetrics(prometheus.NewRegistry())
+	b.WithKubeClient(fake.NewSimpleClientset())
+	b.WithSharding(0, 1)
+	b.WithContext(t.Context())
+	b.WithNamespaces(options.NamespaceList{"ns1", "ns2"})
+	b.WithFieldSelectorFilter("metadata.namespace!=kube-system,spec.nodeName=node-1")
+	b.WithFamilyGeneratorFilter(l)
+	b.WithGenerateStoresFunc(b.DefaultGenerateStoresFunc())
 
-	lw := createCustomResourceDefinitionListWatch(client, "metadata.name!=foos.example.com").(*cache.ListWatch)
-	_, err := lw.ListWithContext(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if gotFieldSelector != "metadata.name!=foos.example.com" {
-		t.Errorf("expected field selector to be propagated, got %q", gotFieldSelector)
+	if got := len(b.buildCustomResourceDefinitionStores()); got != 0 {
+		t.Fatalf("stores without an apiextensions client: got %d, want 0", got)
 	}
 
-	w, err := lw.WatchWithContext(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	b.WithApiextensionsClient(client)
+	if got := len(b.buildCustomResourceDefinitionStores()); got != 1 {
+		t.Fatalf("stores across 2 namespaces: got %d, want 1", got)
 	}
-	w.Stop()
-	if gotWatchFieldSelector != "metadata.name!=foos.example.com" {
-		t.Errorf("expected watch field selector to be propagated, got %q", gotWatchFieldSelector)
+
+	select {
+	case action := <-listed:
+		if ns := action.GetNamespace(); ns != "" {
+			t.Errorf("list namespace: got %q, want cluster-scoped", ns)
+		}
+		if fs := action.GetListRestrictions().Fields.String(); fs != "" {
+			t.Errorf("list field selector: got %q, want none", fs)
+		}
+	case <-time.After(wait.ForeverTestTimeout):
+		t.Fatal("customresourcedefinitions were never listed")
 	}
 }

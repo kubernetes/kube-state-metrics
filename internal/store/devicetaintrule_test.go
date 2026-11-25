@@ -82,7 +82,7 @@ func TestDeviceTaintRuleStore(t *testing.T) {
 			},
 			Want: metadata + `
 				kube_devicetaintrule_created{devicetaintrule="rule-1"} 1.5e+09
-				kube_devicetaintrule_info{device="device-1",devicetaintrule="rule-1",driver="driver-1",pool="pool-1",taint_effect="NoExecute",taint_key="example.com/unhealthy",taint_value="ecc"} 1
+				kube_devicetaintrule_info{device="device-1",device_selector="filtered",devicetaintrule="rule-1",driver="driver-1",pool="pool-1",taint_effect="NoExecute",taint_key="example.com/unhealthy",taint_value="ecc"} 1
 				kube_devicetaintrule_taint_time_added{devicetaintrule="rule-1"} 1.6e+09
 				kube_devicetaintrule_metadata_generation{devicetaintrule="rule-1"} 2
 				kube_devicetaintrule_status_condition{condition="EvictionInProgress",devicetaintrule="rule-1",status="false"} 0
@@ -102,10 +102,28 @@ func TestDeviceTaintRuleStore(t *testing.T) {
 				},
 			},
 			Want: metadata + `
-				kube_devicetaintrule_info{device="",devicetaintrule="rule-minimal",driver="",pool="",taint_effect="None",taint_key="example.com/maintenance",taint_value=""} 1
+				kube_devicetaintrule_info{device="",device_selector="none",devicetaintrule="rule-minimal",driver="",pool="",taint_effect="None",taint_key="example.com/maintenance",taint_value=""} 1
 				kube_devicetaintrule_metadata_generation{devicetaintrule="rule-minimal"} 0
 			`,
 			MetricNames: metricNames,
+		},
+		{
+			Obj: &resourcev1.DeviceTaintRule{
+				ObjectMeta: metav1.ObjectMeta{Name: "rule-all-devices"},
+				Spec: resourcev1.DeviceTaintRuleSpec{
+					DeviceSelector: &resourcev1.DeviceTaintSelector{},
+					Taint: resourcev1.DeviceTaint{
+						Key:    "example.com/drain",
+						Effect: resourcev1.DeviceTaintEffectNoExecute,
+					},
+				},
+			},
+			Want: `
+				# HELP kube_devicetaintrule_info Information about device taint rule.
+				# TYPE kube_devicetaintrule_info gauge
+				kube_devicetaintrule_info{device="",device_selector="all",devicetaintrule="rule-all-devices",driver="",pool="",taint_effect="NoExecute",taint_key="example.com/drain",taint_value=""} 1
+			`,
+			MetricNames: []string{"kube_devicetaintrule_info"},
 		},
 		{
 			AllowAnnotationsList: []string{"team"},

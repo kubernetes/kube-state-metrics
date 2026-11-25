@@ -1,8 +1,10 @@
 # DeviceTaintRule Metrics
 
+These metrics require Kubernetes 1.37 or later, where `resource.k8s.io/v1` serves DeviceTaintRule, with the DeviceTaintRule API enabled.
+
 | Metric name                                                   | Metric type | Description | Labels/tags | Status |
 | ------------------------------------------------------------- | ----------- | ----------- | ----------- | ------ |
-| kube_devicetaintrule_info                                     | Gauge       | Information about device taint rule. The selector labels are empty when the corresponding field is unset. | `devicetaintrule`=&lt;devicetaintrule-name&gt; <br> `taint_key`=&lt;taint-key&gt; <br> `taint_value`=&lt;taint-value&gt; <br> `taint_effect`=&lt;None\|NoSchedule\|NoExecute&gt; <br> `driver`=&lt;driver-name&gt; <br> `pool`=&lt;pool-name&gt; <br> `device`=&lt;device-name&gt; | EXPERIMENTAL |
+| kube_devicetaintrule_info                                     | Gauge       | Information about device taint rule. `device_selector` is `none` when the rule has no selector (it matches no devices), `all` when the selector is empty (it matches every device) and `filtered` otherwise. The driver, pool and device labels are empty when the corresponding field is unset. | `devicetaintrule`=&lt;devicetaintrule-name&gt; <br> `taint_key`=&lt;taint-key&gt; <br> `taint_value`=&lt;taint-value&gt; <br> `taint_effect`=&lt;None\|NoSchedule\|NoExecute&gt; <br> `device_selector`=&lt;none\|all\|filtered&gt; <br> `driver`=&lt;driver-name&gt; <br> `pool`=&lt;pool-name&gt; <br> `device`=&lt;device-name&gt; | EXPERIMENTAL |
 | kube_devicetaintrule_created                                  | Gauge       | Unix creation timestamp | `devicetaintrule`=&lt;devicetaintrule-name&gt; | EXPERIMENTAL |
 | kube_devicetaintrule_taint_time_added                         | Gauge       | Unix timestamp at which the taint was added or its effect was last modified. Omitted when unset. | `devicetaintrule`=&lt;devicetaintrule-name&gt; | EXPERIMENTAL |
 | kube_devicetaintrule_metadata_generation                      | Gauge       | Sequence number representing a specific generation of the desired state. | `devicetaintrule`=&lt;devicetaintrule-name&gt; | EXPERIMENTAL |

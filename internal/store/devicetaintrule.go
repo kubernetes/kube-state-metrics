@@ -70,18 +70,24 @@ func deviceTaintRuleMetricFamilies(allowAnnotationsList, allowLabelsList []strin
 			basemetrics.ALPHA,
 			"",
 			wrapDeviceTaintRuleFunc(func(r *resourcev1.DeviceTaintRule) *metric.Family {
+				// A nil selector matches no devices, an empty one matches all of them.
+				selector := "none"
 				var driver, pool, device string
 				if s := r.Spec.DeviceSelector; s != nil {
 					driver = ptr.Deref(s.Driver, "")
 					pool = ptr.Deref(s.Pool, "")
 					device = ptr.Deref(s.Device, "")
+					selector = "all"
+					if s.Driver != nil || s.Pool != nil || s.Device != nil {
+						selector = "filtered"
+					}
 				}
 
 				return &metric.Family{
 					Metrics: []*metric.Metric{
 						{
-							LabelKeys:   []string{"taint_key", "taint_value", "taint_effect", "driver", "pool", "device"},
-							LabelValues: []string{r.Spec.Taint.Key, r.Spec.Taint.Value, string(r.Spec.Taint.Effect), driver, pool, device},
+							LabelKeys:   []string{"taint_key", "taint_value", "taint_effect", "device_selector", "driver", "pool", "device"},
+							LabelValues: []string{r.Spec.Taint.Key, r.Spec.Taint.Value, string(r.Spec.Taint.Effect), selector, driver, pool, device},
 							Value:       1,
 						},
 					},

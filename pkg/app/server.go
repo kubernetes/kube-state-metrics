@@ -175,6 +175,8 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		}
 	}
 
+	sLogger := slog.New(logr.ToSlogHandler(klog.Background()))
+
 	if opts.AutoGoMemlimit {
 		// Stops this run's refresh when it returns, including on an error or a config reload.
 		refreshCtx, cancelRefresh := context.WithCancel(ctx)
@@ -183,7 +185,7 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 			memlimit.WithRatio(opts.AutoGoMemlimitRatio),
 			memlimit.WithProvider(cgroupLimitWithFallback(memlimit.FromCgroup, memlimit.FromSystem)),
 			memlimit.WithRefreshInterval(refreshCtx, opts.AutoGoMemlimitRefreshInterval),
-			memlimit.WithLogger(slog.New(logr.ToSlogHandler(klog.Background()))),
+			memlimit.WithLogger(sLogger),
 		); err != nil {
 			return fmt.Errorf("failed to set GOMEMLIMIT automatically: %w", err)
 		}
@@ -374,9 +376,6 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options) error {
 		WebListenAddresses: &[]string{metricsServerListenAddress},
 		WebConfigFile:      &tlsConfig,
 	}
-
-	handler := logr.ToSlogHandler(klog.Background())
-	sLogger := slog.New(handler)
 
 	// Run Telemetry server
 	{

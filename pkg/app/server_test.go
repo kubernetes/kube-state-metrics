@@ -1385,15 +1385,16 @@ func TestCgroupLimitWithFallback(t *testing.T) {
 		{name: "no cgroup limit falls back", cgroup: result{err: memlimit.ErrNoLimit}, want: result{limit: 1000}},
 	}
 
-	step := 0
+	var cgroup result
 	provider := cgroupLimitWithFallback(
-		func() (uint64, error) { return steps[step].cgroup.limit, steps[step].cgroup.err },
+		func() (uint64, error) { return cgroup.limit, cgroup.err },
 		func() (uint64, error) { return 1000, nil },
 	)
-	for ; step < len(steps); step++ {
+	for _, s := range steps {
+		cgroup = s.cgroup
 		limit, err := provider()
-		if limit != steps[step].want.limit || !errors.Is(err, steps[step].want.err) {
-			t.Fatalf("%s: got (%d, %v), want (%d, %v)", steps[step].name, limit, err, steps[step].want.limit, steps[step].want.err)
+		if limit != s.want.limit || !errors.Is(err, s.want.err) {
+			t.Fatalf("%s: got (%d, %v), want (%d, %v)", s.name, limit, err, s.want.limit, s.want.err)
 		}
 	}
 }

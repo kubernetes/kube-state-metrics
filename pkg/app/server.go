@@ -93,7 +93,7 @@ func registerApiextensionsClient(storeBuilder *store.Builder, opts *options.Opti
 	}
 	apiextensionsClient, err := util.CreateApiextensionsClient(opts.Apiserver, opts.Kubeconfig)
 	if err != nil {
-		return fmt.Errorf("failed to create apiextensions client: %v", err)
+		return fmt.Errorf("failed to create apiextensions client: %w", err)
 	}
 	storeBuilder.WithApiextensionsClient(apiextensionsClient)
 	return nil

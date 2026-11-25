@@ -388,6 +388,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"daemonsets":                        func(b *Builder) []cache.Store { return b.buildDaemonSetStores() },
 	"deployments":                       func(b *Builder) []cache.Store { return b.buildDeploymentStores() },
 	"deviceclasses":                     func(b *Builder) []cache.Store { return b.buildDeviceClassStores() },
+	"devicetaintrules":                  func(b *Builder) []cache.Store { return b.buildDeviceTaintRuleStores() },
 	"endpoints":                         func(b *Builder) []cache.Store { return b.buildEndpointsStores() },
 	"endpointslices":                    func(b *Builder) []cache.Store { return b.buildEndpointSlicesStores() },
 	"horizontalpodautoscalers":          func(b *Builder) []cache.Store { return b.buildHPAStores() },
@@ -622,6 +623,10 @@ func (b *Builder) buildIngressClassStores() []cache.Store {
 
 func (b *Builder) buildDeviceClassStores() []cache.Store {
 	return b.buildClusterScopedStores(deviceClassMetricFamilies(b.allowAnnotationsList["deviceclasses"], b.allowLabelsList["deviceclasses"]), &resourcev1.DeviceClass{}, createDeviceClassListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildDeviceTaintRuleStores() []cache.Store {
+	return b.buildClusterScopedStores(deviceTaintRuleMetricFamilies(b.allowAnnotationsList["devicetaintrules"], b.allowLabelsList["devicetaintrules"]), &resourcev1.DeviceTaintRule{}, createDeviceTaintRuleListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildResourceClaimStores() []cache.Store {

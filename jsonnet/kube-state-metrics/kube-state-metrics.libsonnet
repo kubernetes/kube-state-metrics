@@ -162,6 +162,7 @@
         apiGroups: ['resource.k8s.io'],
         resources: [
           'deviceclasses',
+          'devicetaintrules',
           'resourceclaims',
           'resourceclaimtemplates',
           'resourceslices',

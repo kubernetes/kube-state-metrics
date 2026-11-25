@@ -283,6 +283,7 @@ func TestDefaultCollectorMetricsAvailable(t *testing.T) {
 		"clusterrole":           true,
 		"clusterrolebinding":    true,
 		"deviceclass":           true,
+		"devicetaintrule":       true,
 		"endpoint":              true,
 		"ingressclass":          true,
 		"resourceclaim":         true,

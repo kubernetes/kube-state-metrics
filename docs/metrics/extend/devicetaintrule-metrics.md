@@ -1,0 +1,11 @@
+# DeviceTaintRule Metrics
+
+| Metric name                                                   | Metric type | Description | Labels/tags | Status |
+| ------------------------------------------------------------- | ----------- | ----------- | ----------- | ------ |
+| kube_devicetaintrule_info                                     | Gauge       | Information about device taint rule. The selector labels are empty when the corresponding field is unset. | `devicetaintrule`=&lt;devicetaintrule-name&gt; <br> `taint_key`=&lt;taint-key&gt; <br> `taint_value`=&lt;taint-value&gt; <br> `taint_effect`=&lt;None\|NoSchedule\|NoExecute&gt; <br> `driver`=&lt;driver-name&gt; <br> `pool`=&lt;pool-name&gt; <br> `device`=&lt;device-name&gt; | EXPERIMENTAL |
+| kube_devicetaintrule_created                                  | Gauge       | Unix creation timestamp | `devicetaintrule`=&lt;devicetaintrule-name&gt; | EXPERIMENTAL |
+| kube_devicetaintrule_taint_time_added                         | Gauge       | Unix timestamp at which the taint was added or its effect was last modified. Omitted when unset. | `devicetaintrule`=&lt;devicetaintrule-name&gt; | EXPERIMENTAL |
+| kube_devicetaintrule_metadata_generation                      | Gauge       | Sequence number representing a specific generation of the desired state. | `devicetaintrule`=&lt;devicetaintrule-name&gt; | EXPERIMENTAL |
+| kube_devicetaintrule_status_condition                         | Gauge       | The condition of a device taint rule. | `devicetaintrule`=&lt;devicetaintrule-name&gt; <br> `condition`=&lt;EvictionInProgress&gt; <br> `status`=&lt;true\|false\|unknown&gt; | EXPERIMENTAL |
+| kube_devicetaintrule_annotations                              | Gauge       | Kubernetes annotations converted to Prometheus labels controlled via [--metric-annotations-allowlist](../../developer/cli-arguments.md) | `devicetaintrule`=&lt;devicetaintrule-name&gt; <br> `annotation_DEVICETAINTRULE_ANNOTATION`=&lt;DEVICETAINTRULE_ANNOTATION&gt; | EXPERIMENTAL |
+| kube_devicetaintrule_labels                                   | Gauge       | Kubernetes labels converted to Prometheus labels controlled via [--metric-labels-allowlist](../../developer/cli-arguments.md) | `devicetaintrule`=&lt;devicetaintrule-name&gt; <br> `label_DEVICETAINTRULE_LABEL`=&lt;DEVICETAINTRULE_LABEL&gt; | EXPERIMENTAL |

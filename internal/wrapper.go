@@ -74,7 +74,12 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	var reloadMu sync.Mutex
 	// start runs kube-state-metrics on ctx with the given options config file
 	// contents, and exits if the run fails. The caller holds reloadMu.
+	// serving is set once a run has been started, guarded by reloadMu. It
+	// stays unset while the options config file rejected at startup with
+	// --continue-without-config waits to be fixed.
+	var serving bool
 	start := func(configFile []byte, onConfigStatus func(reportRejected func())) {
+		serving = true
 		runCtx := ctx
 		runs.Go(func() {
 			err := app.RunKubeStateMetricsWrapper(runCtx, baseOpts.Clone(), app.WithOptionsConfigFile(configFile), app.WithConfigReloadReporter(onConfigStatus))
@@ -114,6 +119,10 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 			// Stopping the running instance takes the metrics endpoints down
 			// until the new one has started, so keep it if only the options
 			// config file changed.
+			if !serving {
+				klog.ErrorS(err, "Invalid options configuration file, waiting for it to be fixed", "file", file)
+				return
+			}
 			if optionsChanged {
 				klog.ErrorS(err, "Invalid options configuration file, keeping the running configuration", "file", file)
 				return
@@ -147,24 +156,24 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	// replaces the initial run's reporter rather than the other way around.
 	initialReporter := status.newRun(false)
 	// The initial run uses the options config file as read here, nil if it
-	// does not exist or was rejected.
+	// does not exist.
 	var configFile []byte
+	// rejected is set when the options config file exists but is rejected.
+	var rejected bool
 
 	if file := options.GetConfigFile(*opts); file != "" {
 		// Merge configFile values with opts so we get the CustomResourceConfigFile from config as well
 		contents, merged, err := loadConfigFile(opts)
+		rejected = err != nil
 		switch {
-		case err != nil:
+		case rejected:
 			klog.ErrorS(err, "Invalid options configuration file", "file", file)
-			// With --continue-without-config, serve with the command line
-			// options until the file is fixed, and report it as rejected.
-			status.reject()
 		case contents == nil:
 			klog.ErrorS(fs.ErrNotExist, "Options configuration file not found at startup", "file", file)
 		default:
 			configFile, opts = contents, merged
 		}
-		if (err != nil || contents == nil) && !opts.ContinueWithoutConfig {
+		if (rejected || contents == nil) && !opts.ContinueWithoutConfig {
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 		reloadMu.Lock()
@@ -203,10 +212,17 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		kubeconfigWatch.watch(opts.Kubeconfig, onFileChange)
 		reloadMu.Unlock()
 	}
-	klog.InfoS("Starting kube-state-metrics")
-	reloadMu.Lock()
-	start(configFile, initialReporter)
-	reloadMu.Unlock()
+	if rejected {
+		// Serving with only the command line options would drop the limits the
+		// file sets, such as namespaces or metric denylists, so wait for a
+		// valid file, which the options file watcher starts a run with.
+		klog.InfoS("Not starting kube-state-metrics until the options configuration file is fixed")
+	} else {
+		klog.InfoS("Starting kube-state-metrics")
+		reloadMu.Lock()
+		start(configFile, initialReporter)
+		reloadMu.Unlock()
+	}
 
 	<-sigCtx.Done()
 	// Restore the default action, so a second signal stops the process at once.

@@ -46,7 +46,7 @@ Flags:
       --auto-gomemlimit-ratio float                          The ratio of reserved GOMEMLIMIT memory to the detected maximum container or system memory. (experimental) (default 0.9)
       --auto-gomemlimit-refresh-interval duration            Interval at which to re-detect the container or system memory limit and update GOMEMLIMIT, for limits that change at runtime such as with in-place pod resize. 0 detects the limit only once at startup. Only used with --auto-gomemlimit. (experimental)
       --config string                                        Path to the kube-state-metrics options config YAML file. If this flag is set, the flags defined in the file override the command line flags. Keys that do not match an option are rejected.
-      --continue-without-config                              If true, kube-state-metrics continues to run even if the config file specified by --config is not present. This is useful for scenarios where config file is not provided at startup but is provided later, for e.g., via configmap. Kube-state-metrics will not exit with an error if the config file is not found, instead watches and reloads when it is created.
+      --continue-without-config                              If true, kube-state-metrics continues to run even if the config file specified by --config is not present. This is useful for scenarios where config file is not provided at startup but is provided later, for e.g., via configmap. Kube-state-metrics will not exit with an error if the config file is not found, instead watches and reloads when it is created. If the config file exists but is rejected, kube-state-metrics does not serve metrics until the file is fixed.
       --continue-without-custom-resource-state-config-file   If true, Kube-state-metrics continues to run even if the config file specified by --custom-resource-state-config-file is not present. This is useful for scenarios where config file is not provided at startup but is provided later, for e.g., via configmap. Kube-state-metrics will not exit with an error if the custom-resource-state-config file is not found, instead watches and reloads when it is created.
       --custom-resource-state-config string                  Inline Custom Resource State Metrics config YAML (experimental)
       --custom-resource-state-config-file string             Path to a Custom Resource State Metrics config file (experimental)
@@ -102,6 +102,8 @@ Use "kube-state-metrics [command] --help" for more information about a command.
 ## Options config file
 
 Options can also be set in the YAML file passed with `--config`. Values in the file override the command line flags. The file must contain a single YAML document, and a key that is not listed below is rejected. The `--config` flag and the logging flags can only be set on the command line.
+
+At startup, a rejected file makes kube-state-metrics exit; with `--continue-without-config`, it serves no metrics until the file is fixed. On a reload, a rejected file keeps the running configuration and sets `kube_state_metrics_last_config_reload_successful` to 0.
 
 ```yaml
 port: 9090

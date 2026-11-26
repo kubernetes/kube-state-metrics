@@ -221,32 +221,12 @@ func runKubeStateMetrics(ctx context.Context, opts *options.Options, c runConfig
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
 	got := options.GetConfigFile(*opts)
 	file := filepath.Clean(got)
-	reportConfigStatus := func() {
-		if c.onConfigStatus == nil {
-			return
-		}
-		c.onConfigStatus(func() {
-			if got != "" {
-				configSuccess.WithLabelValues("config", file).Set(0)
-			}
-		})
-	}
 	if got != "" && c.configFile != nil {
 		// NOTE: Config value will override default values of intersecting options.
-		err := options.UnmarshalConfigFile(c.configFile, opts)
-
-		if err != nil {
-			// DO NOT end the process.
-			// We want to allow the user to still be able to fix the misconfigured config (redeploy or edit the configmaps) and reload KSM automatically once that's done.
-			klog.ErrorS(err, "failed to unmarshal opts config file")
-			// Wait for the next reload.
-			klog.InfoS("misconfigured config detected, KSM will automatically reload on next write to the config")
-			klog.InfoS("waiting for config to be fixed")
-			configSuccess.WithLabelValues("config", file).Set(0)
-			reportConfigStatus()
-			<-ctx.Done()
-			// The watcher cancelled this run to start a fresh one.
-			return nil
+		// The wrapper only starts a run with a file it has checked, so a file
+		// that is rejected here was passed in by a caller that cannot reload it.
+		if err := options.UnmarshalConfigFile(c.configFile, opts); err != nil {
+			return fmt.Errorf("failed to decode options config file %s: %w", got, err)
 		}
 
 		configSuccess.WithLabelValues("config", file).Set(1)
@@ -257,7 +237,13 @@ func runKubeStateMetrics(ctx context.Context, opts *options.Options, c runConfig
 		opts = configureResourcesAndMetrics(opts, c.configFile)
 		klog.InfoS("Using config file", "file", got)
 	}
-	reportConfigStatus()
+	if c.onConfigStatus != nil {
+		c.onConfigStatus(func() {
+			if got != "" {
+				configSuccess.WithLabelValues("config", file).Set(0)
+			}
+		})
+	}
 
 	sLogger := slog.New(logr.ToSlogHandler(klog.Background()))
 

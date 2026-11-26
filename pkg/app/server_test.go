@@ -1192,10 +1192,10 @@ func TestConfigureResourcesAndMetrics_InvalidYAML(t *testing.T) {
 	}
 }
 
-// TestRunKubeStateMetricsMalformedConfigReturnsOnCancel verifies that a run
-// waiting on a malformed config file returns once its context is cancelled
-// instead of continuing startup alongside the run that replaces it.
-func TestRunKubeStateMetricsMalformedConfigReturnsOnCancel(t *testing.T) {
+// TestRunKubeStateMetricsMalformedConfigReturnsError verifies that a run given
+// a malformed config file returns an error instead of starting or waiting for
+// a reload that only the wrapper can trigger.
+func TestRunKubeStateMetricsMalformedConfigReturnsError(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
 	if err := os.WriteFile(configPath, []byte("invalid: [unclosed"), 0o600); err != nil {
 		t.Fatal(err)
@@ -1205,11 +1205,9 @@ func TestRunKubeStateMetricsMalformedConfigReturnsOnCancel(t *testing.T) {
 	// Continuing startup would fail here, so reaching it surfaces as an error.
 	opts.Kubeconfig = filepath.Join(t.TempDir(), "missing-kubeconfig")
 
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	if err := RunKubeStateMetrics(ctx, opts); err != nil {
-		t.Fatalf("expected the cancelled run to return without error, got: %v", err)
+	err := RunKubeStateMetrics(t.Context(), opts)
+	if err == nil || !strings.Contains(err.Error(), "failed to decode options config file") {
+		t.Fatalf("expected the config file decode error, got: %v", err)
 	}
 }
 
@@ -1443,8 +1441,7 @@ func TestRunWithConfigFileIgnoresTheFileOnDisk(t *testing.T) {
 	base.Kubeconfig = filepath.Join(dir, "missing-kubeconfig")
 	base.TotalShards = 1
 
-	// Reading the invalid file would make the run wait for a fix until the
-	// context ends.
+	// Reading the invalid file would make the run fail.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -1461,8 +1458,7 @@ func TestRunWithConfigFileIgnoresTheFileOnDisk(t *testing.T) {
 	}
 }
 
-// The run reports in once it has set the options config file status, also when
-// it waits for an invalid file to be fixed.
+// The run reports in once it has set the options config file status.
 func TestRunReportsConfigStatus(t *testing.T) {
 	dir := t.TempDir()
 	base := options.NewOptions()
@@ -1476,14 +1472,12 @@ func TestRunReportsConfigStatus(t *testing.T) {
 		contents []byte
 	}{
 		{name: "valid", contents: []byte("namespaces: [team-a]\n")},
-		{name: "invalid", contents: []byte("prot: 9090\n")},
 		{name: "missing", contents: nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			reported := false
-			// An invalid file makes the run wait until the context ends.
 			_ = RunKubeStateMetricsWrapper(ctx, base.Clone(), WithOptionsConfigFile(tc.contents), WithConfigReloadReporter(func(reportRejected func()) {
 				reported = true
 				reportRejected()

@@ -33,6 +33,8 @@ spec:
 
 Options can also be set in the YAML file passed with `--config`. Values in the file override the command line flags. The file must contain a single YAML document, and a key that is not listed below is rejected. The `--config` flag and the logging flags can only be set on the command line.
 
+At startup, a rejected file makes kube-state-metrics exit; with `--continue-without-config`, it serves no metrics until the file is fixed. On a reload, a rejected file keeps the running configuration and sets `kube_state_metrics_last_config_reload_successful` to 0.
+
 ```yaml
 port: 9090
 namespaces: [default, kube-system]

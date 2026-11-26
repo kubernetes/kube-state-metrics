@@ -34,6 +34,10 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
+// configSettleDelay is how long a reload waits after a change event before it
+// reads the changed files.
+const configSettleDelay = time.Second
+
 // RunKubeStateMetricsWrapper is a wrapper around KSM, delegated to the root command.
 func RunKubeStateMetricsWrapper(opts *options.Options) {
 	// Snapshot the command line options before any config file is merged in.
@@ -41,13 +45,6 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	// so every run, including each reload, has to start from a fresh copy.
 	// Otherwise keys removed from the config file keep their previous values.
 	baseOpts := opts.Clone()
-
-	runOrDie := func(run func() error) {
-		if err := run(); err != nil {
-			klog.ErrorS(err, "Failed to run kube-state-metrics")
-			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-		}
-	}
 
 	// SIGTERM is what Kubernetes sends to stop a container. Cancelling the
 	// runs on it shuts their servers down and drains in-flight scrapes,
@@ -75,6 +72,18 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	// is overwritten before it is used, the instance it belonged to is never
 	// stopped, and two of them contend for the listen ports.
 	var reloadMu sync.Mutex
+	// start runs kube-state-metrics on ctx with the given options config file
+	// contents, and exits if the run fails. The caller holds reloadMu.
+	start := func(configFile []byte, onConfigStatus func(reportRejected func())) {
+		runCtx := ctx
+		runs.Go(func() {
+			err := app.RunKubeStateMetricsWrapper(runCtx, baseOpts.Clone(), app.WithOptionsConfigFile(configFile), app.WithConfigReloadReporter(onConfigStatus))
+			if err != nil {
+				klog.ErrorS(err, "Failed to run kube-state-metrics")
+				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+			}
+		})
+	}
 	// current is the options config file the running instance was started
 	// with, guarded by reloadMu.
 	var current []byte
@@ -88,6 +97,13 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		}
 
 		klog.InfoS("Changes detected", "name", e.Name)
+		// Let a write in progress finish, so a file written in more than one
+		// chunk is not checked and loaded half-written.
+		select {
+		case <-time.After(configSettleDelay):
+		case <-sigCtx.Done():
+			return
+		}
 		// The new run gets the options config file as it was checked here, as
 		// the file can change again before the run starts.
 		configFile, next, err := loadConfigFile(baseOpts)
@@ -122,13 +138,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		}
 		klog.InfoS("Restarting kube-state-metrics, metrics will be reset")
 		ctx, cancel = context.WithCancelCause(sigCtx)
-		runCtx := ctx
-		runOpts := []app.RunOption{app.WithOptionsConfigFile(configFile), app.WithConfigReloadReporter(status.newRun(rejected))}
-		runs.Go(func() {
-			runOrDie(func() error {
-				return app.RunKubeStateMetricsWrapper(runCtx, baseOpts.Clone(), runOpts...)
-			})
-		})
+		start(configFile, status.newRun(rejected))
 	}
 	onOptionsChange = func(e fsnotify.Event) { restart(e, true) }
 	onFileChange = func(e fsnotify.Event) { restart(e, false) }
@@ -195,12 +205,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	}
 	klog.InfoS("Starting kube-state-metrics")
 	reloadMu.Lock()
-	runCtx := ctx
-	runs.Go(func() {
-		runOrDie(func() error {
-			return app.RunKubeStateMetricsWrapper(runCtx, baseOpts.Clone(), app.WithOptionsConfigFile(configFile), app.WithConfigReloadReporter(initialReporter))
-		})
-	})
+	start(configFile, initialReporter)
 	reloadMu.Unlock()
 
 	<-sigCtx.Done()

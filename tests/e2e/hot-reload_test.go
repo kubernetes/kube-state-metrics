@@ -92,7 +92,7 @@ func TestConfigHotReload(t *testing.T) {
 	if err := os.WriteFile(opts.Config, []byte("enable_gzip_encoding: true\n"), 0600 /* rw------- */); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
-	waitForConfigMetrics(t, "the changed options config file to be loaded", func(m map[string]string) bool {
+	changed := waitForConfigMetrics(t, "the changed options config file to be loaded", func(m map[string]string) bool {
 		return m["kube_state_metrics_last_config_reload_successful"] == "1" &&
 			m["kube_state_metrics_config_hash"] != "" && m["kube_state_metrics_config_hash"] != before["kube_state_metrics_config_hash"]
 	})
@@ -102,9 +102,13 @@ func TestConfigHotReload(t *testing.T) {
 	if err := os.WriteFile(opts.Config, []byte(`foo: "bar"`), 0600 /* rw------- */); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
-	waitForConfigMetrics(t, "the rejected reload to be reported", func(m map[string]string) bool {
+	rejected := waitForConfigMetrics(t, "the rejected reload to be reported", func(m map[string]string) bool {
 		return m["kube_state_metrics_last_config_reload_successful"] == "0"
 	})
+	if rejected["kube_state_metrics_config_hash"] != changed["kube_state_metrics_config_hash"] {
+		t.Fatalf("expected the running instance to keep its configuration, config hash changed from %s to %s",
+			changed["kube_state_metrics_config_hash"], rejected["kube_state_metrics_config_hash"])
+	}
 	conn, err := net.Dial("tcp", "localhost:8080")
 	if err != nil {
 		t.Fatalf("expected the running instance to keep serving after a rejected reload: %v", err)

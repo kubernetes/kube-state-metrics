@@ -128,7 +128,6 @@ server_read_timeout: 30s
 | `custom_resource_state_config_file` | `--custom-resource-state-config-file` | string |
 | `custom_resources_only` | `--custom-resource-state-only` | boolean |
 | `enable_gzip_encoding` | `--enable-gzip-encoding` | boolean |
-| `help` | `--help` | boolean |
 | `host` | `--host` | string |
 | `kubeconfig` | `--kubeconfig` | string |
 | `labels_allow_list` | `--metric-labels-allowlist` | map of resource to list of label keys |

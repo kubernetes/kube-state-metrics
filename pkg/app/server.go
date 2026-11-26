@@ -141,11 +141,10 @@ func RunKubeStateMetrics(ctx context.Context, opts *options.Options, runOpts ...
 		opt(&c)
 	}
 	if !c.configFileSet {
-		configFile, err := readOptionsConfigFile(opts)
-		if err != nil {
+		var err error
+		if c.configFile, err = readOptionsConfigFile(opts); err != nil {
 			return err
 		}
-		c.configFile = configFile
 	}
 	return runKubeStateMetrics(ctx, opts, c)
 }
@@ -157,11 +156,12 @@ func readOptionsConfigFile(opts *options.Options) ([]byte, error) {
 	if got == "" {
 		return nil, nil
 	}
-	if _, err := os.Stat(filepath.Clean(got)); err != nil {
+	file := filepath.Clean(got)
+	if _, err := os.Stat(file); err != nil {
 		klog.ErrorS(err, "encountered error while processing the file", "file", got)
 		return nil, nil
 	}
-	configFile, err := os.ReadFile(filepath.Clean(got))
+	configFile, err := os.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read opts config file: %w", err)
 	}
@@ -219,22 +219,21 @@ func runKubeStateMetrics(ctx context.Context, opts *options.Options, c runConfig
 	})
 	storeBuilder := store.NewBuilder()
 	storeBuilder.WithMetrics(ksmMetricsRegistry)
-	configFile := c.configFile
 	got := options.GetConfigFile(*opts)
+	file := filepath.Clean(got)
 	reportConfigStatus := func() {
 		if c.onConfigStatus == nil {
 			return
 		}
 		c.onConfigStatus(func() {
 			if got != "" {
-				configSuccess.WithLabelValues("config", filepath.Clean(got)).Set(0)
+				configSuccess.WithLabelValues("config", file).Set(0)
 			}
 		})
 	}
-	if got != "" && configFile != nil {
-		file := filepath.Clean(got)
+	if got != "" && c.configFile != nil {
 		// NOTE: Config value will override default values of intersecting options.
-		err := options.UnmarshalConfigFile(configFile, opts)
+		err := options.UnmarshalConfigFile(c.configFile, opts)
 
 		if err != nil {
 			// DO NOT end the process.
@@ -252,10 +251,10 @@ func runKubeStateMetrics(ctx context.Context, opts *options.Options, c runConfig
 
 		configSuccess.WithLabelValues("config", file).Set(1)
 		configSuccessTime.WithLabelValues("config", file).SetToCurrentTime()
-		hash := md5HashAsMetricValue(configFile)
+		hash := md5HashAsMetricValue(c.configFile)
 		configHash.WithLabelValues("config", file).Set(hash)
 
-		opts = configureResourcesAndMetrics(opts, configFile)
+		opts = configureResourcesAndMetrics(opts, c.configFile)
 		klog.InfoS("Using config file", "file", got)
 	}
 	reportConfigStatus()

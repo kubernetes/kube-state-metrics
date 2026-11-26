@@ -217,27 +217,3 @@ func TestConfigStatus(t *testing.T) {
 		}
 	})
 }
-
-func TestOptionsFor(t *testing.T) {
-	base := options.NewOptions()
-	base.Kubeconfig = "/etc/ksm/kubeconfig-from-flag"
-
-	for _, tc := range []struct {
-		name       string
-		configFile []byte
-		want       string
-	}{
-		{name: "no config file", want: "/etc/ksm/kubeconfig-from-flag"},
-		{name: "valid config file", configFile: []byte("kubeconfig: /etc/ksm/kubeconfig-from-config\n"), want: "/etc/ksm/kubeconfig-from-config"},
-		{name: "invalid config file", configFile: []byte("kubeconfig: /etc/ksm/kubeconfig-from-config\nprot: 9090\n"), want: "/etc/ksm/kubeconfig-from-flag"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := optionsFor(base, tc.configFile).Kubeconfig; got != tc.want {
-				t.Errorf("got kubeconfig %q, want %q", got, tc.want)
-			}
-		})
-	}
-	if base.Kubeconfig != "/etc/ksm/kubeconfig-from-flag" {
-		t.Errorf("the base options must not change, got %q", base.Kubeconfig)
-	}
-}

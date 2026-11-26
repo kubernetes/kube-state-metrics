@@ -104,13 +104,15 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 			}
 			// A file the running instance uses changed, such as a rotated
 			// kubeconfig, so restart with the options config file it runs with.
+			// The watchers already follow the files of that configuration.
 			klog.ErrorS(err, "Invalid options configuration file, restarting with the running configuration", "file", file)
-			configFile, next = current, optionsFor(baseOpts, current)
+			configFile = current
+		} else {
+			current = configFile
+			// Follow the files the restarted run will use.
+			crcWatch.watch(next.CustomResourceConfigFile, onFileChange)
+			kubeconfigWatch.watch(next.Kubeconfig, onFileChange)
 		}
-		current = configFile
-		// Follow the files the restarted run will use.
-		crcWatch.watch(next.CustomResourceConfigFile, onFileChange)
-		kubeconfigWatch.watch(next.Kubeconfig, onFileChange)
 		cancel(app.ErrConfigReload)
 		// Wait for the ports to be released.
 		select {
@@ -135,33 +137,24 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	// replaces the initial run's reporter rather than the other way around.
 	initialReporter := status.newRun(false)
 	// The initial run uses the options config file as read here, nil if it
-	// does not exist or cannot be read.
+	// does not exist or cannot be read. A file that cannot be decoded is still
+	// passed on, and the run waits for it to be fixed.
 	var configFile []byte
 
 	if file := options.GetConfigFile(*opts); file != "" {
 		// Merge configFile values with opts so we get the CustomResourceConfigFile from config as well
-		if contents, err := os.ReadFile(filepath.Clean(file)); err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				klog.ErrorS(err, "Options configuration file not found at startup", "file", file)
-			} else {
-				klog.ErrorS(err, "Error reading options configuration file", "file", file)
-			}
-			if !opts.ContinueWithoutConfig {
-				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-			}
-		} else {
-			configFile = contents
-			// Decode onto a copy, as a file that is rejected can still have set
-			// some options, such as continue_without_config.
-			merged := opts.Clone()
-			if err := options.UnmarshalConfigFile(configFile, merged); err != nil {
-				klog.ErrorS(err, "failed to unmarshal options configuration file", "file", file)
-				if !opts.ContinueWithoutConfig {
-					klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-				}
-			} else {
-				opts = merged
-			}
+		contents, merged, err := loadConfigFile(opts)
+		configFile = contents
+		switch {
+		case err != nil:
+			klog.ErrorS(err, "Invalid options configuration file", "file", file)
+		case contents == nil:
+			klog.ErrorS(fs.ErrNotExist, "Options configuration file not found at startup", "file", file)
+		default:
+			opts = merged
+		}
+		if (err != nil || contents == nil) && !opts.ContinueWithoutConfig {
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 		reloadMu.Lock()
 		current = configFile
@@ -295,22 +288,12 @@ func (s *configStatus) reject() {
 	}
 }
 
-// optionsFor returns the options a run started from baseOpts with configFile
-// as its options config file uses. A config file that cannot be decoded
-// leaves the run waiting for a fix, so the command line options apply.
-func optionsFor(baseOpts *options.Options, configFile []byte) *options.Options {
-	opts := baseOpts.Clone()
-	if configFile != nil && options.UnmarshalConfigFile(configFile, opts) != nil {
-		return baseOpts.Clone()
-	}
-	return opts
-}
-
 // loadConfigFile reads the options config file of baseOpts and returns its
 // contents along with the options a run starting from baseOpts uses. The
 // contents are nil if no options config file is set or it does not exist; the
 // run then starts without it. A file that exists but cannot be read or decoded
-// is an error.
+// is an error, returned with the contents that were read, if any, and no
+// options.
 func loadConfigFile(baseOpts *options.Options) ([]byte, *options.Options, error) {
 	opts := baseOpts.Clone()
 	file := options.GetConfigFile(*opts)
@@ -324,8 +307,10 @@ func loadConfigFile(baseOpts *options.Options) ([]byte, *options.Options, error)
 		}
 		return nil, nil, err
 	}
+	// Decoded onto a copy, as a file that is rejected can still have set some
+	// options, such as continue_without_config.
 	if err := options.UnmarshalConfigFile(configFile, opts); err != nil {
-		return nil, nil, err
+		return configFile, nil, err
 	}
 	return configFile, opts, nil
 }

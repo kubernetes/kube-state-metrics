@@ -121,6 +121,7 @@ server_read_timeout: 30s
 | `auth_filter` | `--auth-filter` | boolean |
 | `auto-gomemlimit` | `--auto-gomemlimit` | boolean |
 | `auto-gomemlimit-ratio` | `--auto-gomemlimit-ratio` | float |
+| `auto-gomemlimit-refresh-interval` | `--auto-gomemlimit-refresh-interval` | duration |
 | `continue_without_config` | `--continue-without-config` | boolean |
 | `continue_without_custom_resource_state_config_file` | `--continue-without-custom-resource-state-config-file` | boolean |
 | `custom_resource_config` | `--custom-resource-state-config` | string |
@@ -146,6 +147,7 @@ server_read_timeout: 30s
 | `server_read_header_timeout` | `--server-read-header-timeout` | duration |
 | `server_read_timeout` | `--server-read-timeout` | duration |
 | `server_write_timeout` | `--server-write-timeout` | duration |
+| `shutdown_delay` | `--shutdown-delay` | duration |
 | `shard` | `--shard` | integer |
 | `telemetry_host` | `--telemetry-host` | string |
 | `telemetry_port` | `--telemetry-port` | integer |

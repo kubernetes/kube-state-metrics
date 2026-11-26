@@ -137,21 +137,22 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	// replaces the initial run's reporter rather than the other way around.
 	initialReporter := status.newRun(false)
 	// The initial run uses the options config file as read here, nil if it
-	// does not exist or cannot be read. A file that cannot be decoded is still
-	// passed on, and the run waits for it to be fixed.
+	// does not exist or was rejected.
 	var configFile []byte
 
 	if file := options.GetConfigFile(*opts); file != "" {
 		// Merge configFile values with opts so we get the CustomResourceConfigFile from config as well
 		contents, merged, err := loadConfigFile(opts)
-		configFile = contents
 		switch {
 		case err != nil:
 			klog.ErrorS(err, "Invalid options configuration file", "file", file)
+			// With --continue-without-config, serve with the command line
+			// options until the file is fixed, and report it as rejected.
+			status.reject()
 		case contents == nil:
 			klog.ErrorS(fs.ErrNotExist, "Options configuration file not found at startup", "file", file)
 		default:
-			opts = merged
+			configFile, opts = contents, merged
 		}
 		if (err != nil || contents == nil) && !opts.ContinueWithoutConfig {
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
@@ -292,8 +293,7 @@ func (s *configStatus) reject() {
 // contents along with the options a run starting from baseOpts uses. The
 // contents are nil if no options config file is set or it does not exist; the
 // run then starts without it. A file that exists but cannot be read or decoded
-// is an error, returned with the contents that were read, if any, and no
-// options.
+// is an error.
 func loadConfigFile(baseOpts *options.Options) ([]byte, *options.Options, error) {
 	opts := baseOpts.Clone()
 	file := options.GetConfigFile(*opts)
@@ -310,7 +310,7 @@ func loadConfigFile(baseOpts *options.Options) ([]byte, *options.Options, error)
 	// Decoded onto a copy, as a file that is rejected can still have set some
 	// options, such as continue_without_config.
 	if err := options.UnmarshalConfigFile(configFile, opts); err != nil {
-		return configFile, nil, err
+		return nil, nil, err
 	}
 	return configFile, opts, nil
 }

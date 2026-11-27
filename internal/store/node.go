@@ -57,6 +57,8 @@ func nodeMetricFamilies(allowAnnotationsList, allowLabelsList []string) []genera
 		createNodeStatusCapacityFamilyGenerator(),
 		createNodeStatusConditionFamilyGenerator(),
 		createNodeStateAddressFamilyGenerator(),
+		createNodeVolumesAttachedGenerator(),
+		createNodeVolumesInUseGenerator(),
 	}
 }
 
@@ -530,6 +532,44 @@ func createNodeStatusConditionFamilyGenerator() generator.FamilyGenerator {
 
 			return &metric.Family{
 				Metrics: ms,
+			}
+		}),
+	)
+}
+
+func createNodeVolumesAttachedGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_node_volumes_attached",
+		"Number of volumes attached to the node",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapNodeFunc(func(n *v1.Node) *metric.Family {
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						Value: float64(len(n.Status.VolumesAttached)),
+					},
+				},
+			}
+		}),
+	)
+}
+
+func createNodeVolumesInUseGenerator() generator.FamilyGenerator {
+	return *generator.NewFamilyGeneratorWithStability(
+		"kube_node_volumes_in_use",
+		"Number of volumes in use on the node",
+		metric.Gauge,
+		basemetrics.ALPHA,
+		"",
+		wrapNodeFunc(func(n *v1.Node) *metric.Family {
+			return &metric.Family{
+				Metrics: []*metric.Metric{
+					{
+						Value: float64(len(n.Status.VolumesInUse)),
+					},
+				},
 			}
 		}),
 	)

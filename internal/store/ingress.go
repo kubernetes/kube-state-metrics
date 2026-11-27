@@ -162,7 +162,7 @@ func ingressMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 							if path.Backend.Service != nil {
 								ms = append(ms, &metric.Metric{
 									LabelKeys:   []string{"host", "path", "path_type", "service_name", "service_port"},
-									LabelValues: []string{rule.Host, path.Path, pathType, path.Backend.Service.Name, strconv.Itoa(int(path.Backend.Service.Port.Number))},
+									LabelValues: []string{rule.Host, path.Path, pathType, path.Backend.Service.Name, ingressServicePort(path.Backend.Service.Port)},
 									Value:       1,
 								})
 							} else {
@@ -234,4 +234,13 @@ func createIngressListWatch(kubeClient clientset.Interface, ns string, fieldSele
 			return kubeClient.NetworkingV1().Ingresses(ns).Watch(context.TODO(), opts)
 		},
 	}
+}
+
+// ingressServicePort returns the backend's port number, or its name when the
+// backend refers to the Service port by name. Exactly one of them is set.
+func ingressServicePort(port networkingv1.ServiceBackendPort) string {
+	if port.Name != "" {
+		return port.Name
+	}
+	return strconv.Itoa(int(port.Number))
 }

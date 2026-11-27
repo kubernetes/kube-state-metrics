@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
@@ -317,26 +318,35 @@ func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
 	}
 
 	// Render every object that is not rendered yet on the shared workers,
-	// then store them in list order. Objects from a WatchList initial sync
+	// and store them in list order. Objects from a WatchList initial sync
 	// were handed to the workers by Transformer as they arrived; objects from
-	// a List are full objects and are handed over here.
-	rendered := make([]*renderedObject, len(list))
-	for i, o := range list {
-		if r, ok := o.(*renderedObject); ok {
-			rendered[i] = r
-			continue
-		}
-		uid, _ := objectUID(o) // checked above
-		if !s.admit(uid) {
-			continue
-		}
-		rendered[i] = s.renderAsync(uid, o)
-	}
-	for _, r := range rendered {
-		if r != nil {
+	// a List are full objects and are handed over here. Only a few objects
+	// are in flight at a time, so that on a relist each object's old metrics
+	// are replaced, and can be collected, soon after its new ones are
+	// rendered, rather than once the whole list is.
+	maxInFlight := 2 * runtime.GOMAXPROCS(0)
+	var inFlight []*renderedObject
+	storeRendered := func(keep int) {
+		for len(inFlight) > keep {
+			r := inFlight[0]
+			inFlight[0] = nil
+			inFlight = inFlight[1:]
 			s.metrics.Store(r.uid, r.wait())
 		}
 	}
+	for _, o := range list {
+		r, ok := o.(*renderedObject)
+		if !ok {
+			uid, _ := objectUID(o) // checked above
+			if !s.admit(uid) {
+				continue
+			}
+			r = s.renderAsync(uid, o)
+		}
+		inFlight = append(inFlight, r)
+		storeRendered(maxInFlight)
+	}
+	storeRendered(0)
 
 	s.setLastResourceVersion(resourceVersion)
 
@@ -358,6 +368,8 @@ func (s *MetricsStore) Resync() error {
 // The rendered objects are not runtime.Objects, so client-go's WatchList data
 // consistency check (KUBE_WATCHLIST_INCONSISTENCY_DETECTOR) cannot be used with
 // this store.
+//
+// The objects are rendered concurrently, see renderAsync.
 func (s *MetricsStore) Transformer() cache.TransformFunc {
 	return func(obj any) (any, error) {
 		o, err := meta.Accessor(obj)
@@ -371,7 +383,34 @@ func (s *MetricsStore) Transformer() cache.TransformFunc {
 // renderSlots bounds the number of objects rendered at the same time, across
 // all stores. The reflectors of the different resources already sync
 // concurrently, so a bound per store would oversubscribe the CPUs.
-var renderSlots = make(chan struct{}, runtime.GOMAXPROCS(0))
+var renderSlots renderLimiter
+
+// renderLimiter is a semaphore whose size follows GOMAXPROCS, which the
+// runtime adjusts when the container's CPU limit changes.
+type renderLimiter struct {
+	mu      sync.Mutex
+	cond    *sync.Cond
+	running int
+}
+
+func (l *renderLimiter) acquire() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.cond == nil {
+		l.cond = sync.NewCond(&l.mu)
+	}
+	for l.running >= runtime.GOMAXPROCS(0) {
+		l.cond.Wait()
+	}
+	l.running++
+}
+
+func (l *renderLimiter) release() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.running--
+	l.cond.Signal()
+}
 
 // renderAsync renders obj on a worker and returns at once. When every worker
 // is busy it blocks until one is free, so a reflector feeding objects faster
@@ -379,11 +418,17 @@ var renderSlots = make(chan struct{}, runtime.GOMAXPROCS(0))
 // This keeps the memory peak of a WatchList initial sync close to that of
 // rendering inline, while spreading the rendering of a large resource, which
 // would otherwise run on its reflector's goroutine alone, over all CPUs.
+//
+// The store's generate function is therefore called concurrently, and must be
+// safe for concurrent use.
 func (s *MetricsStore) renderAsync(uid types.UID, obj any) *renderedObject {
 	r := &renderedObject{uid: uid}
-	renderSlots <- struct{}{}
+	renderSlots.acquire()
 	r.wg.Go(func() {
-		defer func() { <-renderSlots }()
+		// Report a panic as the reflector goroutine the rendering moved
+		// from would have.
+		defer utilruntime.HandleCrash()
+		defer renderSlots.release()
 		r.families = renderFamilies(s.generateMetricsFunc(obj))
 	})
 	return r

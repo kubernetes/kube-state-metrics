@@ -72,7 +72,9 @@ func (m *Metric) Write(s *bytes.Buffer) {
 		writeLabels(s, '{', m.LabelKeys, m.LabelValues)
 		s.WriteByte('}')
 	}
-	m.writeValue(s)
+	s.WriteByte(' ')
+	writeFloat(s, m.Value)
+	s.WriteByte('\n')
 }
 
 // writeAfterPrefix writes the metric following a name and an already opened,
@@ -82,7 +84,9 @@ func (m *Metric) writeAfterPrefix(s *bytes.Buffer) {
 
 	writeLabels(s, ',', m.LabelKeys, m.LabelValues)
 	s.WriteByte('}')
-	m.writeValue(s)
+	s.WriteByte(' ')
+	writeFloat(s, m.Value)
+	s.WriteByte('\n')
 }
 
 func checkLabels(keys, values []string) {
@@ -92,12 +96,6 @@ func checkLabels(keys, values []string) {
 			keys, values,
 		))
 	}
-}
-
-func (m *Metric) writeValue(s *bytes.Buffer) {
-	s.WriteByte(' ')
-	writeFloat(s, m.Value)
-	s.WriteByte('\n')
 }
 
 // writeLabels writes keys and values as key="value" pairs, each preceded by

@@ -103,13 +103,17 @@ func (f Family) AppendBytes(b []byte) []byte {
 	buf := bytes.NewBuffer(b)
 	buf.Grow(f.SizeHint())
 
-	if f.DefaultLabels == nil {
-		return f.appendMetrics(buf)
+	var keys, values []string
+	if d := f.DefaultLabels; d != nil {
+		keys, values = d.Keys, d.Values
+		checkLabels(keys, values)
 	}
-	keys, values := f.DefaultLabels.Keys, f.DefaultLabels.Values
-	checkLabels(keys, values)
 	if len(keys) == 0 {
-		return f.appendMetrics(buf)
+		for _, m := range f.Metrics {
+			buf.WriteString(f.Name)
+			m.Write(buf)
+		}
+		return buf.Bytes()
 	}
 
 	// Render the name and the default labels, without the closing brace, once.
@@ -128,15 +132,6 @@ func (f Family) AppendBytes(b []byte) []byte {
 		m.writeAfterPrefix(buf)
 	}
 
-	return buf.Bytes()
-}
-
-// appendMetrics renders the metrics of a family without default labels.
-func (f Family) appendMetrics(buf *bytes.Buffer) []byte {
-	for _, m := range f.Metrics {
-		buf.WriteString(f.Name)
-		m.Write(buf)
-	}
 	return buf.Bytes()
 }
 

@@ -100,9 +100,11 @@ func createEndpointsSliceHints() generator.FamilyGenerator {
 		wrapEndpointSliceFunc(func(e *discoveryv1.EndpointSlice) *metric.Family {
 			m := []*metric.Metric{}
 			for _, ep := range e.Endpoints {
-				// Hint is populated when the endpoint is configured to be zone aware and preferentially route requests to its local zone.
-				// If there is no hint, skip this metric
-				if ep.Hints == nil || len(ep.Hints.ForZones) == 0 {
+				// Hints are populated when the endpoint is configured for topology-aware
+				// routing: forZones for zone-local routing, forNodes for node-local
+				// routing (trafficDistribution: PreferSameNode). Endpoints without
+				// hints produce no series.
+				if ep.Hints == nil {
 					continue
 				}
 
@@ -124,8 +126,15 @@ func createEndpointsSliceHints() generator.FamilyGenerator {
 					// would write into the same backing array and report the last
 					// one.
 					m = append(m, &metric.Metric{
-						LabelKeys:   []string{"address", "for_zone"},
-						LabelValues: []string{address, zone.Name},
+						LabelKeys:   []string{"address", "for_zone", "for_node"},
+						LabelValues: []string{address, zone.Name, ""},
+						Value:       1,
+					})
+				}
+				for _, node := range ep.Hints.ForNodes {
+					m = append(m, &metric.Metric{
+						LabelKeys:   []string{"address", "for_zone", "for_node"},
+						LabelValues: []string{address, "", node.Name},
 						Value:       1,
 					})
 				}

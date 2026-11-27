@@ -122,8 +122,9 @@ func wrapValidatingAdmissionPolicyBindingFunc(f func(*admissionregistrationv1.Va
 
 		metricFamily := f(vapb)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descValidatingAdmissionPolicyBindingDefaultLabels, []string{vapb.Name}, m.LabelKeys, m.LabelValues)
+		if len(metricFamily.Metrics) > 0 {
+			metricFamily.DefaultLabelKeys = descValidatingAdmissionPolicyBindingDefaultLabels
+			metricFamily.DefaultLabelValues = []string{vapb.Name}
 		}
 
 		return metricFamily

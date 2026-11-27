@@ -66,33 +66,51 @@ type Metric struct {
 }
 
 func (m *Metric) Write(s *bytes.Buffer) {
+	m.checkLabels()
+
+	if len(m.LabelKeys) > 0 {
+		writeLabels(s, '{', m.LabelKeys, m.LabelValues)
+		s.WriteByte('}')
+	}
+	m.writeValue(s)
+}
+
+// writeAfterPrefix writes the metric following a name and an already opened,
+// non-empty label set: its own labels, the closing brace and the value.
+func (m *Metric) writeAfterPrefix(s *bytes.Buffer) {
+	m.checkLabels()
+
+	writeLabels(s, ',', m.LabelKeys, m.LabelValues)
+	s.WriteByte('}')
+	m.writeValue(s)
+}
+
+func (m *Metric) checkLabels() {
 	if len(m.LabelKeys) != len(m.LabelValues) {
 		panic(fmt.Sprintf(
 			"expected labelKeys %q to be of same length as labelValues %q",
 			m.LabelKeys, m.LabelValues,
 		))
 	}
+}
 
-	labelsToString(s, m.LabelKeys, m.LabelValues)
+func (m *Metric) writeValue(s *bytes.Buffer) {
 	s.WriteByte(' ')
 	writeFloat(s, m.Value)
 	s.WriteByte('\n')
 }
 
-func labelsToString(m *bytes.Buffer, keys, values []string) {
-	if len(keys) > 0 {
-		var separator byte = '{'
-
-		for i := range keys {
-			m.WriteByte(separator)
-			m.WriteString(keys[i])
-			m.WriteString("=\"")
-			escapeString(m, values[i])
-			m.WriteByte('"')
-			separator = ','
-		}
-
-		m.WriteByte('}')
+// writeLabels writes keys and values as key="value" pairs, each preceded by
+// separator for the first pair and by ',' for the rest. It writes no braces
+// of its own beyond the given separator.
+func writeLabels(m *bytes.Buffer, separator byte, keys, values []string) {
+	for i := range keys {
+		m.WriteByte(separator)
+		m.WriteString(keys[i])
+		m.WriteString("=\"")
+		escapeString(m, values[i])
+		m.WriteByte('"')
+		separator = ','
 	}
 }
 

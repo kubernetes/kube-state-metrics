@@ -18,6 +18,7 @@ package metric
 
 import (
 	"bytes"
+	"fmt"
 )
 
 // FamilyInterface interface for a family
@@ -31,6 +32,14 @@ type Family struct {
 	Name    string
 	Type    Type
 	Metrics []*Metric
+	// DefaultLabelKeys and DefaultLabelValues are labels shared by every
+	// metric of the family, typically the ones identifying the object (e.g.
+	// namespace and name). They are rendered before each metric's own labels.
+	// Keeping them here instead of merging them into every Metric avoids
+	// allocating new label slices per metric, and lets the rendered prefix be
+	// escaped once per family instead of once per metric.
+	DefaultLabelKeys   []string
+	DefaultLabelValues []string
 }
 
 // Inspect use to inspect the inside of a Family
@@ -55,9 +64,36 @@ func (f Family) AppendBytes(b []byte) []byte {
 
 	buf := bytes.NewBuffer(b)
 	buf.Grow(f.SizeHint())
-	for _, m := range f.Metrics {
-		buf.WriteString(f.Name)
-		m.Write(buf)
+
+	if len(f.DefaultLabelKeys) == 0 {
+		for _, m := range f.Metrics {
+			buf.WriteString(f.Name)
+			m.Write(buf)
+		}
+		return buf.Bytes()
+	}
+
+	if len(f.DefaultLabelKeys) != len(f.DefaultLabelValues) {
+		panic(fmt.Sprintf(
+			"expected default labelKeys %q to be of same length as default labelValues %q",
+			f.DefaultLabelKeys, f.DefaultLabelValues,
+		))
+	}
+
+	// Render the name and the default labels, without the closing brace, once.
+	// Every following metric copies these bytes instead of escaping the values
+	// again. The slice stays valid if buf grows: growing copies the contents to
+	// a new array and leaves the old one untouched.
+	start := buf.Len()
+	buf.WriteString(f.Name)
+	writeLabels(buf, '{', f.DefaultLabelKeys, f.DefaultLabelValues)
+	prefix := buf.Bytes()[start:]
+
+	for i, m := range f.Metrics {
+		if i > 0 {
+			buf.Write(prefix)
+		}
+		m.writeAfterPrefix(buf)
 	}
 
 	return buf.Bytes()
@@ -71,10 +107,18 @@ const valueSizeHint = 16
 // buffer up front instead of growing (and copying) it repeatedly. It is an
 // estimate, not a bound: the value length is assumed rather than computed.
 func (f Family) SizeHint() int {
+	defaultSize := 0
+	for i, k := range f.DefaultLabelKeys {
+		defaultSize += len(k) + 4
+		if i < len(f.DefaultLabelValues) {
+			defaultSize += len(f.DefaultLabelValues[i])
+		}
+	}
+
 	size := 0
 	for _, m := range f.Metrics {
 		// name, '{', '}', the value, the space before it and the newline after
-		size += len(f.Name) + 2 + valueSizeHint
+		size += len(f.Name) + 2 + valueSizeHint + defaultSize
 		for i, k := range m.LabelKeys {
 			// key, '=', '"', value, '"' and the separating ',' or '{'
 			size += len(k) + 4

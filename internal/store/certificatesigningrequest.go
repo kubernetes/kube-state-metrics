@@ -145,8 +145,9 @@ func wrapCSRFunc(f func(*certv1.CertificateSigningRequest) *metric.Family) func(
 		csr := obj.(*certv1.CertificateSigningRequest)
 		metricFamily := f(csr)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descCSRLabelsDefaultLabels, []string{csr.Name, csr.Spec.SignerName}, m.LabelKeys, m.LabelValues)
+		if len(metricFamily.Metrics) > 0 {
+			metricFamily.DefaultLabelKeys = descCSRLabelsDefaultLabels
+			metricFamily.DefaultLabelValues = []string{csr.Name, csr.Spec.SignerName}
 		}
 
 		return metricFamily

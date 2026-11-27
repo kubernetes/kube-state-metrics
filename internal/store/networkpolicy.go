@@ -148,8 +148,9 @@ func wrapNetworkPolicyFunc(f func(*networkingv1.NetworkPolicy) *metric.Family) f
 
 		metricFamily := f(networkPolicy)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descNetworkPolicyLabelsDefaultLabels, []string{networkPolicy.Namespace, networkPolicy.Name}, m.LabelKeys, m.LabelValues)
+		if len(metricFamily.Metrics) > 0 {
+			metricFamily.DefaultLabelKeys = descNetworkPolicyLabelsDefaultLabels
+			metricFamily.DefaultLabelValues = []string{networkPolicy.Namespace, networkPolicy.Name}
 		}
 
 		return metricFamily

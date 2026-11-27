@@ -159,8 +159,9 @@ func wrapRoleBindingFunc(f func(*rbacv1.RoleBinding) *metric.Family) func(any) *
 
 		metricFamily := f(rolebinding)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descRoleBindingLabelsDefaultLabels, []string{rolebinding.Namespace, rolebinding.Name}, m.LabelKeys, m.LabelValues)
+		if len(metricFamily.Metrics) > 0 {
+			metricFamily.DefaultLabelKeys = descRoleBindingLabelsDefaultLabels
+			metricFamily.DefaultLabelValues = []string{rolebinding.Namespace, rolebinding.Name}
 		}
 
 		return metricFamily

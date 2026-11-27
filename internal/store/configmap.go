@@ -153,8 +153,9 @@ func wrapConfigMapFunc(f func(*v1.ConfigMap) *metric.Family) func(any) *metric.F
 
 		metricFamily := f(configMap)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descConfigMapLabelsDefaultLabels, []string{configMap.Namespace, configMap.Name}, m.LabelKeys, m.LabelValues)
+		if len(metricFamily.Metrics) > 0 {
+			metricFamily.DefaultLabelKeys = descConfigMapLabelsDefaultLabels
+			metricFamily.DefaultLabelValues = []string{configMap.Namespace, configMap.Name}
 		}
 
 		return metricFamily

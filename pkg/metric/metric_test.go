@@ -18,8 +18,10 @@ package metric
 
 import (
 	"bytes"
+	"slices"
 	"strings"
 	"testing"
+	"unsafe"
 )
 
 func TestFamilyString(t *testing.T) {
@@ -52,9 +54,8 @@ func TestFamilyDefaultLabels(t *testing.T) {
 		{
 			name: "metrics with and without own labels",
 			family: Family{
-				Name:               "kube_pod_status",
-				DefaultLabelKeys:   []string{"namespace", "pod"},
-				DefaultLabelValues: []string{"ns1", "pod1"},
+				Name:          "kube_pod_status",
+				DefaultLabels: NewDefaultLabels([]string{"namespace", "pod"}, "ns1", "pod1"),
 				Metrics: []*Metric{
 					{Value: 1},
 					{LabelKeys: []string{"phase"}, LabelValues: []string{"Running"}, Value: 1},
@@ -69,9 +70,8 @@ kube_pod_status{namespace="ns1",pod="pod1",phase="Failed",reason="x"} 0
 		{
 			name: "default label values are escaped",
 			family: Family{
-				Name:               "kube_x",
-				DefaultLabelKeys:   []string{"name"},
-				DefaultLabelValues: []string{"a\"b\nc\\"},
+				Name:          "kube_x",
+				DefaultLabels: NewDefaultLabels([]string{"name"}, "a\"b\nc\\"),
 				Metrics: []*Metric{
 					{Value: 2},
 					{LabelKeys: []string{"k"}, LabelValues: []string{"\""}, Value: 3},
@@ -84,9 +84,8 @@ kube_x{name="a\"b\nc\\",k="\""} 3
 		{
 			name: "no metrics renders nothing",
 			family: Family{
-				Name:               "kube_z",
-				DefaultLabelKeys:   []string{"name"},
-				DefaultLabelValues: []string{"n"},
+				Name:          "kube_z",
+				DefaultLabels: NewDefaultLabels([]string{"name"}, "n"),
 			},
 			expected: "",
 		},
@@ -96,9 +95,8 @@ kube_x{name="a\"b\nc\\",k="\""} 3
 	// metrics are written, after the default label prefix has been rendered.
 	const longValue = 1.2345678901234567e+300
 	grow := Family{
-		Name:               "kube_y",
-		DefaultLabelKeys:   []string{"name"},
-		DefaultLabelValues: []string{"n"},
+		Name:          "kube_y",
+		DefaultLabels: NewDefaultLabels([]string{"name"}, "n"),
 	}
 	var growExpected strings.Builder
 	growExpected.WriteString("existing\n")
@@ -128,6 +126,42 @@ kube_x{name="a\"b\nc\\",k="\""} 3
 	}
 }
 
+// Families are allocated for every object on every event, also by generators
+// that set no default labels, so Family must not outgrow its size class.
+func TestFamilySize(t *testing.T) {
+	if size := unsafe.Sizeof(Family{}); size > 64 {
+		t.Errorf("Family is %d bytes, it should fit the 64-byte size class", size)
+	}
+}
+
+func TestNewDefaultLabels(t *testing.T) {
+	values := []string{"a", "b", "c", "d"}
+	for n := 0; n <= len(values); n++ {
+		keys := []string{"k1", "k2", "k3", "k4"}[:n]
+		want := slices.Clone(values[:n])
+		d := NewDefaultLabels(keys, values[:n]...)
+		if !slices.Equal(d.Values, want) {
+			t.Errorf("%d values: got %q, want %q", n, d.Values, want)
+		}
+		// The values are copied, so the caller may reuse its slice.
+		if n > 0 {
+			values[0] = "changed"
+			if d.Values[0] != want[0] {
+				t.Errorf("%d values: the values were not copied", n)
+			}
+			values[0] = "a"
+		}
+	}
+
+	// Stores share one key slice for all objects, as here.
+	keys := []string{"namespace", "pod", "uid"}
+	if allocs := testing.AllocsPerRun(100, func() {
+		_ = NewDefaultLabels(keys, "ns", "pod", "uid")
+	}); allocs > 1 {
+		t.Errorf("expected up to three values to cost one allocation, got %v", allocs)
+	}
+}
+
 func TestFamilyDefaultLabelsMismatchPanics(t *testing.T) {
 	defer func() {
 		if recover() == nil {
@@ -136,10 +170,9 @@ func TestFamilyDefaultLabelsMismatchPanics(t *testing.T) {
 	}()
 
 	f := Family{
-		Name:               "kube_x",
-		DefaultLabelKeys:   []string{"a", "b"},
-		DefaultLabelValues: []string{"1"},
-		Metrics:            []*Metric{{Value: 1}},
+		Name:          "kube_x",
+		DefaultLabels: NewDefaultLabels([]string{"a", "b"}, "1"),
+		Metrics:       []*Metric{{Value: 1}},
 	}
 	f.ByteSlice()
 }

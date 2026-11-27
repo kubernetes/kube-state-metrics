@@ -154,8 +154,7 @@ func wrapConfigMapFunc(f func(*v1.ConfigMap) *metric.Family) func(any) *metric.F
 		metricFamily := f(configMap)
 
 		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabelKeys = descConfigMapLabelsDefaultLabels
-			metricFamily.DefaultLabelValues = []string{configMap.Namespace, configMap.Name}
+			metricFamily.DefaultLabels = metric.NewDefaultLabels(descConfigMapLabelsDefaultLabels, configMap.Namespace, configMap.Name)
 		}
 
 		return metricFamily

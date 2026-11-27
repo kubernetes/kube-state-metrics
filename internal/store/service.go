@@ -213,8 +213,7 @@ func wrapSvcFunc(f func(*v1.Service) *metric.Family) func(any) *metric.Family {
 		metricFamily := f(svc)
 
 		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabelKeys = descServiceLabelsDefaultLabels
-			metricFamily.DefaultLabelValues = []string{svc.Namespace, svc.Name, string(svc.UID)}
+			metricFamily.DefaultLabels = metric.NewDefaultLabels(descServiceLabelsDefaultLabels, svc.Namespace, svc.Name, string(svc.UID))
 		}
 
 		return metricFamily

@@ -298,8 +298,7 @@ func wrapEndpointSliceFunc(f func(*discoveryv1.EndpointSlice) *metric.Family) fu
 		metricFamily := f(endpointSlice)
 
 		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabelKeys = descEndpointSliceLabelsDefaultLabels
-			metricFamily.DefaultLabelValues = []string{endpointSlice.Name, endpointSlice.Namespace}
+			metricFamily.DefaultLabels = metric.NewDefaultLabels(descEndpointSliceLabelsDefaultLabels, endpointSlice.Name, endpointSlice.Namespace)
 		}
 
 		return metricFamily

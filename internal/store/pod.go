@@ -2048,8 +2048,7 @@ func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(any) *metric.Family {
 		metricFamily := f(pod)
 
 		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabelKeys = descPodLabelsDefaultLabels
-			metricFamily.DefaultLabelValues = []string{pod.Namespace, pod.Name, string(pod.UID)}
+			metricFamily.DefaultLabels = metric.NewDefaultLabels(descPodLabelsDefaultLabels, pod.Namespace, pod.Name, string(pod.UID))
 		}
 
 		return metricFamily

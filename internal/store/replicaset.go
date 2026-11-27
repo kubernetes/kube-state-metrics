@@ -283,8 +283,7 @@ func wrapReplicaSetFunc(f func(*v1.ReplicaSet) *metric.Family) func(any) *metric
 		metricFamily := f(replicaSet)
 
 		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabelKeys = descReplicaSetLabelsDefaultLabels
-			metricFamily.DefaultLabelValues = []string{replicaSet.Namespace, replicaSet.Name}
+			metricFamily.DefaultLabels = metric.NewDefaultLabels(descReplicaSetLabelsDefaultLabels, replicaSet.Namespace, replicaSet.Name)
 		}
 
 		return metricFamily

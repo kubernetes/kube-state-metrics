@@ -192,8 +192,7 @@ func wrapEndpointFunc(f func(*v1.Endpoints) *metric.Family) func(any) *metric.Fa
 		metricFamily := f(endpoint)
 
 		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabelKeys = descEndpointLabelsDefaultLabels
-			metricFamily.DefaultLabelValues = []string{endpoint.Namespace, endpoint.Name}
+			metricFamily.DefaultLabels = metric.NewDefaultLabels(descEndpointLabelsDefaultLabels, endpoint.Namespace, endpoint.Name)
 		}
 
 		return metricFamily

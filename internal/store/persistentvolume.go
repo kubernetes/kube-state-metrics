@@ -70,8 +70,7 @@ func wrapPersistentVolumeFunc(f func(*v1.PersistentVolume) *metric.Family) func(
 		metricFamily := f(persistentVolume)
 
 		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabelKeys = descPersistentVolumeLabelsDefaultLabels
-			metricFamily.DefaultLabelValues = []string{persistentVolume.Name}
+			metricFamily.DefaultLabels = metric.NewDefaultLabels(descPersistentVolumeLabelsDefaultLabels, persistentVolume.Name)
 		}
 
 		return metricFamily

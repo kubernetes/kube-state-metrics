@@ -122,8 +122,7 @@ func wrapLimitRangeFunc(f func(*v1.LimitRange) *metric.Family) func(any) *metric
 		metricFamily := f(limitRange)
 
 		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabelKeys = descLimitRangeLabelsDefaultLabels
-			metricFamily.DefaultLabelValues = []string{limitRange.Namespace, limitRange.Name}
+			metricFamily.DefaultLabels = metric.NewDefaultLabels(descLimitRangeLabelsDefaultLabels, limitRange.Namespace, limitRange.Name)
 		}
 
 		return metricFamily

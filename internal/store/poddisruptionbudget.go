@@ -215,8 +215,7 @@ func wrapPodDisruptionBudgetFunc(f func(*policyv1.PodDisruptionBudget) *metric.F
 		metricFamily := f(podDisruptionBudget)
 
 		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabelKeys = descPodDisruptionBudgetLabelsDefaultLabels
-			metricFamily.DefaultLabelValues = []string{podDisruptionBudget.Namespace, podDisruptionBudget.Name}
+			metricFamily.DefaultLabels = metric.NewDefaultLabels(descPodDisruptionBudgetLabelsDefaultLabels, podDisruptionBudget.Namespace, podDisruptionBudget.Name)
 		}
 
 		return metricFamily

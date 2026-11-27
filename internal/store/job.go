@@ -464,8 +464,7 @@ func wrapJobFunc(f func(*v1batch.Job) *metric.Family) func(any) *metric.Family {
 		metricFamily := f(job)
 
 		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabelKeys = descJobLabelsDefaultLabels
-			metricFamily.DefaultLabelValues = []string{job.Namespace, job.Name}
+			metricFamily.DefaultLabels = metric.NewDefaultLabels(descJobLabelsDefaultLabels, job.Namespace, job.Name)
 		}
 
 		return metricFamily

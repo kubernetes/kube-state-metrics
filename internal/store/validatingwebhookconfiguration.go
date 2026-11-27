@@ -129,8 +129,7 @@ func wrapValidatingWebhookConfigurationFunc(f func(*admissionregistrationv1.Vali
 		metricFamily := f(validatingWebhookConfiguration)
 
 		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabelKeys = descValidatingWebhookConfigurationDefaultLabels
-			metricFamily.DefaultLabelValues = []string{validatingWebhookConfiguration.Name}
+			metricFamily.DefaultLabels = metric.NewDefaultLabels(descValidatingWebhookConfigurationDefaultLabels, validatingWebhookConfiguration.Name)
 		}
 
 		return metricFamily

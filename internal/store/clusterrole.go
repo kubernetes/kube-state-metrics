@@ -156,8 +156,7 @@ func wrapClusterRoleFunc(f func(*rbacv1.ClusterRole) *metric.Family) func(any) *
 		metricFamily := f(clusterrole)
 
 		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabelKeys = descClusterRoleLabelsDefaultLabels
-			metricFamily.DefaultLabelValues = []string{clusterrole.Name}
+			metricFamily.DefaultLabels = metric.NewDefaultLabels(descClusterRoleLabelsDefaultLabels, clusterrole.Name)
 		}
 
 		return metricFamily

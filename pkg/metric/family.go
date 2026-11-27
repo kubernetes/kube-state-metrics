@@ -32,14 +32,40 @@ type Family struct {
 	Name    string
 	Type    Type
 	Metrics []*Metric
-	// DefaultLabelKeys and DefaultLabelValues are labels shared by every
-	// metric of the family, typically the ones identifying the object (e.g.
-	// namespace and name). They are rendered before each metric's own labels.
-	// Keeping them here instead of merging them into every Metric avoids
-	// allocating new label slices per metric, and lets the rendered prefix be
-	// escaped once per family instead of once per metric.
-	DefaultLabelKeys   []string
-	DefaultLabelValues []string
+	// DefaultLabels are labels shared by every metric of the family,
+	// typically the ones identifying the object (e.g. namespace and name).
+	// They are rendered before each metric's own labels. Keeping them here
+	// instead of merging them into every Metric avoids allocating new label
+	// slices per metric, and lets the rendered prefix be escaped once per
+	// family instead of once per metric.
+	//
+	// It is a pointer to keep Family within the 64-byte allocation size
+	// class: families are allocated for every object on every event, also
+	// by generators that set no default labels.
+	DefaultLabels *DefaultLabels
+}
+
+// maxInlineDefaultLabels is the number of default label values stored inline
+// in DefaultLabels. The objects of the built-in stores are identified by at
+// most three labels (namespace, name and uid).
+const maxInlineDefaultLabels = 3
+
+// DefaultLabels are labels shared by every metric of a Family.
+type DefaultLabels struct {
+	Keys   []string
+	Values []string
+
+	inline [maxInlineDefaultLabels]string
+}
+
+// NewDefaultLabels returns default labels with the given keys and values. The
+// keys are kept as is, as they are typically shared by all objects of a
+// store, and must not be modified afterwards. The values are copied into the
+// returned struct, so up to three of them cost no allocation of their own.
+func NewDefaultLabels(keys []string, values ...string) *DefaultLabels {
+	d := &DefaultLabels{Keys: keys}
+	d.Values = append(d.inline[:0], values...)
+	return d
 }
 
 // Inspect use to inspect the inside of a Family
@@ -65,7 +91,7 @@ func (f Family) AppendBytes(b []byte) []byte {
 	buf := bytes.NewBuffer(b)
 	buf.Grow(f.SizeHint())
 
-	if len(f.DefaultLabelKeys) == 0 {
+	if f.DefaultLabels == nil || len(f.DefaultLabels.Keys) == 0 {
 		for _, m := range f.Metrics {
 			buf.WriteString(f.Name)
 			m.Write(buf)
@@ -73,10 +99,11 @@ func (f Family) AppendBytes(b []byte) []byte {
 		return buf.Bytes()
 	}
 
-	if len(f.DefaultLabelKeys) != len(f.DefaultLabelValues) {
+	keys, values := f.DefaultLabels.Keys, f.DefaultLabels.Values
+	if len(keys) != len(values) {
 		panic(fmt.Sprintf(
 			"expected default labelKeys %q to be of same length as default labelValues %q",
-			f.DefaultLabelKeys, f.DefaultLabelValues,
+			keys, values,
 		))
 	}
 
@@ -86,7 +113,7 @@ func (f Family) AppendBytes(b []byte) []byte {
 	// a new array and leaves the old one untouched.
 	start := buf.Len()
 	buf.WriteString(f.Name)
-	writeLabels(buf, '{', f.DefaultLabelKeys, f.DefaultLabelValues)
+	writeLabels(buf, '{', keys, values)
 	prefix := buf.Bytes()[start:]
 
 	for i, m := range f.Metrics {
@@ -108,10 +135,12 @@ const valueSizeHint = 16
 // estimate, not a bound: the value length is assumed rather than computed.
 func (f Family) SizeHint() int {
 	defaultSize := 0
-	for i, k := range f.DefaultLabelKeys {
-		defaultSize += len(k) + 4
-		if i < len(f.DefaultLabelValues) {
-			defaultSize += len(f.DefaultLabelValues[i])
+	if d := f.DefaultLabels; d != nil {
+		for i, k := range d.Keys {
+			defaultSize += len(k) + 4
+			if i < len(d.Values) {
+				defaultSize += len(d.Values[i])
+			}
 		}
 	}
 

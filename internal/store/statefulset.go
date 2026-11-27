@@ -351,8 +351,7 @@ func wrapStatefulSetFunc(f func(*v1.StatefulSet) *metric.Family) func(any) *metr
 		metricFamily := f(statefulSet)
 
 		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabelKeys = descStatefulSetLabelsDefaultLabels
-			metricFamily.DefaultLabelValues = []string{statefulSet.Namespace, statefulSet.Name}
+			metricFamily.DefaultLabels = metric.NewDefaultLabels(descStatefulSetLabelsDefaultLabels, statefulSet.Namespace, statefulSet.Name)
 		}
 
 		return metricFamily

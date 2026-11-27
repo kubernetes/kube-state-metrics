@@ -48,7 +48,7 @@ func TestEndpointSliceStore(t *testing.T) {
 			Want: `
 					# HELP kube_endpointslice_info Information about endpointslice.
 					# TYPE kube_endpointslice_info gauge
-					kube_endpointslice_info{endpointslice="test_endpointslice-info",addresstype="IPv4",namespace="test"} 1
+					kube_endpointslice_info{endpointslice="test_endpointslice-info",address_type="IPv4",namespace="test"} 1
 				`,
 			MetricNames: []string{
 				"kube_endpointslice_info",

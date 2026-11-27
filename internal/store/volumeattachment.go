@@ -103,7 +103,7 @@ var (
 					return &metric.Family{
 						Metrics: []*metric.Metric{
 							{
-								LabelKeys:   []string{"volumename"},
+								LabelKeys:   []string{"volume_name"},
 								LabelValues: []string{*va.Spec.Source.PersistentVolumeName},
 								Value:       1,
 							},

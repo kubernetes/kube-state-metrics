@@ -322,11 +322,12 @@ func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
 	// Render every object that is not rendered yet on the shared workers,
 	// and store them in list order. Objects from a WatchList initial sync
 	// were handed to the workers by Transformer as they arrived; objects from
-	// a List are full objects and are handed over here. Only a few objects
-	// are in flight at a time, so that on a relist each object's old metrics
-	// are replaced, and can be collected, soon after its new ones are
-	// rendered, rather than once the whole list is.
-	maxInFlight := 2 * runtime.GOMAXPROCS(0)
+	// a List are full objects and are handed over here. A bounded number of
+	// objects is in flight at a time, so that on a relist each object's old
+	// metrics are replaced, and can be collected, soon after its new ones are
+	// rendered, rather than once the whole list is. The bound is several
+	// objects per worker, so a slow object at the head does not idle them.
+	maxInFlight := 32 * runtime.GOMAXPROCS(0)
 	var inFlight []*renderedObject
 	storeRendered := func(keep int) {
 		for len(inFlight) > keep {
@@ -390,34 +391,7 @@ func (s *MetricsStore) Transformer() cache.TransformFunc {
 // renderSlots bounds the number of objects rendered at the same time, across
 // all stores. The reflectors of the different resources already sync
 // concurrently, so a bound per store would oversubscribe the CPUs.
-var renderSlots renderLimiter
-
-// renderLimiter is a semaphore whose size follows GOMAXPROCS, which the
-// runtime adjusts when the container's CPU limit changes.
-type renderLimiter struct {
-	mu      sync.Mutex
-	cond    *sync.Cond
-	running int
-}
-
-func (l *renderLimiter) acquire() {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	if l.cond == nil {
-		l.cond = sync.NewCond(&l.mu)
-	}
-	for l.running >= runtime.GOMAXPROCS(0) {
-		l.cond.Wait()
-	}
-	l.running++
-}
-
-func (l *renderLimiter) release() {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.running--
-	l.cond.Signal()
-}
+var renderSlots = make(chan struct{}, runtime.GOMAXPROCS(0))
 
 // renderAsync renders obj on a worker and returns at once. When every worker
 // is busy it blocks until one is free, so a reflector feeding objects faster
@@ -430,12 +404,12 @@ func (l *renderLimiter) release() {
 // safe for concurrent use.
 func (s *MetricsStore) renderAsync(uid types.UID, obj any) *renderedObject {
 	r := &renderedObject{uid: uid}
-	renderSlots.acquire()
+	renderSlots <- struct{}{}
 	r.wg.Go(func() {
 		// Report a panic as the reflector goroutine the rendering moved
 		// from would have.
 		defer utilruntime.HandleCrash()
-		defer renderSlots.release()
+		defer func() { <-renderSlots }()
 		r.families = renderFamilies(s.generateMetricsFunc(obj))
 	})
 	return r

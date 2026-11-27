@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	goruntime "runtime"
 	"slices"
 	"strings"
 	"sync/atomic"
@@ -515,7 +514,7 @@ func barrierGenFunc(t *testing.T, n int64) func(any) []metric.FamilyInterface {
 }
 
 func TestReplaceRendersInParallel(t *testing.T) {
-	if goruntime.GOMAXPROCS(0) < 2 {
+	if cap(renderSlots) < 2 {
 		t.Skip("needs GOMAXPROCS >= 2")
 	}
 	ms := NewMetricsStore([]string{"Test info."}, barrierGenFunc(t, 2))
@@ -532,7 +531,7 @@ func TestReplaceRendersInParallel(t *testing.T) {
 // During a WatchList initial sync, Transformer hands objects to the workers
 // and returns, so the reflector can decode the next object meanwhile.
 func TestTransformerRendersInParallel(t *testing.T) {
-	if goruntime.GOMAXPROCS(0) < 2 {
+	if cap(renderSlots) < 2 {
 		t.Skip("needs GOMAXPROCS >= 2")
 	}
 	ms := NewMetricsStore([]string{"Test info."}, barrierGenFunc(t, 2))

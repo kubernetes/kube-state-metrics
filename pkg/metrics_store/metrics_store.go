@@ -17,6 +17,7 @@ limitations under the License.
 package metricsstore
 
 import (
+	"runtime"
 	"sync"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -130,7 +131,7 @@ func (s *MetricsStore) Add(obj any) error {
 	// WatchList is disabled when --object-limit is set, so no per-object
 	// bookkeeping is skipped here.
 	if r, ok := obj.(*renderedObject); ok {
-		s.metrics.Store(r.uid, r.families)
+		s.metrics.Store(r.uid, r.wait())
 		return nil
 	}
 
@@ -144,16 +145,8 @@ func (s *MetricsStore) Add(obj any) error {
 	// The object limit has to be enforced here and not only on List: objects
 	// created after the initial List, and updates to objects the List dropped,
 	// arrive through the watch.
-	if s.objectLimit > 0 {
-		if _, exists := s.metrics.Load(o.GetUID()); !exists {
-			if s.objectCount >= s.objectLimit {
-				if s.onObjectDropped != nil {
-					s.onObjectDropped()
-				}
-				return nil
-			}
-			s.objectCount++
-		}
+	if !s.admit(o.GetUID()) {
+		return nil
 	}
 
 	families := s.generateMetricsFunc(obj)
@@ -161,6 +154,26 @@ func (s *MetricsStore) Add(obj any) error {
 	s.metrics.Store(o.GetUID(), renderFamilies(families))
 
 	return nil
+}
+
+// admit reports whether the object with the given UID may be stored under the
+// object limit, and counts it if it is new. It calls onObjectDropped for an
+// object that is not admitted.
+func (s *MetricsStore) admit(uid types.UID) bool {
+	if s.objectLimit <= 0 {
+		return true
+	}
+	if _, exists := s.metrics.Load(uid); exists {
+		return true
+	}
+	if s.objectCount >= s.objectLimit {
+		if s.onObjectDropped != nil {
+			s.onObjectDropped()
+		}
+		return false
+	}
+	s.objectCount++
+	return true
 }
 
 // objectUID returns the UID an object is stored under.
@@ -303,10 +316,30 @@ func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
 		s.objectCount = kept
 	}
 
-	for _, o := range list {
-		if err := s.Add(o); err != nil {
-			return err
+	// Render every object that is not rendered yet on the shared workers,
+	// then store them in list order. Objects from a WatchList initial sync
+	// were handed to the workers by Transformer as they arrived; objects from
+	// a List are full objects and are handed over here.
+	rendered := make([]*renderedObject, len(list))
+	for i, o := range list {
+		if r, ok := o.(*renderedObject); ok {
+			rendered[i] = r
+			continue
 		}
+		uid, _ := objectUID(o) // checked above
+		if !s.admit(uid) {
+			continue
+		}
+		rendered[i] = s.renderAsync(uid, o)
+	}
+	for i, r := range rendered {
+		if r == nil {
+			continue
+		}
+		s.metrics.Store(r.uid, r.wait())
+		// Let the rendered object, and the object it was made from, be
+		// collected while the rest of the list is still being stored.
+		rendered[i] = nil
 	}
 
 	s.setLastResourceVersion(resourceVersion)
@@ -335,18 +368,48 @@ func (s *MetricsStore) Transformer() cache.TransformFunc {
 		if err != nil {
 			return obj, nil
 		}
-		return &renderedObject{
-			uid:      o.GetUID(),
-			families: renderFamilies(s.generateMetricsFunc(obj)),
-		}, nil
+		return s.renderAsync(o.GetUID(), obj), nil
 	}
 }
 
-// renderedObject stands in for an object in the reflector's temporary store and
-// holds the metrics already generated from it.
+// renderSlots bounds the number of objects rendered at the same time, across
+// all stores. The reflectors of the different resources already sync
+// concurrently, so a bound per store would oversubscribe the CPUs.
+var renderSlots = make(chan struct{}, runtime.GOMAXPROCS(0))
+
+// renderAsync renders obj on a worker and returns at once. When every worker
+// is busy it blocks until one is free, so a reflector feeding objects faster
+// than they render is slowed down instead of accumulating unrendered objects.
+// This keeps the memory peak of a WatchList initial sync close to that of
+// rendering inline, while spreading the rendering of a large resource, which
+// would otherwise run on its reflector's goroutine alone, over all CPUs.
+func (s *MetricsStore) renderAsync(uid types.UID, obj any) *renderedObject {
+	r := &renderedObject{uid: uid}
+	r.wg.Add(1)
+	renderSlots <- struct{}{}
+	go func() {
+		defer func() {
+			<-renderSlots
+			r.wg.Done()
+		}()
+		r.families = renderFamilies(s.generateMetricsFunc(obj))
+	}()
+	return r
+}
+
+// renderedObject stands in for an object in the reflector's temporary store,
+// and for a listed object in Replace, while its metrics are rendered.
 type renderedObject struct {
-	uid      types.UID
+	uid types.UID
+	wg  sync.WaitGroup
+	// families is set once wg is done.
 	families [][]byte
+}
+
+// wait blocks until the object is rendered and returns its families.
+func (r *renderedObject) wait() [][]byte {
+	r.wg.Wait()
+	return r.families
 }
 
 // Bookmark implements the Bookmark method of the store interface.

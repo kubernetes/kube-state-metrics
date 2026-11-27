@@ -466,3 +466,80 @@ func TestReplaceObjectLimitAfterChurn(t *testing.T) {
 		t.Fatalf("expected 1 dropped object, got %d", dropped)
 	}
 }
+
+// barrierGenFunc returns a generate function whose calls each wait until n
+// calls are running at the same time, or fail the test after a timeout. It
+// only completes if the store renders at least n objects in parallel.
+func barrierGenFunc(t *testing.T, n int64) func(any) []metric.FamilyInterface {
+	var running atomic.Int64
+	return func(obj any) []metric.FamilyInterface {
+		running.Add(1)
+		deadline := time.Now().Add(5 * time.Second)
+		for running.Load() < n {
+			if time.Now().After(deadline) {
+				t.Errorf("expected %d objects to be rendered in parallel", n)
+				break
+			}
+			time.Sleep(time.Millisecond)
+		}
+		o, _ := meta.Accessor(obj)
+		return []metric.FamilyInterface{&metric.Family{
+			Name: "kube_test_info",
+			Metrics: []*metric.Metric{{
+				LabelKeys:   []string{"uid"},
+				LabelValues: []string{string(o.GetUID())},
+				Value:       1,
+			}},
+		}}
+	}
+}
+
+func TestReplaceRendersInParallel(t *testing.T) {
+	if cap(renderSlots) < 2 {
+		t.Skip("needs GOMAXPROCS >= 2")
+	}
+	ms := NewMetricsStore([]string{"Test info."}, barrierGenFunc(t, 2))
+
+	list := []any{&v1.Service{UID: "a"}, &v1.Service{UID: "b"}, &v1.Service{UID: "c"}}
+	if err := ms.Replace(list, "1"); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := storedUIDs(ms), []string{"a", "b", "c"}; !slices.Equal(got, want) {
+		t.Errorf("stored %v, want %v", got, want)
+	}
+}
+
+// During a WatchList initial sync, Transformer hands objects to the workers
+// and returns, so the reflector can decode the next object meanwhile.
+func TestTransformerRendersInParallel(t *testing.T) {
+	if cap(renderSlots) < 2 {
+		t.Skip("needs GOMAXPROCS >= 2")
+	}
+	ms := NewMetricsStore([]string{"Test info."}, barrierGenFunc(t, 2))
+	transform := ms.Transformer()
+
+	var list []any
+	for _, uid := range []types.UID{"a", "b"} {
+		r, err := transform(&v1.Service{UID: uid})
+		if err != nil {
+			t.Fatal(err)
+		}
+		list = append(list, r)
+	}
+	if err := ms.Replace(list, "1"); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := storedUIDs(ms), []string{"a", "b"}; !slices.Equal(got, want) {
+		t.Errorf("stored %v, want %v", got, want)
+	}
+
+	out := strings.Builder{}
+	if err := NewMetricsWriter("test", ms).WriteAll(&out); err != nil {
+		t.Fatal(err)
+	}
+	for _, uid := range []string{"a", "b"} {
+		if !strings.Contains(out.String(), `uid="`+uid+`"`) {
+			t.Errorf("expected the metric of %s to be written, got %q", uid, out.String())
+		}
+	}
+}

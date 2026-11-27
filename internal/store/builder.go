@@ -382,6 +382,7 @@ var availableStoresMu sync.RWMutex
 var availableStores = map[string]func(f *Builder) []cache.Store{
 	"certificatesigningrequests":        func(b *Builder) []cache.Store { return b.buildCsrStores() },
 	"clusterroles":                      func(b *Builder) []cache.Store { return b.buildClusterRoleStores() },
+	"clustertrustbundles":               func(b *Builder) []cache.Store { return b.buildClusterTrustBundleStores() },
 	"configmaps":                        func(b *Builder) []cache.Store { return b.buildConfigMapStores() },
 	"clusterrolebindings":               func(b *Builder) []cache.Store { return b.buildClusterRoleBindingStores() },
 	"cronjobs":                          func(b *Builder) []cache.Store { return b.buildCronJobStores() },
@@ -403,6 +404,7 @@ var availableStores = map[string]func(f *Builder) []cache.Store{
 	"nodes":                             func(b *Builder) []cache.Store { return b.buildNodeStores() },
 	"persistentvolumeclaims":            func(b *Builder) []cache.Store { return b.buildPersistentVolumeClaimStores() },
 	"persistentvolumes":                 func(b *Builder) []cache.Store { return b.buildPersistentVolumeStores() },
+	"podcertificaterequests":            func(b *Builder) []cache.Store { return b.buildPodCertificateRequestStores() },
 	"poddisruptionbudgets":              func(b *Builder) []cache.Store { return b.buildPodDisruptionBudgetStores() },
 	"pods":                              func(b *Builder) []cache.Store { return b.buildPodStores() },
 	"replicasets":                       func(b *Builder) []cache.Store { return b.buildReplicaSetStores() },
@@ -561,6 +563,14 @@ func (b *Builder) buildPodStores() []cache.Store {
 
 func (b *Builder) buildCsrStores() []cache.Store {
 	return b.buildClusterScopedStores(csrMetricFamilies(b.allowAnnotationsList["certificatesigningrequests"], b.allowLabelsList["certificatesigningrequests"]), &certv1.CertificateSigningRequest{}, createCSRListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildClusterTrustBundleStores() []cache.Store {
+	return b.buildClusterScopedStores(clusterTrustBundleMetricFamilies(b.allowAnnotationsList["clustertrustbundles"], b.allowLabelsList["clustertrustbundles"]), &certv1.ClusterTrustBundle{}, createClusterTrustBundleListWatch, b.useAPIServerCache, b.objectLimit)
+}
+
+func (b *Builder) buildPodCertificateRequestStores() []cache.Store {
+	return b.buildStoresFunc(podCertificateRequestMetricFamilies(b.allowAnnotationsList["podcertificaterequests"], b.allowLabelsList["podcertificaterequests"]), &certv1.PodCertificateRequest{}, createPodCertificateRequestListWatch, b.useAPIServerCache, b.objectLimit)
 }
 
 func (b *Builder) buildValidatingAdmissionPolicyStores() []cache.Store {

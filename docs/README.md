@@ -70,8 +70,10 @@ See each file for specific documentation about the exposed metrics:
 
 * [ClusterRole Metrics](metrics/cluster/clusterrole-metrics.md)
 * [ClusterRoleBinding Metrics](metrics/cluster/clusterrolebinding-metrics.md)
+* [ClusterTrustBundle Metrics](metrics/auth/clustertrustbundle-metrics.md)
 * [EndpointSlice Metrics](metrics/service/endpointslice-metrics.md)
 * [IngressClass Metrics](metrics/service/ingressclass-metrics.md)
+* [PodCertificateRequest Metrics](metrics/auth/podcertificaterequest-metrics.md)
 * [Role Metrics](metrics/auth/role-metrics.md)
 * [RoleBinding Metrics](metrics/auth/rolebinding-metrics.md)
 * [ServiceAccount Metrics](metrics/auth/serviceaccount-metrics.md)

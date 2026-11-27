@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
+	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
@@ -35,6 +36,9 @@ import (
 // Make sure the public Builder implements the public BuilderInterface.
 // New internal Builder methods should be added to the public BuilderInterface.
 var _ ksmtypes.BuilderInterface = &Builder{}
+
+// The public Builder can also build the customresourcedefinitions store.
+var _ ksmtypes.ApiextensionsClientSetter = &Builder{}
 
 // Builder helps to build store. It follows the builder pattern
 // (https://en.wikipedia.org/wiki/Builder_pattern).
@@ -93,6 +97,13 @@ func (b *Builder) WithContext(ctx context.Context) {
 // WithKubeClient sets the kubeClient property of a Builder.
 func (b *Builder) WithKubeClient(c clientset.Interface) {
 	b.internal.WithKubeClient(c)
+}
+
+// WithApiextensionsClient sets the apiextensionsClient property of a Builder.
+func (b *Builder) WithApiextensionsClient(c apiextensionsclientset.Interface) {
+	if s, ok := b.internal.(ksmtypes.ApiextensionsClientSetter); ok {
+		s.WithApiextensionsClient(c)
+	}
 }
 
 // WithCustomResourceClients sets the customResourceClients property of a Builder.

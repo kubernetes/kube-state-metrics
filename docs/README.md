@@ -70,6 +70,7 @@ See each file for specific documentation about the exposed metrics:
 
 * [ClusterRole Metrics](metrics/cluster/clusterrole-metrics.md)
 * [ClusterRoleBinding Metrics](metrics/cluster/clusterrolebinding-metrics.md)
+* [CustomResourceDefinition Metrics](metrics/extend/customresourcedefinition-metrics.md)
 * [EndpointSlice Metrics](metrics/service/endpointslice-metrics.md)
 * [IngressClass Metrics](metrics/service/ingressclass-metrics.md)
 * [Role Metrics](metrics/auth/role-metrics.md)

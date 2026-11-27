@@ -22,6 +22,7 @@ import (
 	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 
 	"github.com/prometheus/client_golang/prometheus"
+	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
@@ -29,6 +30,13 @@ import (
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
+
+// ApiextensionsClientSetter is implemented by builders that can build the
+// customresourcedefinitions store. It is kept out of BuilderInterface so that
+// adding it does not break existing BuilderInterface implementations.
+type ApiextensionsClientSetter interface {
+	WithApiextensionsClient(c apiextensionsclientset.Interface)
+}
 
 // BuilderInterface represent all methods that a Builder should implements
 type BuilderInterface interface {

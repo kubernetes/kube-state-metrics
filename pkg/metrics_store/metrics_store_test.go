@@ -441,6 +441,28 @@ func TestMetricsStoreObjectLimit(t *testing.T) {
 	}
 }
 
+// An object listed twice takes one slot of the limit, although it is only
+// stored once it has been rendered.
+func TestReplaceObjectLimitDuplicateUID(t *testing.T) {
+	var dropped int
+	ms := NewMetricsStore([]string{}, func(any) []metric.FamilyInterface { return nil }, WithObjectLimit(2, func() { dropped++ }))
+
+	list := []any{&v1.Service{UID: "a"}, &v1.Service{UID: "a"}, &v1.Service{UID: "b"}}
+	if err := ms.Replace(list, "1"); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := storedUIDs(ms); !slices.Equal(got, []string{"a", "b"}) {
+		t.Fatalf("expected store keys [a b], got %v", got)
+	}
+	if n := ms.objectCount; n != 2 {
+		t.Fatalf("expected an object count of 2, got %d", n)
+	}
+	if dropped != 0 {
+		t.Fatalf("expected no dropped object, got %d", dropped)
+	}
+}
+
 // A relist frees the slots of the objects it no longer contains before it
 // admits new ones, so the limit holds the listed objects that were kept.
 func TestReplaceObjectLimitAfterChurn(t *testing.T) {

@@ -293,13 +293,15 @@ func (s *MetricsStore) GetByKey(_ string) (item any, exists bool, err error) {
 // object, rather than whatever subset had been re-added so far, and never sees
 // a deleted object next to the objects that were created since.
 func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
-	listed := make(map[types.UID]struct{}, len(list))
+	// listed holds the UIDs of the list, and whether the object was
+	// admitted by this Replace, so that a UID listed twice is counted once.
+	listed := make(map[types.UID]bool, len(list))
 	for _, o := range list {
 		uid, err := objectUID(o)
 		if err != nil {
 			return err
 		}
-		listed[uid] = struct{}{}
+		listed[uid] = false
 	}
 
 	var kept int64
@@ -338,8 +340,13 @@ func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
 		r, ok := o.(*renderedObject)
 		if !ok {
 			uid, _ := objectUID(o) // checked above
-			if !s.admit(uid) {
-				continue
+			// An admitted object is only stored once it is rendered, so
+			// admit cannot tell that it was counted already.
+			if !listed[uid] {
+				if !s.admit(uid) {
+					continue
+				}
+				listed[uid] = true
 			}
 			r = s.renderAsync(uid, o)
 		}

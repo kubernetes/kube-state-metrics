@@ -85,6 +85,7 @@ func BenchmarkWatchListSync(b *testing.B) {
 	transformed := make([]any, len(list))
 	for b.Loop() {
 		b.StopTimer()
+		clear(transformed)
 		store, _ := benchSyncStore(0)
 		transform := store.Transformer()
 		b.StartTimer()

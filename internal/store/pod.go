@@ -208,6 +208,9 @@ func createPodContainerResourceRequestsFamilyGenerator() generator.FamilyGenerat
 // selects from each container, labelled with the container, the given extra
 // labels, the resource and its unit. Resources without a known unit are
 // skipped.
+//
+// extraKeys and extraValues must have the same length, and extraKeys must not
+// contain "container", "resource" or "unit", which would duplicate a label.
 func containerResourceMetrics(containers []v1.Container, resources func(v1.ResourceRequirements) v1.ResourceList, extraKeys, extraValues []string) []*metric.Metric {
 	labelKeys := make([]string, 0, len(extraKeys)+3)
 	labelKeys = append(labelKeys, "container")

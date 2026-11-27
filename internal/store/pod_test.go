@@ -1966,6 +1966,76 @@ func TestPodStore(t *testing.T) {
 			},
 		},
 		{
+			// Huge pages and attachable volumes are labelled with the byte unit; a
+			// name that is also an extended resource gets an integer series too.
+			Obj: &v1.Pod{
+				Name:      "pod3",
+				Namespace: "ns3",
+				UID:       "uid3",
+				Spec: v1.PodSpec{
+					NodeName: "node1",
+					Containers: []v1.Container{
+						{
+							Name: "pod3_con1",
+							Resources: v1.ResourceRequirements{
+								Requests: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceName("hugepages-2Mi"):              resource.MustParse("4Mi"),
+									v1.ResourceName("attachable-volumes-aws-ebs"): resource.MustParse("39"),
+								},
+								Limits: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceName("hugepages-2Mi"):              resource.MustParse("8Mi"),
+									v1.ResourceName("attachable-volumes-aws-ebs"): resource.MustParse("40"),
+									// Both a huge page and an extended resource name.
+									v1.ResourceName("hugepages-vendor.example.com/foo"): resource.MustParse("4"),
+								},
+							},
+						},
+					},
+					InitContainers: []v1.Container{
+						{
+							Name: "pod3_initcon1",
+							Resources: v1.ResourceRequirements{
+								Requests: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceName("hugepages-1Gi"):              resource.MustParse("1Gi"),
+									v1.ResourceName("attachable-volumes-csi-foo"): resource.MustParse("2"),
+								},
+								Limits: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceName("hugepages-1Gi"):              resource.MustParse("2Gi"),
+									v1.ResourceName("attachable-volumes-csi-foo"): resource.MustParse("3"),
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: `
+				# HELP kube_pod_container_resource_limits [STABLE] The number of requested limit resource by a container. It is recommended to use the kube_pod_resource_limits metric exposed by kube-scheduler instead, as it is more precise.
+				# HELP kube_pod_container_resource_requests [STABLE] The number of requested request resource by a container. It is recommended to use the kube_pod_resource_requests metric exposed by kube-scheduler instead, as it is more precise.
+				# HELP kube_pod_init_container_resource_limits The number of requested limit resource by an init container.
+				# HELP kube_pod_init_container_resource_requests The number of requested request resource by an init container.
+				# TYPE kube_pod_container_resource_limits gauge
+				# TYPE kube_pod_container_resource_requests gauge
+				# TYPE kube_pod_init_container_resource_limits gauge
+				# TYPE kube_pod_init_container_resource_requests gauge
+				kube_pod_container_resource_limits{container="pod3_con1",namespace="ns3",node="node1",pod="pod3",resource="attachable_volumes_aws_ebs",unit="byte",uid="uid3"} 40
+				kube_pod_container_resource_limits{container="pod3_con1",namespace="ns3",node="node1",pod="pod3",resource="hugepages_2Mi",unit="byte",uid="uid3"} 8.388608e+06
+				kube_pod_container_resource_limits{container="pod3_con1",namespace="ns3",node="node1",pod="pod3",resource="hugepages_vendor_example_com_foo",unit="byte",uid="uid3"} 4
+				kube_pod_container_resource_limits{container="pod3_con1",namespace="ns3",node="node1",pod="pod3",resource="hugepages_vendor_example_com_foo",unit="integer",uid="uid3"} 4
+				kube_pod_container_resource_requests{container="pod3_con1",namespace="ns3",node="node1",pod="pod3",resource="attachable_volumes_aws_ebs",unit="byte",uid="uid3"} 39
+				kube_pod_container_resource_requests{container="pod3_con1",namespace="ns3",node="node1",pod="pod3",resource="hugepages_2Mi",unit="byte",uid="uid3"} 4.194304e+06
+				kube_pod_init_container_resource_limits{container="pod3_initcon1",namespace="ns3",pod="pod3",resource="attachable_volumes_csi_foo",unit="byte",uid="uid3"} 3
+				kube_pod_init_container_resource_limits{container="pod3_initcon1",namespace="ns3",pod="pod3",resource="hugepages_1Gi",unit="byte",uid="uid3"} 2.147483648e+09
+				kube_pod_init_container_resource_requests{container="pod3_initcon1",namespace="ns3",pod="pod3",resource="attachable_volumes_csi_foo",unit="byte",uid="uid3"} 2
+				kube_pod_init_container_resource_requests{container="pod3_initcon1",namespace="ns3",pod="pod3",resource="hugepages_1Gi",unit="byte",uid="uid3"} 1.073741824e+09
+			`,
+			MetricNames: []string{
+				"kube_pod_container_resource_requests",
+				"kube_pod_container_resource_limits",
+				"kube_pod_init_container_resource_limits",
+				"kube_pod_init_container_resource_requests",
+			},
+		},
+		{
 
 			Obj: &v1.Pod{
 				Name:      "pod2",

@@ -158,18 +158,37 @@ func TestNewDefaultLabels(t *testing.T) {
 }
 
 func TestFamilyDefaultLabelsMismatchPanics(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Fatal("expected a panic for mismatched default label keys and values")
-		}
-	}()
+	for name, d := range map[string]*DefaultLabels{
+		"more keys than values": NewDefaultLabels([]string{"a", "b"}, "1"),
+		"values without keys":   NewDefaultLabels(nil, "1"),
+	} {
+		t.Run(name, func(t *testing.T) {
+			defer func() {
+				if recover() == nil {
+					t.Fatal("expected a panic for mismatched default label keys and values")
+				}
+			}()
 
-	f := Family{
-		Name:          "kube_x",
-		DefaultLabels: NewDefaultLabels([]string{"a", "b"}, "1"),
-		Metrics:       []*Metric{{Value: 1}},
+			f := Family{Name: "kube_x", DefaultLabels: d, Metrics: []*Metric{{Value: 1}}}
+			f.ByteSlice()
+		})
 	}
-	f.ByteSlice()
+}
+
+func TestFamilyMetricLabels(t *testing.T) {
+	m := &Metric{LabelKeys: []string{"phase"}, LabelValues: []string{"Running"}}
+
+	keys, values := Family{Metrics: []*Metric{m}}.MetricLabels(m)
+	if !slices.Equal(keys, []string{"phase"}) || !slices.Equal(values, []string{"Running"}) {
+		t.Errorf("without default labels: got %q %q", keys, values)
+	}
+
+	f := Family{Metrics: []*Metric{m}}
+	f.SetDefaultLabels([]string{"namespace", "pod"}, "ns1", "pod1")
+	keys, values = f.MetricLabels(m)
+	if !slices.Equal(keys, []string{"namespace", "pod", "phase"}) || !slices.Equal(values, []string{"ns1", "pod1", "Running"}) {
+		t.Errorf("with default labels: got %q %q", keys, values)
+	}
 }
 
 func BenchmarkMetricWrite(b *testing.B) {

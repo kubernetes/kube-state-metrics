@@ -32,7 +32,9 @@ type Family struct {
 	Type    Type
 	Metrics []*Metric
 	// DefaultLabels are rendered before each metric's own labels, escaped
-	// once per family. A pointer keeps Family in the 64-byte size class.
+	// once per family. They are not part of the metrics' LabelKeys and
+	// LabelValues; use MetricLabels for a metric's complete label set. A
+	// pointer keeps Family in the 64-byte size class.
 	DefaultLabels *DefaultLabels
 }
 
@@ -67,6 +69,17 @@ func (f *Family) SetDefaultLabels(keys []string, values ...string) {
 	}
 }
 
+// MetricLabels returns the complete label set of m, a metric of the family:
+// the family's default labels followed by the metric's own labels.
+func (f Family) MetricLabels(m *Metric) (keys, values []string) {
+	if f.DefaultLabels == nil {
+		return m.LabelKeys, m.LabelValues
+	}
+	keys = append(append(make([]string, 0, len(f.DefaultLabels.Keys)+len(m.LabelKeys)), f.DefaultLabels.Keys...), m.LabelKeys...)
+	values = append(append(make([]string, 0, len(f.DefaultLabels.Values)+len(m.LabelValues)), f.DefaultLabels.Values...), m.LabelValues...)
+	return keys, values
+}
+
 // Inspect use to inspect the inside of a Family
 func (f Family) Inspect(inspect func(Family)) {
 	inspect(f)
@@ -90,16 +103,14 @@ func (f Family) AppendBytes(b []byte) []byte {
 	buf := bytes.NewBuffer(b)
 	buf.Grow(f.SizeHint())
 
-	if f.DefaultLabels == nil || len(f.DefaultLabels.Keys) == 0 {
-		for _, m := range f.Metrics {
-			buf.WriteString(f.Name)
-			m.Write(buf)
-		}
-		return buf.Bytes()
+	if f.DefaultLabels == nil {
+		return f.appendMetrics(buf)
 	}
-
 	keys, values := f.DefaultLabels.Keys, f.DefaultLabels.Values
 	checkLabels(keys, values)
+	if len(keys) == 0 {
+		return f.appendMetrics(buf)
+	}
 
 	// Render the name and the default labels, without the closing brace, once.
 	// Every following metric copies these bytes instead of escaping the values
@@ -117,6 +128,15 @@ func (f Family) AppendBytes(b []byte) []byte {
 		m.writeAfterPrefix(buf)
 	}
 
+	return buf.Bytes()
+}
+
+// appendMetrics renders the metrics of a family without default labels.
+func (f Family) appendMetrics(buf *bytes.Buffer) []byte {
+	for _, m := range f.Metrics {
+		buf.WriteString(f.Name)
+		m.Write(buf)
+	}
 	return buf.Bytes()
 }
 

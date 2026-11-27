@@ -17,9 +17,12 @@ limitations under the License.
 package e2e
 
 import (
+	"bufio"
 	"context"
 	"net"
+	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -80,37 +83,86 @@ func TestConfigHotReload(t *testing.T) {
 		t.Fatalf("failed to wait for port 8080 to come up for the first time: %v", err)
 	}
 
-	// Modify config to trigger hot reload.
-	config := `foo: "bar"`
-	err = os.WriteFile(opts.Config, []byte(config), 0600 /* rw------- */)
-	if err != nil {
+	// The empty file is loaded at startup.
+	before := waitForConfigMetrics(t, "the initial options config file to be loaded", func(m map[string]string) bool {
+		return m["kube_state_metrics_last_config_reload_successful"] == "1" && m["kube_state_metrics_config_hash"] != ""
+	})
+
+	// A valid change restarts kube-state-metrics with the new file.
+	if err := os.WriteFile(opts.Config, []byte("enable_gzip_encoding: true\n"), 0600 /* rw------- */); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
+	changed := waitForConfigMetrics(t, "the changed options config file to be loaded", func(m map[string]string) bool {
+		return m["kube_state_metrics_last_config_reload_successful"] == "1" &&
+			m["kube_state_metrics_config_hash"] != "" && m["kube_state_metrics_config_hash"] != before["kube_state_metrics_config_hash"]
+	})
 
-	// Wait for port 8080 to come up.
-	ch := make(chan bool, 1)
-	err = wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 20*time.Second, true, func(_ context.Context) (bool, error) {
-		conn, err := net.Dial("tcp", "localhost:8080")
+	// An unknown key is rejected: the running instance keeps serving and the
+	// reload is reported as failed.
+	if err := os.WriteFile(opts.Config, []byte(`foo: "bar"`), 0600 /* rw------- */); err != nil {
+		t.Fatalf("failed to write config file: %v", err)
+	}
+	rejected := waitForConfigMetrics(t, "the rejected reload to be reported", func(m map[string]string) bool {
+		return m["kube_state_metrics_last_config_reload_successful"] == "0"
+	})
+	if rejected["kube_state_metrics_config_hash"] != changed["kube_state_metrics_config_hash"] {
+		t.Fatalf("expected the running instance to keep its configuration, config hash changed from %s to %s",
+			changed["kube_state_metrics_config_hash"], rejected["kube_state_metrics_config_hash"])
+	}
+	conn, err := net.Dial("tcp", "localhost:8080")
+	if err != nil {
+		t.Fatalf("expected the running instance to keep serving after a rejected reload: %v", err)
+	}
+	if err := conn.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// waitForConfigMetrics polls the telemetry endpoint until the options config
+// file's self metrics, keyed by metric name, satisfy cond, and returns them.
+func waitForConfigMetrics(t *testing.T, what string, cond func(map[string]string) bool) map[string]string {
+	t.Helper()
+	var got map[string]string
+	err := wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 30*time.Second, true, func(ctx context.Context) (bool, error) {
+		m, err := configMetrics(ctx)
 		if err != nil {
+			// The telemetry server is down while kube-state-metrics restarts.
 			return false, nil
 		}
-		err = conn.Close()
-		if err != nil {
-			return false, err
-		}
-		// Indicate that the test has passed.
-		ch <- true
-		return true, nil
+		got = m
+		return cond(m), nil
 	})
 	if err != nil {
-		t.Fatalf("failed to wait for port 8080 to come up after restarting the process: %v", err)
+		t.Fatalf("failed to wait for %s, last config metrics %v: %v", what, got, err)
 	}
+	return got
+}
 
-	// Wait for process to exit.
-	select {
-	case <-ch:
-		t.Log("test passed successfully")
-	case <-time.After(20 * time.Second):
-		t.Fatal("timed out waiting for test to pass, check the logs for more info")
+// configMetrics returns the values of the options config file's self metrics,
+// keyed by metric name.
+func configMetrics(ctx context.Context) (map[string]string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:8081/metrics", nil)
+	if err != nil {
+		return nil, err
 	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	values := map[string]string{}
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "#") || !strings.Contains(line, `type="config"`) {
+			continue
+		}
+		name, rest, ok := strings.Cut(line, "{")
+		if !ok {
+			continue
+		}
+		fields := strings.Fields(rest)
+		values[name] = fields[len(fields)-1]
+	}
+	return values, scanner.Err()
 }

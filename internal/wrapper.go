@@ -29,11 +29,14 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"k8s.io/klog/v2"
-	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
 	"k8s.io/kube-state-metrics/v2/pkg/app"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
+
+// configSettleDelay is how long a reload waits after a change event before it
+// reads the changed files.
+const configSettleDelay = time.Second
 
 // RunKubeStateMetricsWrapper is a wrapper around KSM, delegated to the root command.
 func RunKubeStateMetricsWrapper(opts *options.Options) {
@@ -42,13 +45,6 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	// so every run, including each reload, has to start from a fresh copy.
 	// Otherwise keys removed from the config file keep their previous values.
 	baseOpts := opts.Clone()
-
-	KSMRunOrDie := func(ctx context.Context) {
-		if err := app.RunKubeStateMetricsWrapper(ctx, baseOpts.Clone()); err != nil {
-			klog.ErrorS(err, "Failed to run kube-state-metrics")
-			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-		}
-	}
 
 	// SIGTERM is what Kubernetes sends to stop a container. Cancelling the
 	// runs on it shuts their servers down and drains in-flight scrapes,
@@ -65,7 +61,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 
 	// The custom resource config file and the kubeconfig can be set by the
 	// options config file, so the files in effect can change with each reload.
-	var restart func(fsnotify.Event)
+	var onOptionsChange, onFileChange func(fsnotify.Event)
 	crcWatch := &movableWatch{name: "Custom resource configuration file"}
 	kubeconfigWatch := &movableWatch{name: "kubeconfig file"}
 
@@ -76,7 +72,28 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 	// is overwritten before it is used, the instance it belonged to is never
 	// stopped, and two of them contend for the listen ports.
 	var reloadMu sync.Mutex
-	restart = func(e fsnotify.Event) {
+	// start runs kube-state-metrics on ctx with the given options config file
+	// contents, and exits if the run fails. The caller holds reloadMu.
+	// serving is set once a run has been started, guarded by reloadMu. It
+	// stays unset while the options config file rejected at startup with
+	// --continue-without-config waits to be fixed.
+	var serving bool
+	start := func(configFile []byte, onConfigStatus func(reportRejected func())) {
+		serving = true
+		runCtx := ctx
+		runs.Go(func() {
+			err := app.RunKubeStateMetricsWrapper(runCtx, baseOpts.Clone(), app.WithOptionsConfigFile(configFile), app.WithConfigReloadReporter(onConfigStatus))
+			if err != nil {
+				klog.ErrorS(err, "Failed to run kube-state-metrics")
+				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+			}
+		})
+	}
+	// current is the options config file the running instance was started
+	// with, guarded by reloadMu.
+	var current []byte
+	status := &configStatus{}
+	restart := func(e fsnotify.Event, optionsChanged bool) {
 		reloadMu.Lock()
 		defer reloadMu.Unlock()
 		if sigCtx.Err() != nil {
@@ -85,12 +102,41 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		}
 
 		klog.InfoS("Changes detected", "name", e.Name)
-		// Follow the files the restarted run will use. An options config file
-		// that cannot be read keeps the current watchers; the run waits for it
-		// to be fixed and the fix triggers another restart.
-		if next, ok := reloadedOptions(baseOpts); ok {
-			crcWatch.watch(next.CustomResourceConfigFile, restart)
-			kubeconfigWatch.watch(next.Kubeconfig, restart)
+		// Let a write in progress finish, so a file written in more than one
+		// chunk is not checked and loaded half-written.
+		select {
+		case <-time.After(configSettleDelay):
+		case <-sigCtx.Done():
+			return
+		}
+		// The new run gets the options config file as it was checked here, as
+		// the file can change again before the run starts.
+		configFile, next, err := loadConfigFile(baseOpts)
+		rejected := err != nil
+		if rejected {
+			file := options.GetConfigFile(*baseOpts)
+			status.reject()
+			// Stopping the running instance takes the metrics endpoints down
+			// until the new one has started, so keep it if only the options
+			// config file changed.
+			if !serving {
+				klog.ErrorS(err, "Invalid options configuration file, waiting for it to be fixed", "file", file)
+				return
+			}
+			if optionsChanged {
+				klog.ErrorS(err, "Invalid options configuration file, keeping the running configuration", "file", file)
+				return
+			}
+			// A file the running instance uses changed, such as a rotated
+			// kubeconfig, so restart with the options config file it runs with.
+			// The watchers already follow the files of that configuration.
+			klog.ErrorS(err, "Invalid options configuration file, restarting with the running configuration", "file", file)
+			configFile = current
+		} else {
+			current = configFile
+			// Follow the files the restarted run will use.
+			crcWatch.watch(next.CustomResourceConfigFile, onFileChange)
+			kubeconfigWatch.watch(next.Kubeconfig, onFileChange)
 		}
 		cancel(app.ErrConfigReload)
 		// Wait for the ports to be released.
@@ -101,34 +147,39 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		}
 		klog.InfoS("Restarting kube-state-metrics, metrics will be reset")
 		ctx, cancel = context.WithCancelCause(sigCtx)
-		runCtx := ctx
-		runs.Go(func() { KSMRunOrDie(runCtx) })
+		start(configFile, status.newRun(rejected))
 	}
+	onOptionsChange = func(e fsnotify.Event) { restart(e, true) }
+	onFileChange = func(e fsnotify.Event) { restart(e, false) }
+
+	// Registered before any watcher starts, so that a run started by a reload
+	// replaces the initial run's reporter rather than the other way around.
+	initialReporter := status.newRun(false)
+	// The initial run uses the options config file as read here, nil if it
+	// does not exist.
+	var configFile []byte
+	// rejected is set when the options config file exists but is rejected.
+	var rejected bool
 
 	if file := options.GetConfigFile(*opts); file != "" {
 		// Merge configFile values with opts so we get the CustomResourceConfigFile from config as well
-		if configFile, err := os.ReadFile(filepath.Clean(file)); err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				klog.ErrorS(err, "Options configuration file not found at startup", "file", file)
-			} else {
-				klog.ErrorS(err, "Error reading options configuration file", "file", file)
-			}
-			if !opts.ContinueWithoutConfig {
-				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-			}
-		} else if err := yaml.Unmarshal(configFile, opts); err != nil {
-			klog.ErrorS(err, "failed to unmarshal options configuration file", "file", file)
-			if !opts.ContinueWithoutConfig {
-				klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-			}
-			// TODO: Remove deprecated custom_resource_config_file support in KSM 2.21.
-		} else if opts.CustomResourceConfigFileDeprecated != "" {
-			klog.Warning("The 'custom_resource_config_file' config key is deprecated and will be removed in a future release; use 'custom_resource_state_config_file' instead")
-			if opts.CustomResourceConfigFile == "" {
-				opts.CustomResourceConfigFile = opts.CustomResourceConfigFileDeprecated
-			}
+		contents, merged, err := loadConfigFile(opts)
+		rejected = err != nil
+		switch {
+		case rejected:
+			klog.ErrorS(err, "Invalid options configuration file", "file", file)
+		case contents == nil:
+			klog.ErrorS(fs.ErrNotExist, "Options configuration file not found at startup", "file", file)
+		default:
+			configFile, opts = contents, merged
 		}
-		if _, err := watchFile(file, restart); err != nil {
+		if (rejected || contents == nil) && !opts.ContinueWithoutConfig {
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+		}
+		reloadMu.Lock()
+		current = configFile
+		reloadMu.Unlock()
+		if _, err := watchFile(file, onOptionsChange); err != nil {
 			klog.ErrorS(err, "Failed to watch options configuration file", "file", file)
 		}
 	}
@@ -145,7 +196,7 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 		}
 		// The options file watcher is already running and may restart first.
 		reloadMu.Lock()
-		crcWatch.watch(opts.CustomResourceConfigFile, restart)
+		crcWatch.watch(opts.CustomResourceConfigFile, onFileChange)
 		reloadMu.Unlock()
 	}
 	if opts.Kubeconfig != "" {
@@ -158,14 +209,20 @@ func RunKubeStateMetricsWrapper(opts *options.Options) {
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 		reloadMu.Lock()
-		kubeconfigWatch.watch(opts.Kubeconfig, restart)
+		kubeconfigWatch.watch(opts.Kubeconfig, onFileChange)
 		reloadMu.Unlock()
 	}
-	klog.InfoS("Starting kube-state-metrics")
-	reloadMu.Lock()
-	runCtx := ctx
-	runs.Go(func() { KSMRunOrDie(runCtx) })
-	reloadMu.Unlock()
+	if rejected {
+		// Serving with only the command line options would drop the limits the
+		// file sets, such as namespaces or metric denylists, so wait for a
+		// valid file, which the options file watcher starts a run with.
+		klog.InfoS("Not starting kube-state-metrics until the options configuration file is fixed")
+	} else {
+		klog.InfoS("Starting kube-state-metrics")
+		reloadMu.Lock()
+		start(configFile, initialReporter)
+		reloadMu.Unlock()
+	}
 
 	<-sigCtx.Done()
 	// Restore the default action, so a second signal stops the process at once.
@@ -207,23 +264,74 @@ func (w *movableWatch) watch(file string, onChange func(fsnotify.Event)) {
 	w.stop = stop
 }
 
-// reloadedOptions returns the options a run starting from baseOpts uses, with
-// the options config file merged in. It returns false when the options config
-// file cannot be read or parsed.
-func reloadedOptions(baseOpts *options.Options) (*options.Options, bool) {
+// configStatus routes rejected reloads of the options config file to the run
+// that serves kube_state_metrics_last_config_reload_successful. A reload can be
+// rejected while the run started by the previous reload is still setting up its
+// metrics and has yet to report the file it was given as loaded, so a rejection
+// is kept and applied once that run reports in.
+type configStatus struct {
+	mu       sync.Mutex
+	run      int
+	rejected bool
+	report   func()
+}
+
+// newRun registers a new run, whose options config file has been rejected if
+// rejected is set, and returns the callback the run reports in with. Runs
+// registered before it can no longer report in.
+func (s *configStatus) newRun(rejected bool) func(reportRejected func()) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.run++
+	run := s.run
+	s.rejected = rejected
+	s.report = nil
+	return func(reportRejected func()) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if run != s.run {
+			return
+		}
+		s.report = reportRejected
+		if s.rejected {
+			reportRejected()
+		}
+	}
+}
+
+// reject marks the options config file as rejected in the latest run, now or
+// once it reports in.
+func (s *configStatus) reject() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.rejected = true
+	if s.report != nil {
+		s.report()
+	}
+}
+
+// loadConfigFile reads the options config file of baseOpts and returns its
+// contents along with the options a run starting from baseOpts uses. The
+// contents are nil if no options config file is set or it does not exist; the
+// run then starts without it. A file that exists but cannot be read or decoded
+// is an error.
+func loadConfigFile(baseOpts *options.Options) ([]byte, *options.Options, error) {
 	opts := baseOpts.Clone()
-	if file := options.GetConfigFile(*opts); file != "" {
-		configFile, err := os.ReadFile(filepath.Clean(file))
-		if err != nil {
-			return nil, false
-		}
-		if err := yaml.Unmarshal(configFile, opts); err != nil {
-			return nil, false
-		}
+	file := options.GetConfigFile(*opts)
+	if file == "" {
+		return nil, opts, nil
 	}
-	// TODO: Remove deprecated custom_resource_config_file support in KSM 2.21.
-	if opts.CustomResourceConfigFile == "" {
-		opts.CustomResourceConfigFile = opts.CustomResourceConfigFileDeprecated
+	configFile, err := os.ReadFile(filepath.Clean(file))
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, opts, nil
+		}
+		return nil, nil, err
 	}
-	return opts, true
+	// Decoded onto a copy, as a file that is rejected can still have set some
+	// options, such as continue_without_config.
+	if err := options.UnmarshalConfigFile(configFile, opts); err != nil {
+		return nil, nil, err
+	}
+	return configFile, opts, nil
 }

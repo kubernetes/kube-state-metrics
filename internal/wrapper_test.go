@@ -26,7 +26,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
-func TestReloadedOptions(t *testing.T) {
+func TestLoadConfigFile(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "config.yaml")
 	writeConfig := func(content string) {
@@ -41,38 +41,59 @@ func TestReloadedOptions(t *testing.T) {
 	base.CustomResourceConfigFile = "/etc/ksm/from-flag.yaml"
 	base.Kubeconfig = "/etc/ksm/kubeconfig-from-flag"
 
+	t.Run("missing file is left to the run", func(t *testing.T) {
+		configFile, got, err := loadConfigFile(base)
+		if err != nil || configFile != nil {
+			t.Fatalf("got (%q, %v), want no contents and no error", configFile, err)
+		}
+		if got.CustomResourceConfigFile != "/etc/ksm/from-flag.yaml" {
+			t.Errorf("expected the flags, got %q", got.CustomResourceConfigFile)
+		}
+	})
+
 	tests := []struct {
 		name           string
 		config         string
 		wantCRC        string
 		wantKubeconfig string
-		wantOK         bool
+		wantErr        bool
 	}{
 		{
 			name:           "config file overrides the flags",
 			config:         "custom_resource_state_config_file: /etc/ksm/from-config.yaml\nkubeconfig: /etc/ksm/kubeconfig-from-config\n",
 			wantCRC:        "/etc/ksm/from-config.yaml",
 			wantKubeconfig: "/etc/ksm/kubeconfig-from-config",
-			wantOK:         true,
 		},
 		{
 			name:           "override removed falls back to the flags",
 			config:         "port: 8080\n",
 			wantCRC:        "/etc/ksm/from-flag.yaml",
 			wantKubeconfig: "/etc/ksm/kubeconfig-from-flag",
-			wantOK:         true,
 		},
-		{name: "unparsable config file", config: "port: [\n"},
+		{
+			name:           "empty file",
+			config:         "",
+			wantCRC:        "/etc/ksm/from-flag.yaml",
+			wantKubeconfig: "/etc/ksm/kubeconfig-from-flag",
+		},
+		{name: "unparsable config file", config: "port: [\n", wantErr: true},
+		{name: "unknown key", config: "prot: 9090\n", wantErr: true},
+		{name: "removed key", config: "custom_resource_config_file: /etc/ksm/removed.yaml\n", wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			writeConfig(tt.config)
-			got, ok := reloadedOptions(base)
-			if ok != tt.wantOK {
-				t.Fatalf("got ok %v, want %v", ok, tt.wantOK)
+			configFile, got, err := loadConfigFile(base)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("got error %v, wantErr %v", err, tt.wantErr)
 			}
-			if !ok {
+			if err != nil {
 				return
+			}
+			// The run is given these contents instead of reading the file
+			// again, and nil would tell it that there is no config file.
+			if configFile == nil || string(configFile) != tt.config {
+				t.Errorf("got contents %q, want %q", configFile, tt.config)
 			}
 			if got.CustomResourceConfigFile != tt.wantCRC || got.Kubeconfig != tt.wantKubeconfig {
 				t.Errorf("got (%q, %q), want (%q, %q)", got.CustomResourceConfigFile, got.Kubeconfig, tt.wantCRC, tt.wantKubeconfig)
@@ -83,12 +104,19 @@ func TestReloadedOptions(t *testing.T) {
 		t.Errorf("the base options must not change, got (%q, %q)", base.CustomResourceConfigFile, base.Kubeconfig)
 	}
 
-	t.Run("deprecated key", func(t *testing.T) {
-		noFlag := options.NewOptions()
-		noFlag.Config = configPath
-		writeConfig("custom_resource_config_file: /etc/ksm/deprecated.yaml\n")
-		if got, ok := reloadedOptions(noFlag); !ok || got.CustomResourceConfigFile != "/etc/ksm/deprecated.yaml" {
-			t.Errorf("expected the deprecated key's file, got %v", got)
+	t.Run("no config file", func(t *testing.T) {
+		if configFile, _, err := loadConfigFile(options.NewOptions()); err != nil || configFile != nil {
+			t.Errorf("got (%q, %v), want no contents and no error", configFile, err)
+		}
+	})
+
+	// A directory exists but cannot be read as a file, like a file without
+	// read permission, and the run would exit on it.
+	t.Run("unreadable file", func(t *testing.T) {
+		unreadable := options.NewOptions()
+		unreadable.Config = dir
+		if _, _, err := loadConfigFile(unreadable); err == nil {
+			t.Error("expected an error")
 		}
 	})
 }
@@ -120,4 +148,72 @@ func TestMovableWatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectEvent(t, events)
+}
+
+func TestConfigStatus(t *testing.T) {
+	// reporter returns the reportRejected callback of a run and counts its calls.
+	reporter := func() (*int, func()) {
+		var n int
+		return &n, func() { n++ }
+	}
+
+	t.Run("rejected before the run reports in", func(t *testing.T) {
+		s := &configStatus{}
+		onReady := s.newRun(false)
+		// A reload is rejected while the run is still starting, then the run
+		// reports the file it was started with as loaded.
+		s.reject()
+		n, report := reporter()
+		onReady(report)
+		if *n != 1 {
+			t.Fatalf("expected the rejection to be applied once the run reports in, got %d calls", *n)
+		}
+	})
+
+	t.Run("rejected after the run reported in", func(t *testing.T) {
+		s := &configStatus{}
+		n, report := reporter()
+		s.newRun(false)(report)
+		if *n != 0 {
+			t.Fatalf("expected no rejection for an accepted file, got %d calls", *n)
+		}
+		s.reject()
+		if *n != 1 {
+			t.Fatalf("expected the rejection to be applied, got %d calls", *n)
+		}
+	})
+
+	t.Run("restarted with a rejected file", func(t *testing.T) {
+		s := &configStatus{}
+		n, report := reporter()
+		s.newRun(true)(report)
+		if *n != 1 {
+			t.Fatalf("expected the rejection to carry over to the restarted run, got %d calls", *n)
+		}
+	})
+
+	t.Run("accepted reload clears the rejection", func(t *testing.T) {
+		s := &configStatus{}
+		s.newRun(false)
+		s.reject()
+		n, report := reporter()
+		s.newRun(false)(report)
+		if *n != 0 {
+			t.Fatalf("expected no rejection for the new run, got %d calls", *n)
+		}
+	})
+
+	t.Run("a replaced run cannot report in", func(t *testing.T) {
+		s := &configStatus{}
+		stale := s.newRun(false)
+		current := s.newRun(false)
+		staleN, staleReport := reporter()
+		n, report := reporter()
+		current(report)
+		stale(staleReport)
+		s.reject()
+		if *staleN != 0 || *n != 1 {
+			t.Fatalf("expected only the current run to be marked, got stale=%d current=%d", *staleN, *n)
+		}
+	})
 }

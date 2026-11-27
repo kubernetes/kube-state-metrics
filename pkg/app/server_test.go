@@ -1192,10 +1192,10 @@ func TestConfigureResourcesAndMetrics_InvalidYAML(t *testing.T) {
 	}
 }
 
-// TestRunKubeStateMetricsMalformedConfigReturnsOnCancel verifies that a run
-// waiting on a malformed config file returns once its context is cancelled
-// instead of continuing startup alongside the run that replaces it.
-func TestRunKubeStateMetricsMalformedConfigReturnsOnCancel(t *testing.T) {
+// TestRunKubeStateMetricsMalformedConfigReturnsError verifies that a run given
+// a malformed config file returns an error instead of starting or waiting for
+// a reload that only the wrapper can trigger.
+func TestRunKubeStateMetricsMalformedConfigReturnsError(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
 	if err := os.WriteFile(configPath, []byte("invalid: [unclosed"), 0o600); err != nil {
 		t.Fatal(err)
@@ -1205,11 +1205,9 @@ func TestRunKubeStateMetricsMalformedConfigReturnsOnCancel(t *testing.T) {
 	// Continuing startup would fail here, so reaching it surfaces as an error.
 	opts.Kubeconfig = filepath.Join(t.TempDir(), "missing-kubeconfig")
 
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	if err := RunKubeStateMetrics(ctx, opts); err != nil {
-		t.Fatalf("expected the cancelled run to return without error, got: %v", err)
+	err := RunKubeStateMetrics(t.Context(), opts)
+	if err == nil || !strings.Contains(err.Error(), "failed to decode options config file") {
+		t.Fatalf("expected the config file decode error, got: %v", err)
 	}
 }
 
@@ -1346,14 +1344,14 @@ func TestConfigReloadStartsFromBaseline(t *testing.T) {
 	base.Kubeconfig = filepath.Join(dir, "missing-kubeconfig")
 	base.TotalShards = 1
 
-	writeConfig("annotations_allow_list:\n  secrets: [\"*\"]\nnamespaces: [team-a]\ncustom_resource_config_file: " + filepath.Join(dir, "crs.yaml") + "\n")
+	writeConfig("annotations_allow_list:\n  secrets: [\"*\"]\nnamespaces: [team-a]\ncustom_resource_state_config_file: " + filepath.Join(dir, "crs.yaml") + "\n")
 	first := base.Clone()
 	_ = RunKubeStateMetricsWrapper(context.Background(), first)
 	if len(first.AnnotationsAllowList["secrets"]) != 1 || !slices.Equal(first.Namespaces, []string{"team-a"}) {
 		t.Fatalf("expected config values to be applied, got annotations=%v namespaces=%v", first.AnnotationsAllowList, first.Namespaces)
 	}
 	if first.CustomResourceConfigFile != filepath.Join(dir, "crs.yaml") {
-		t.Fatalf("expected deprecated custom_resource_config_file to be honored, got %q", first.CustomResourceConfigFile)
+		t.Fatalf("expected custom_resource_state_config_file to be applied, got %q", first.CustomResourceConfigFile)
 	}
 
 	writeConfig("enable_gzip_encoding: true\n")
@@ -1424,6 +1422,72 @@ func TestShutdownDelaySkippedOnReload(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := shutdownDelay(tc.ctx, delay); got != tc.want {
 				t.Fatalf("shutdownDelay() = %s, want %s", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestRunWithConfigFileIgnoresTheFileOnDisk(t *testing.T) {
+	dir := t.TempDir()
+	cfg := filepath.Join(dir, "config.yaml")
+	// The file changed to an invalid one after the reload checked it.
+	if err := os.WriteFile(cfg, []byte("port: [\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	base := options.NewOptions()
+	base.Config = cfg
+	// A missing kubeconfig makes the run return right after the config merge.
+	base.Kubeconfig = filepath.Join(dir, "missing-kubeconfig")
+	base.TotalShards = 1
+
+	// Reading the invalid file would make the run fail.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	opts := base.Clone()
+	_ = RunKubeStateMetricsWrapper(ctx, opts, WithOptionsConfigFile([]byte("namespaces: [team-a]\n")))
+	if !slices.Equal(opts.Namespaces, []string{"team-a"}) {
+		t.Fatalf("expected the given config file contents to be applied, got namespaces=%v", opts.Namespaces)
+	}
+
+	opts = base.Clone()
+	_ = RunKubeStateMetricsWrapper(ctx, opts, WithOptionsConfigFile(nil))
+	if ctx.Err() != nil || len(opts.Namespaces) != 0 {
+		t.Fatalf("expected a run without config file contents to start without the file, got namespaces=%v ctx=%v", opts.Namespaces, ctx.Err())
+	}
+}
+
+// The run reports in once it has set the options config file status.
+func TestRunReportsConfigStatus(t *testing.T) {
+	dir := t.TempDir()
+	base := options.NewOptions()
+	base.Config = filepath.Join(dir, "config.yaml")
+	// A missing kubeconfig makes the run return right after the config merge.
+	base.Kubeconfig = filepath.Join(dir, "missing-kubeconfig")
+	base.TotalShards = 1
+
+	for _, tc := range []struct {
+		name     string
+		contents []byte
+	}{
+		{name: "valid", contents: []byte("namespaces: [team-a]\n")},
+		{name: "missing", contents: nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			reported := false
+			_ = RunKubeStateMetricsWrapper(ctx, base.Clone(), WithOptionsConfigFile(tc.contents), WithConfigReloadReporter(func(reportRejected func()) {
+				reported = true
+				reportRejected()
+				cancel()
+			}))
+			if !reported {
+				t.Fatal("expected the run to report its config status")
+			}
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatal("the run did not return after its context was cancelled")
 			}
 		})
 	}

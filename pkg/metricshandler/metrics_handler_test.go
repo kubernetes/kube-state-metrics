@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,6 +35,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
+	metricsstore "k8s.io/kube-state-metrics/v2/pkg/metrics_store"
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 )
 
@@ -261,5 +263,95 @@ func TestRunHonoursContextDuringStatefulSetLookup(t *testing.T) {
 	case <-statefulSetReached:
 	default:
 		t.Fatal("expected Run to reach the StatefulSet lookup")
+	}
+}
+
+// The gzip and buffered writers are pooled. Scrapes reusing them, with and
+// without gzip, must each produce the complete response.
+func TestServeHTTPPooledWritersProduceCompleteResponses(t *testing.T) {
+	store := newBenchStore(t, 200, 10)
+	stub := &stubStoreBuilder{buildWriters: metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("pods", store)}}
+	handler := New(&options.Options{}, fake.NewSimpleClientset(), stub, true)
+	handler.ConfigureSharding(context.Background(), 0, 1)
+
+	scrape := func(acceptEncoding string) string {
+		t.Helper()
+		req := httptest.NewRequest("GET", "/metrics", nil)
+		req.Header.Set("Accept-Encoding", acceptEncoding)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		res := w.Result()
+		defer res.Body.Close()
+		var body io.Reader = res.Body
+		if res.Header.Get("Content-Encoding") == "gzip" {
+			zr, err := gzip.NewReader(res.Body)
+			if err != nil {
+				t.Fatalf("response is not readable gzip: %v", err)
+			}
+			defer zr.Close()
+			body = zr
+		}
+		b, err := io.ReadAll(body)
+		if err != nil {
+			t.Fatalf("reading response: %v", err)
+		}
+		return string(b)
+	}
+
+	want := scrape("identity")
+	if n := strings.Count(want, "\n"); n < 200*10 {
+		t.Fatalf("expected at least %d lines, got %d", 200*10, n)
+	}
+	for i, enc := range []string{"gzip", "gzip", "identity", "gzip", "identity"} {
+		if got := scrape(enc); got != want {
+			t.Fatalf("scrape %d (%s): response differs from the first one (%d vs %d bytes)", i, enc, len(got), len(want))
+		}
+	}
+}
+
+// cancellingResponseWriter cancels the request on its first write and records
+// how much was written in total.
+type cancellingResponseWriter struct {
+	header http.Header
+	cancel context.CancelFunc
+	writes int
+	n      int
+}
+
+func (w *cancellingResponseWriter) Header() http.Header { return w.header }
+func (w *cancellingResponseWriter) WriteHeader(int)     {}
+func (w *cancellingResponseWriter) Write(b []byte) (int, error) {
+	w.writes++
+	w.n += len(b)
+	w.cancel()
+	return len(b), nil
+}
+
+// Once the request is cancelled, e.g. because the client went away, the
+// handler must stop writing instead of rendering the rest of the response.
+func TestServeHTTPStopsWhenRequestIsCancelled(t *testing.T) {
+	store := newBenchStore(t, 1000, 40)
+	stub := &stubStoreBuilder{buildWriters: metricsstore.MetricsWriterList{metricsstore.NewMetricsWriter("pods", store)}}
+	handler := New(&options.Options{}, fake.NewSimpleClientset(), stub, true)
+	handler.ConfigureSharding(context.Background(), 0, 1)
+
+	for _, acceptEncoding := range []string{"identity", "gzip"} {
+		t.Run(acceptEncoding, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			req := httptest.NewRequest("GET", "/metrics", nil).WithContext(ctx)
+			req.Header.Set("Accept-Encoding", acceptEncoding)
+			w := &cancellingResponseWriter{header: http.Header{}, cancel: cancel}
+			handler.ServeHTTP(w, req)
+
+			// The buffer that was being written when the request was
+			// cancelled may still reach the client, gzip may split it into
+			// several writes, but nothing after it. The full response is
+			// several MB.
+			if w.n > responseBufferSize {
+				t.Errorf("expected at most one buffer (%d bytes) after cancellation, got %d bytes in %d writes", responseBufferSize, w.n, w.writes)
+			}
+		})
 	}
 }

@@ -17,7 +17,7 @@ limitations under the License.
 package metricshandler
 
 import (
-	"compress/gzip"
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -27,6 +27,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/klauspost/compress/gzip"
 	"github.com/prometheus/common/expfmt"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -56,6 +57,39 @@ var negotiableFormats = func() []expfmt.Format {
 		expfmt.NewFormat(expfmt.TypeTextPlain),
 	}
 }()
+
+// responseBufferSize is the size of the buffer in front of the (possibly
+// gzip-compressed) response. Objects are written one family at a time, mostly
+// a few hundred bytes each, so buffering turns many small writes into few
+// large ones.
+const responseBufferSize = 64 << 10
+
+var (
+	// gzipWriterPool reuses gzip writers across scrapes. A writer holds
+	// several hundred KB of compressor state, which would otherwise be
+	// allocated and collected on every scrape.
+	gzipWriterPool = sync.Pool{
+		New: func() any { return gzip.NewWriter(nil) },
+	}
+	bufWriterPool = sync.Pool{
+		New: func() any { return bufio.NewWriterSize(nil, responseBufferSize) },
+	}
+)
+
+// ctxWriter fails every write once ctx is done. It sits below the response
+// buffer, so a scrape stops within one buffer of the client going away
+// instead of rendering and compressing the rest of the response for nobody.
+type ctxWriter struct {
+	ctx context.Context
+	w   io.Writer
+}
+
+func (c ctxWriter) Write(p []byte) (int, error) {
+	if err := c.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return c.w.Write(p)
+}
 
 // MetricsHandler is a http.Handler that exposes the main kube-state-metrics
 // /metrics endpoint. It allows concurrent reconfiguration at runtime.
@@ -257,7 +291,8 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resHeader := w.Header()
-	var writer io.Writer = w
+	var out io.Writer = w
+	var gz *gzip.Writer
 
 	contentType := expfmt.NegotiateAccept(r.Header, negotiableFormats...)
 
@@ -275,7 +310,9 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		for part := range strings.SplitSeq(reqHeader, ",") {
 			part = strings.TrimSpace(part)
 			if part == "gzip" || strings.HasPrefix(part, "gzip;") {
-				writer = gzip.NewWriter(writer)
+				gz = gzipWriterPool.Get().(*gzip.Writer)
+				gz.Reset(w)
+				out = gz
 				resHeader.Set("Content-Encoding", "gzip")
 				// Stop at the first match, as the upstream implementation does.
 				// Wrapping twice would leave the inner writer unclosed, so its
@@ -284,6 +321,19 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
+	ctx := r.Context()
+	writer := bufWriterPool.Get().(*bufio.Writer)
+	writer.Reset(ctxWriter{ctx: ctx, w: out})
+	defer func() {
+		// Drop the references to the response before pooling the writers.
+		writer.Reset(nil)
+		bufWriterPool.Put(writer)
+		if gz != nil {
+			gz.Reset(io.Discard)
+			gzipWriterPool.Put(gz)
+		}
+	}()
 
 	requestedResources := parseResources(r.URL.Query()["resources"])
 	excludedResources := parseResources(r.URL.Query()["exclude_resources"])
@@ -313,28 +363,45 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	sanitizedWriters := metricsstore.SanitizeHeaders(contentType, activeWriters)
 
+	// A failed write leaves the buffered writer failing every later write,
+	// so the first error ends the response.
 	for _, w := range sanitizedWriters {
-		err := w.WriteAll(writer)
-		if err != nil {
-			klog.ErrorS(err, "Failed to write metrics")
+		if err := w.WriteAll(writer); err != nil {
+			logWriteError(ctx, err, "Failed to write metrics")
+			return
 		}
 	}
 
 	// OpenMetrics spec requires that we end with an EOF directive.
 	if contentType.FormatType() == expfmt.TypeOpenMetrics {
-		_, err := writer.Write([]byte("# EOF\n"))
-		if err != nil {
-			klog.ErrorS(err, "Failed to write EOF directive")
+		if _, err := writer.WriteString("# EOF\n"); err != nil {
+			logWriteError(ctx, err, "Failed to write EOF directive")
+			return
 		}
 	}
 
+	if err := writer.Flush(); err != nil {
+		logWriteError(ctx, err, "Failed to write metrics")
+		return
+	}
+
 	// In case we gzipped the response, we have to close the writer.
-	if closer, ok := writer.(io.Closer); ok {
-		err := closer.Close()
-		if err != nil {
+	if gz != nil {
+		if err := gz.Close(); err != nil {
 			klog.ErrorS(err, "Failed to close the writer")
 		}
 	}
+}
+
+// logWriteError logs a failure to write the response, telling a request that
+// was cancelled, typically because the client went away or timed out, apart
+// from other errors.
+func logWriteError(ctx context.Context, err error, msg string) {
+	if ctx.Err() != nil {
+		klog.ErrorS(context.Cause(ctx), "Stopped writing metrics, the request was cancelled")
+		return
+	}
+	klog.ErrorS(err, msg)
 }
 
 func parseResources(params []string) map[string]struct{} {

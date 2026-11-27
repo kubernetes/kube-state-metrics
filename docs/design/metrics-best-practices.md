@@ -75,10 +75,4 @@ For a fixed list of known reason/condition values where most objects match none 
 
 ## Stability
 
-We follow the stability framework derived from Kubernetes, in which we expose experimental and stable metrics.
-Experimental metrics are recently introduced or expose alpha/beta resources in the Kubernetes API.
-They can change anytime and should be used with caution.
-They can be promoted to a stable metric once the object stabilized in the Kubernetes API or they were part of two consecutive releases and haven't observed any changes in them.
-
-Stable metrics are considered frozen with the exception of new labels being added.
-A stable metric or a label on a stable metric can be deprecated in release Major.Minor and the earliest point it will be removed is the release Major.Minor+2.
+See [Metric Stability and Lifecycle](../metric-stability.md) for the stability levels, the compatibility guarantees for stable metrics and the deprecation process.

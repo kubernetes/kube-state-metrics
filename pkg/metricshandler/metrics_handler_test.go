@@ -20,6 +20,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -347,11 +348,28 @@ func TestServeHTTPStopsWhenRequestIsCancelled(t *testing.T) {
 
 			// The buffer that was being written when the request was
 			// cancelled may still reach the client, gzip may split it into
-			// several writes, but nothing after it. The full response is
-			// several MB.
-			if w.n > responseBufferSize {
-				t.Errorf("expected at most one buffer (%d bytes) after cancellation, got %d bytes in %d writes", responseBufferSize, w.n, w.writes)
+			// several writes and add its header and block framing, but
+			// nothing after it. The full response is several MB.
+			const maxBytes = responseBufferSize + 1024
+			if w.n > maxBytes {
+				t.Errorf("expected at most one buffer (%d bytes) after cancellation, got %d bytes in %d writes", maxBytes, w.n, w.writes)
 			}
 		})
+	}
+}
+
+// The response buffer passes a write larger than itself straight through, so
+// ctxWriter must split it to stop within one buffer of a cancellation.
+func TestCtxWriterSplitsLargeWrites(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	w := &cancellingResponseWriter{header: http.Header{}, cancel: cancel}
+
+	n, err := ctxWriter{ctx: ctx, w: w}.Write(make([]byte, 4*responseBufferSize))
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("expected context.Canceled, got %v", err)
+	}
+	if n != responseBufferSize || w.n != responseBufferSize {
+		t.Errorf("expected one buffer (%d bytes) to be written, got %d bytes, %d reported", responseBufferSize, w.n, n)
 	}
 }

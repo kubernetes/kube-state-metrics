@@ -79,16 +79,26 @@ var (
 // ctxWriter fails every write once ctx is done. It sits below the response
 // buffer, so a scrape stops within one buffer of the client going away
 // instead of rendering and compressing the rest of the response for nobody.
+// The buffer passes a write larger than itself straight through, so such a
+// write is split into buffer-sized chunks to keep that bound.
 type ctxWriter struct {
 	ctx context.Context
 	w   io.Writer
 }
 
-func (c ctxWriter) Write(p []byte) (int, error) {
-	if err := c.ctx.Err(); err != nil {
-		return 0, err
+func (c ctxWriter) Write(p []byte) (n int, err error) {
+	for len(p) > 0 {
+		if err := c.ctx.Err(); err != nil {
+			return n, err
+		}
+		m, err := c.w.Write(p[:min(len(p), responseBufferSize)])
+		n += m
+		if err != nil {
+			return n, err
+		}
+		p = p[m:]
 	}
-	return c.w.Write(p)
+	return n, nil
 }
 
 // MetricsHandler is a http.Handler that exposes the main kube-state-metrics
@@ -388,17 +398,17 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// In case we gzipped the response, we have to close the writer.
 	if gz != nil {
 		if err := gz.Close(); err != nil {
-			klog.ErrorS(err, "Failed to close the writer")
+			logWriteError(ctx, err, "Failed to close the writer")
 		}
 	}
 }
 
-// logWriteError logs a failure to write the response, telling a request that
-// was cancelled, typically because the client went away or timed out, apart
-// from other errors.
+// logWriteError logs a failure to write the response. A request that was
+// cancelled, typically because the client went away or its scrape timed out,
+// is expected and only logged at a higher verbosity.
 func logWriteError(ctx context.Context, err error, msg string) {
 	if ctx.Err() != nil {
-		klog.ErrorS(context.Cause(ctx), "Stopped writing metrics, the request was cancelled")
+		klog.V(2).InfoS("Stopped writing metrics, the request was cancelled", "reason", context.Cause(ctx))
 		return
 	}
 	klog.ErrorS(err, msg)

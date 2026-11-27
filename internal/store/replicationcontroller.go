@@ -218,9 +218,7 @@ func wrapReplicationControllerFunc(f func(*v1.ReplicationController) *metric.Fam
 
 		metricFamily := f(replicationController)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descReplicationControllerLabelsDefaultLabels, replicationController.Namespace, replicationController.Name)
-		}
+		metricFamily.SetDefaultLabels(descReplicationControllerLabelsDefaultLabels, replicationController.Namespace, replicationController.Name)
 
 		return metricFamily
 	}

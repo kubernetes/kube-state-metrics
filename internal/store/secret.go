@@ -210,9 +210,7 @@ func wrapSecretFunc(f func(*v1.Secret) *metric.Family) func(any) *metric.Family 
 
 		metricFamily := f(secret)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descSecretLabelsDefaultLabels, secret.Namespace, secret.Name)
-		}
+		metricFamily.SetDefaultLabels(descSecretLabelsDefaultLabels, secret.Namespace, secret.Name)
 
 		return metricFamily
 	}

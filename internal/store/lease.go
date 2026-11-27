@@ -108,9 +108,7 @@ func wrapLeaseFunc(f func(*coordinationv1.Lease) *metric.Family) func(any) *metr
 
 		metricFamily := f(lease)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descLeaseLabelsDefaultLabels, lease.Name)
-		}
+		metricFamily.SetDefaultLabels(descLeaseLabelsDefaultLabels, lease.Name)
 
 		return metricFamily
 	}

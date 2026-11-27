@@ -159,9 +159,7 @@ func wrapRoleBindingFunc(f func(*rbacv1.RoleBinding) *metric.Family) func(any) *
 
 		metricFamily := f(rolebinding)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descRoleBindingLabelsDefaultLabels, rolebinding.Namespace, rolebinding.Name)
-		}
+		metricFamily.SetDefaultLabels(descRoleBindingLabelsDefaultLabels, rolebinding.Namespace, rolebinding.Name)
 
 		return metricFamily
 	}

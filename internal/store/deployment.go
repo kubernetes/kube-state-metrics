@@ -445,9 +445,7 @@ func wrapDeploymentFunc(f func(*v1.Deployment) *metric.Family) func(any) *metric
 
 		metricFamily := f(deployment)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descDeploymentLabelsDefaultLabels, deployment.Namespace, deployment.Name)
-		}
+		metricFamily.SetDefaultLabels(descDeploymentLabelsDefaultLabels, deployment.Namespace, deployment.Name)
 
 		return metricFamily
 	}

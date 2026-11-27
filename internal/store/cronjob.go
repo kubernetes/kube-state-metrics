@@ -355,9 +355,7 @@ func wrapCronJobFunc(f func(*batchv1.CronJob) *metric.Family) func(any) *metric.
 
 		metricFamily := f(cronJob)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descCronJobLabelsDefaultLabels, cronJob.Namespace, cronJob.Name)
-		}
+		metricFamily.SetDefaultLabels(descCronJobLabelsDefaultLabels, cronJob.Namespace, cronJob.Name)
 
 		return metricFamily
 	}

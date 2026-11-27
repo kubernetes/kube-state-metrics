@@ -66,7 +66,7 @@ type Metric struct {
 }
 
 func (m *Metric) Write(s *bytes.Buffer) {
-	m.checkLabels()
+	checkLabels(m.LabelKeys, m.LabelValues)
 
 	if len(m.LabelKeys) > 0 {
 		writeLabels(s, '{', m.LabelKeys, m.LabelValues)
@@ -78,18 +78,18 @@ func (m *Metric) Write(s *bytes.Buffer) {
 // writeAfterPrefix writes the metric following a name and an already opened,
 // non-empty label set: its own labels, the closing brace and the value.
 func (m *Metric) writeAfterPrefix(s *bytes.Buffer) {
-	m.checkLabels()
+	checkLabels(m.LabelKeys, m.LabelValues)
 
 	writeLabels(s, ',', m.LabelKeys, m.LabelValues)
 	s.WriteByte('}')
 	m.writeValue(s)
 }
 
-func (m *Metric) checkLabels() {
-	if len(m.LabelKeys) != len(m.LabelValues) {
+func checkLabels(keys, values []string) {
+	if len(keys) != len(values) {
 		panic(fmt.Sprintf(
 			"expected labelKeys %q to be of same length as labelValues %q",
-			m.LabelKeys, m.LabelValues,
+			keys, values,
 		))
 	}
 }

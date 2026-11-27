@@ -127,9 +127,7 @@ func wrapVolumeAttributesClassFunc(f func(*storagev1.VolumeAttributesClass) *met
 
 		metricFamily := f(volumeAttributesClass)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descVolumeAttributesClassLabelsDefaultLabels, volumeAttributesClass.Name)
-		}
+		metricFamily.SetDefaultLabels(descVolumeAttributesClassLabelsDefaultLabels, volumeAttributesClass.Name)
 
 		return metricFamily
 	}

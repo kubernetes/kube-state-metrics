@@ -157,9 +157,7 @@ func wrapRoleFunc(f func(*rbacv1.Role) *metric.Family) func(any) *metric.Family 
 
 		metricFamily := f(role)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descRoleLabelsDefaultLabels, role.Namespace, role.Name)
-		}
+		metricFamily.SetDefaultLabels(descRoleLabelsDefaultLabels, role.Namespace, role.Name)
 
 		return metricFamily
 	}

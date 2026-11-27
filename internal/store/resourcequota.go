@@ -146,9 +146,7 @@ func wrapResourceQuotaFunc(f func(*v1.ResourceQuota) *metric.Family) func(any) *
 
 		metricFamily := f(resourceQuota)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descResourceQuotaLabelsDefaultLabels, resourceQuota.Namespace, resourceQuota.Name)
-		}
+		metricFamily.SetDefaultLabels(descResourceQuotaLabelsDefaultLabels, resourceQuota.Namespace, resourceQuota.Name)
 
 		return metricFamily
 	}

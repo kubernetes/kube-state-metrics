@@ -45,6 +45,20 @@ func TestFamilyString(t *testing.T) {
 }
 
 func TestFamilyDefaultLabels(t *testing.T) {
+	// Values longer than the size hint assumes make the buffer grow while
+	// metrics are written, after the default label prefix has been rendered.
+	const longValue = 1.2345678901234567e+300
+	grow := Family{
+		Name:          "kube_y",
+		DefaultLabels: NewDefaultLabels([]string{"name"}, "n"),
+	}
+	var growExpected strings.Builder
+	growExpected.WriteString("existing\n")
+	for range 100 {
+		grow.Metrics = append(grow.Metrics, &Metric{Value: longValue})
+		growExpected.WriteString(`kube_y{name="n"} 1.2345678901234567e+300` + "\n")
+	}
+
 	tests := []struct {
 		name     string
 		family   Family
@@ -89,32 +103,13 @@ kube_x{name="a\"b\nc\\",k="\""} 3
 			},
 			expected: "",
 		},
+		{
+			name:     "appends after existing bytes and survives buffer growth",
+			family:   grow,
+			prefix:   []byte("existing\n"),
+			expected: growExpected.String(),
+		},
 	}
-
-	// Values longer than the size hint assumes make the buffer grow while
-	// metrics are written, after the default label prefix has been rendered.
-	const longValue = 1.2345678901234567e+300
-	grow := Family{
-		Name:          "kube_y",
-		DefaultLabels: NewDefaultLabels([]string{"name"}, "n"),
-	}
-	var growExpected strings.Builder
-	growExpected.WriteString("existing\n")
-	for range 100 {
-		grow.Metrics = append(grow.Metrics, &Metric{Value: longValue})
-		growExpected.WriteString(`kube_y{name="n"} 1.2345678901234567e+300` + "\n")
-	}
-	tests = append(tests, struct {
-		name     string
-		family   Family
-		prefix   []byte
-		expected string
-	}{
-		name:     "appends after existing bytes and survives buffer growth",
-		family:   grow,
-		prefix:   []byte("existing\n"),
-		expected: growExpected.String(),
-	})
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

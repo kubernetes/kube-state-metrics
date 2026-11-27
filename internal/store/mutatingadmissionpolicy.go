@@ -102,9 +102,7 @@ func wrapMutatingAdmissionPolicyFunc(f func(*admissionregistrationv1.MutatingAdm
 
 		metricFamily := f(mapObj)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descMutatingAdmissionPolicyDefaultLabels, mapObj.Name)
-		}
+		metricFamily.SetDefaultLabels(descMutatingAdmissionPolicyDefaultLabels, mapObj.Name)
 
 		return metricFamily
 	}

@@ -168,9 +168,7 @@ func wrapNamespaceFunc(f func(*v1.Namespace) *metric.Family) func(any) *metric.F
 
 		metricFamily := f(namespace)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descNamespaceLabelsDefaultLabels, namespace.Name)
-		}
+		metricFamily.SetDefaultLabels(descNamespaceLabelsDefaultLabels, namespace.Name)
 
 		return metricFamily
 	}

@@ -138,9 +138,7 @@ func wrapStorageClassFunc(f func(*storagev1.StorageClass) *metric.Family) func(a
 
 		metricFamily := f(storageClass)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descStorageClassLabelsDefaultLabels, storageClass.Name)
-		}
+		metricFamily.SetDefaultLabels(descStorageClassLabelsDefaultLabels, storageClass.Name)
 
 		return metricFamily
 	}

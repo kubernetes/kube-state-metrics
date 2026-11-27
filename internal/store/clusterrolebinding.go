@@ -157,9 +157,7 @@ func wrapClusterRoleBindingFunc(f func(*rbacv1.ClusterRoleBinding) *metric.Famil
 
 		metricFamily := f(clusterrolebinding)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descClusterRoleBindingLabelsDefaultLabels, clusterrolebinding.Name)
-		}
+		metricFamily.SetDefaultLabels(descClusterRoleBindingLabelsDefaultLabels, clusterrolebinding.Name)
 
 		return metricFamily
 	}

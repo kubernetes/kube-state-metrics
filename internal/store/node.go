@@ -541,9 +541,7 @@ func wrapNodeFunc(f func(*v1.Node) *metric.Family) func(any) *metric.Family {
 
 		metricFamily := f(node)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descNodeLabelsDefaultLabels, node.Name)
-		}
+		metricFamily.SetDefaultLabels(descNodeLabelsDefaultLabels, node.Name)
 
 		return metricFamily
 	}

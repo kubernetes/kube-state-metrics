@@ -18,7 +18,6 @@ package metric
 
 import (
 	"bytes"
-	"fmt"
 )
 
 // FamilyInterface interface for a family
@@ -32,16 +31,8 @@ type Family struct {
 	Name    string
 	Type    Type
 	Metrics []*Metric
-	// DefaultLabels are labels shared by every metric of the family,
-	// typically the ones identifying the object (e.g. namespace and name).
-	// They are rendered before each metric's own labels. Keeping them here
-	// instead of merging them into every Metric avoids allocating new label
-	// slices per metric, and lets the rendered prefix be escaped once per
-	// family instead of once per metric.
-	//
-	// It is a pointer to keep Family within the 64-byte allocation size
-	// class: families are allocated for every object on every event, also
-	// by generators that set no default labels.
+	// DefaultLabels are rendered before each metric's own labels, escaped
+	// once per family. A pointer keeps Family in the 64-byte size class.
 	DefaultLabels *DefaultLabels
 }
 
@@ -66,6 +57,14 @@ func NewDefaultLabels(keys []string, values ...string) *DefaultLabels {
 	d := &DefaultLabels{Keys: keys}
 	d.Values = append(d.inline[:0], values...)
 	return d
+}
+
+// SetDefaultLabels sets the family's default labels, see NewDefaultLabels. It
+// does nothing for a family without metrics, which renders nothing anyway.
+func (f *Family) SetDefaultLabels(keys []string, values ...string) {
+	if len(f.Metrics) > 0 {
+		f.DefaultLabels = NewDefaultLabels(keys, values...)
+	}
 }
 
 // Inspect use to inspect the inside of a Family
@@ -100,12 +99,7 @@ func (f Family) AppendBytes(b []byte) []byte {
 	}
 
 	keys, values := f.DefaultLabels.Keys, f.DefaultLabels.Values
-	if len(keys) != len(values) {
-		panic(fmt.Sprintf(
-			"expected default labelKeys %q to be of same length as default labelValues %q",
-			keys, values,
-		))
-	}
+	checkLabels(keys, values)
 
 	// Render the name and the default labels, without the closing brace, once.
 	// Every following metric copies these bytes instead of escaping the values
@@ -136,24 +130,25 @@ const valueSizeHint = 16
 func (f Family) SizeHint() int {
 	defaultSize := 0
 	if d := f.DefaultLabels; d != nil {
-		for i, k := range d.Keys {
-			defaultSize += len(k) + 4
-			if i < len(d.Values) {
-				defaultSize += len(d.Values[i])
-			}
-		}
+		defaultSize = labelsSizeHint(d.Keys, d.Values)
 	}
 
 	size := 0
 	for _, m := range f.Metrics {
 		// name, '{', '}', the value, the space before it and the newline after
-		size += len(f.Name) + 2 + valueSizeHint + defaultSize
-		for i, k := range m.LabelKeys {
-			// key, '=', '"', value, '"' and the separating ',' or '{'
-			size += len(k) + 4
-			if i < len(m.LabelValues) {
-				size += len(m.LabelValues[i])
-			}
+		size += len(f.Name) + 2 + valueSizeHint + defaultSize + labelsSizeHint(m.LabelKeys, m.LabelValues)
+	}
+	return size
+}
+
+// labelsSizeHint returns the rendered size of a label set without its braces.
+func labelsSizeHint(keys, values []string) int {
+	size := 0
+	for i, k := range keys {
+		// key, '=', '"', value, '"' and the separating ',' or '{'
+		size += len(k) + 4
+		if i < len(values) {
+			size += len(values[i])
 		}
 	}
 	return size

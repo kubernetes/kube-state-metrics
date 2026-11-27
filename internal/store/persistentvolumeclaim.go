@@ -391,9 +391,7 @@ func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) *metric.Fam
 
 		metricFamily := f(persistentVolumeClaim)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descPersistentVolumeClaimLabelsDefaultLabels, persistentVolumeClaim.Namespace, persistentVolumeClaim.Name)
-		}
+		metricFamily.SetDefaultLabels(descPersistentVolumeClaimLabelsDefaultLabels, persistentVolumeClaim.Namespace, persistentVolumeClaim.Name)
 
 		return metricFamily
 	}

@@ -101,9 +101,7 @@ func wrapValidatingAdmissionPolicyFunc(f func(*admissionregistrationv1.Validatin
 
 		metricFamily := f(vap)
 
-		if len(metricFamily.Metrics) > 0 {
-			metricFamily.DefaultLabels = metric.NewDefaultLabels(descValidatingAdmissionPolicyDefaultLabels, vap.Name)
-		}
+		metricFamily.SetDefaultLabels(descValidatingAdmissionPolicyDefaultLabels, vap.Name)
 
 		return metricFamily
 	}

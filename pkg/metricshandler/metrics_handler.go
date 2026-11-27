@@ -301,7 +301,10 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resHeader := w.Header()
-	var out io.Writer = w
+	ctx := r.Context()
+	// Every write to the response checks the request's context, also those
+	// of the compressor, which may emit several blocks for one write to it.
+	var out io.Writer = ctxWriter{ctx: ctx, w: w}
 	var gz *gzip.Writer
 
 	contentType := expfmt.NegotiateAccept(r.Header, negotiableFormats...)
@@ -321,8 +324,9 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			part = strings.TrimSpace(part)
 			if part == "gzip" || strings.HasPrefix(part, "gzip;") {
 				gz = gzipWriterPool.Get().(*gzip.Writer)
-				gz.Reset(w)
-				out = gz
+				gz.Reset(out)
+				// Also check before compressing, not to compress for nobody.
+				out = ctxWriter{ctx: ctx, w: gz}
 				resHeader.Set("Content-Encoding", "gzip")
 				// Stop at the first match, as the upstream implementation does.
 				// Wrapping twice would leave the inner writer unclosed, so its
@@ -332,9 +336,8 @@ func (m *MetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ctx := r.Context()
 	writer := bufWriterPool.Get().(*bufio.Writer)
-	writer.Reset(ctxWriter{ctx: ctx, w: out})
+	writer.Reset(out)
 	defer func() {
 		// Drop the references to the response before pooling the writers.
 		writer.Reset(nil)

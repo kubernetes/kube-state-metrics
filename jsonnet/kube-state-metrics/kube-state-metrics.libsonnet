@@ -160,6 +160,17 @@
         verbs: ['list', 'watch'],
       },
       {
+        apiGroups: ['resource.k8s.io'],
+        resources: [
+          'deviceclasses',
+          'devicetaintrules',
+          'resourceclaims',
+          'resourceclaimtemplates',
+          'resourceslices',
+        ],
+        verbs: ['list', 'watch'],
+      },
+      {
         apiGroups: ['rbac.authorization.k8s.io'],
         resources: [
           'clusterrolebindings',

@@ -35,6 +35,10 @@ var (
 	descConfigMapLabelsDefaultLabels = []string{"namespace", "configmap"}
 )
 
+func wrapConfigMapDefaultLabels(labels []string) []string {
+	return mergeKeys(descConfigMapLabelsDefaultLabels, labels)
+}
+
 func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -59,12 +63,13 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_configmap_labels",
 			"Kubernetes labels converted to Prometheus labels.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapConfigMapDefaultLabels([]string{"label_CONFIGMAP_LABEL"}),
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				if len(allowLabelsList) == 0 {
 					return &metric.Family{}
@@ -81,12 +86,13 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_configmap_info",
 			"Information about configmap.",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapConfigMapDefaultLabels(nil),
 			wrapConfigMapFunc(func(_ *v1.ConfigMap) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{{
@@ -97,12 +103,13 @@ func configMapMetricFamilies(allowAnnotationsList, allowLabelsList []string) []g
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_configmap_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapConfigMapDefaultLabels(nil),
 			wrapConfigMapFunc(func(c *v1.ConfigMap) *metric.Family {
 				ms := []*metric.Metric{}
 

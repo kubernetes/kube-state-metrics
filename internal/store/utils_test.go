@@ -674,3 +674,15 @@ func BenchmarkMapToPrometheusLabels(b *testing.B) {
 		}
 	})
 }
+
+func TestMergeKeys(t *testing.T) {
+	got := mergeKeys(
+		[]string{"keyA", "keyB"},
+		nil,
+		[]string{"keyC"},
+	)
+	want := []string{"keyA", "keyB", "keyC"}
+	if !slices.Equal(got, want) {
+		t.Errorf("mergeKeys() got = %v, want %v", got, want)
+	}
+}

@@ -39,6 +39,10 @@ var (
 	descPodDisruptionBudgetLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
 )
 
+func wrapPodDisruptionBudgetDefaultLabels(labels []string) []string {
+	return mergeKeys(descPodDisruptionBudgetLabelsDefaultLabels, labels)
+}
+
 func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		*generator.NewFamilyGeneratorWithStability(
@@ -85,12 +89,13 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_poddisruptionbudget_created",
 			"Unix creation timestamp",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapPodDisruptionBudgetDefaultLabels(nil),
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				ms := []*metric.Metric{}
 
@@ -105,12 +110,13 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_poddisruptionbudget_status_current_healthy",
 			"Current number of healthy pods",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapPodDisruptionBudgetDefaultLabels(nil),
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -121,12 +127,13 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_poddisruptionbudget_status_desired_healthy",
 			"Minimum desired number of healthy pods",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapPodDisruptionBudgetDefaultLabels(nil),
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -137,12 +144,13 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_poddisruptionbudget_status_pod_disruptions_allowed",
 			"Number of pod disruptions that are currently allowed",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapPodDisruptionBudgetDefaultLabels(nil),
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -153,12 +161,13 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_poddisruptionbudget_status_expected_pods",
 			"Total number of pods counted by this disruption budget",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapPodDisruptionBudgetDefaultLabels(nil),
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{
@@ -169,12 +178,13 @@ func podDisruptionBudgetMetricFamilies(allowAnnotationsList, allowLabelsList []s
 				}
 			}),
 		),
-		*generator.NewFamilyGeneratorWithStability(
+		*generator.NewFamilyGeneratorWithLabels(
 			"kube_poddisruptionbudget_status_observed_generation",
 			"Most recent generation observed when updating this PDB status",
 			metric.Gauge,
 			basemetrics.STABLE,
 			"",
+			wrapPodDisruptionBudgetDefaultLabels(nil),
 			wrapPodDisruptionBudgetFunc(func(p *policyv1.PodDisruptionBudget) *metric.Family {
 				return &metric.Family{
 					Metrics: []*metric.Metric{

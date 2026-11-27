@@ -53,6 +53,10 @@ var (
 	targetMetricLabels = []string{"metric_name", "metric_target_type", "container"}
 )
 
+func wrapHPADefaultLabels(labels []string) []string {
+	return mergeKeys(descHorizontalPodAutoscalerLabelsDefaultLabels, labels)
+}
+
 func hpaMetricFamilies(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		createHPAInfo(),
@@ -128,12 +132,13 @@ func createHPAInfo() generator.FamilyGenerator {
 }
 
 func createHPAMetaDataGeneration() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_horizontalpodautoscaler_metadata_generation",
 		"The generation observed by the HorizontalPodAutoscaler controller.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapHPADefaultLabels(nil),
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 			return &metric.Family{
 				Metrics: []*metric.Metric{
@@ -147,12 +152,13 @@ func createHPAMetaDataGeneration() generator.FamilyGenerator {
 }
 
 func createHPASpecMaxReplicas() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_horizontalpodautoscaler_spec_max_replicas",
 		"Upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapHPADefaultLabels(nil),
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 			return &metric.Family{
 				Metrics: []*metric.Metric{
@@ -166,12 +172,13 @@ func createHPASpecMaxReplicas() generator.FamilyGenerator {
 }
 
 func createHPASpecMinReplicas() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_horizontalpodautoscaler_spec_min_replicas",
 		"Lower limit for the number of pods that can be set by the autoscaler, default 1.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapHPADefaultLabels(nil),
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 			minReplicas := float64(1)
 			if a.Spec.MinReplicas != nil {
@@ -268,12 +275,13 @@ func createHPASpecTargetMetric() generator.FamilyGenerator {
 }
 
 func createHPAStatusTargetMetric() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_horizontalpodautoscaler_status_target_metric",
 		"The current metric status used by this autoscaler when calculating the desired replica count.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapHPADefaultLabels(targetMetricLabels),
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(a.Status.CurrentMetrics))
 			for _, m := range a.Status.CurrentMetrics {
@@ -348,12 +356,13 @@ func createHPAStatusTargetMetric() generator.FamilyGenerator {
 }
 
 func createHPAStatusCurrentReplicas() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_horizontalpodautoscaler_status_current_replicas",
 		"Current number of replicas of pods managed by this autoscaler.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapHPADefaultLabels(nil),
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 			return &metric.Family{
 				Metrics: []*metric.Metric{
@@ -367,12 +376,13 @@ func createHPAStatusCurrentReplicas() generator.FamilyGenerator {
 }
 
 func createHPAStatusDesiredReplicas() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_horizontalpodautoscaler_status_desired_replicas",
 		"Desired number of replicas of pods managed by this autoscaler.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapHPADefaultLabels(nil),
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 			return &metric.Family{
 				Metrics: []*metric.Metric{
@@ -411,12 +421,13 @@ func createHPAAnnotations(allowAnnotationsList []string) generator.FamilyGenerat
 }
 
 func createHPALabels(allowLabelsList []string) generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	return *generator.NewFamilyGeneratorWithLabels(
 		descHorizontalPodAutoscalerLabelsName,
 		descHorizontalPodAutoscalerLabelsHelp,
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapHPADefaultLabels([]string{"label_HPA_LABEL"}),
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 			if len(allowLabelsList) == 0 {
 				return &metric.Family{}
@@ -436,12 +447,15 @@ func createHPALabels(allowLabelsList []string) generator.FamilyGenerator {
 }
 
 func createHPAStatusCondition() generator.FamilyGenerator {
-	return *generator.NewFamilyGeneratorWithStability(
+	statusConditionLabelKeys := []string{"condition", "status"}
+
+	return *generator.NewFamilyGeneratorWithLabels(
 		"kube_horizontalpodautoscaler_status_condition",
 		"The condition of this autoscaler.",
 		metric.Gauge,
 		basemetrics.STABLE,
 		"",
+		wrapHPADefaultLabels(statusConditionLabelKeys),
 		wrapHPAFunc(func(a *autoscaling.HorizontalPodAutoscaler) *metric.Family {
 			ms := make([]*metric.Metric, 0, len(a.Status.Conditions)*len(conditionStatuses))
 
@@ -450,7 +464,7 @@ func createHPAStatusCondition() generator.FamilyGenerator {
 
 				for _, m := range metrics {
 					metric := m
-					metric.LabelKeys = []string{"condition", "status"}
+					metric.LabelKeys = statusConditionLabelKeys
 					metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 					ms = append(ms, metric)
 				}

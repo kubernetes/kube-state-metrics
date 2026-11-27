@@ -126,10 +126,10 @@ func precomputeHeaders(headers []string) (headersOpenMetrics, headersTextPlain, 
 // Add inserts adds to the MetricsStore by calling the metrics generator functions and
 // adding the generated metrics to the metrics map that underlies the MetricStore.
 func (s *MetricsStore) Add(obj any) error {
-	// Objects rendered by Transformer only arrive through Replace at the end of
-	// a WatchList initial sync, which records the resource version itself.
-	// WatchList is disabled when --object-limit is set, so no per-object
-	// bookkeeping is skipped here.
+	// Objects rendered by Transformer are only expected in Replace at the end
+	// of a WatchList initial sync, which stores them itself; this keeps Add
+	// working should a reflector hand one over directly. WatchList is disabled
+	// when --object-limit is set, so no per-object bookkeeping is skipped here.
 	if r, ok := obj.(*renderedObject); ok {
 		s.metrics.Store(r.uid, r.wait())
 		return nil
@@ -332,14 +332,10 @@ func (s *MetricsStore) Replace(list []any, resourceVersion string) error {
 		}
 		rendered[i] = s.renderAsync(uid, o)
 	}
-	for i, r := range rendered {
-		if r == nil {
-			continue
+	for _, r := range rendered {
+		if r != nil {
+			s.metrics.Store(r.uid, r.wait())
 		}
-		s.metrics.Store(r.uid, r.wait())
-		// Let the rendered object, and the object it was made from, be
-		// collected while the rest of the list is still being stored.
-		rendered[i] = nil
 	}
 
 	s.setLastResourceVersion(resourceVersion)
@@ -385,15 +381,11 @@ var renderSlots = make(chan struct{}, runtime.GOMAXPROCS(0))
 // would otherwise run on its reflector's goroutine alone, over all CPUs.
 func (s *MetricsStore) renderAsync(uid types.UID, obj any) *renderedObject {
 	r := &renderedObject{uid: uid}
-	r.wg.Add(1)
 	renderSlots <- struct{}{}
-	go func() {
-		defer func() {
-			<-renderSlots
-			r.wg.Done()
-		}()
+	r.wg.Go(func() {
+		defer func() { <-renderSlots }()
 		r.families = renderFamilies(s.generateMetricsFunc(obj))
-	}()
+	})
 	return r
 }
 

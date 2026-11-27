@@ -474,13 +474,10 @@ func barrierGenFunc(t *testing.T, n int64) func(any) []metric.FamilyInterface {
 	var running atomic.Int64
 	return func(obj any) []metric.FamilyInterface {
 		running.Add(1)
-		deadline := time.Now().Add(5 * time.Second)
-		for running.Load() < n {
-			if time.Now().After(deadline) {
-				t.Errorf("expected %d objects to be rendered in parallel", n)
-				break
-			}
-			time.Sleep(time.Millisecond)
+		if err := wait.PollUntilContextTimeout(context.Background(), time.Millisecond, 5*time.Second, true, func(context.Context) (bool, error) {
+			return running.Load() >= n, nil
+		}); err != nil {
+			t.Errorf("expected %d objects to be rendered in parallel", n)
 		}
 		o, _ := meta.Accessor(obj)
 		return []metric.FamilyInterface{&metric.Family{

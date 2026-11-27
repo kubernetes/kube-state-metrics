@@ -128,9 +128,7 @@ func wrapMutatingWebhookConfigurationFunc(f func(*admissionregistrationv1.Mutati
 
 		metricFamily := f(mutatingWebhookConfiguration)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descMutatingWebhookConfigurationDefaultLabels, []string{mutatingWebhookConfiguration.Name}, m.LabelKeys, m.LabelValues)
-		}
+		metricFamily.SetDefaultLabels(descMutatingWebhookConfigurationDefaultLabels, mutatingWebhookConfiguration.Name)
 
 		return metricFamily
 	}

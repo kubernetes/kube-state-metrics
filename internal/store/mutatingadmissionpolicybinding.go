@@ -102,9 +102,7 @@ func wrapMutatingAdmissionPolicyBindingFunc(f func(*admissionregistrationv1.Muta
 
 		metricFamily := f(mapb)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descMutatingAdmissionPolicyBindingDefaultLabels, []string{mapb.Name}, m.LabelKeys, m.LabelValues)
-		}
+		metricFamily.SetDefaultLabels(descMutatingAdmissionPolicyBindingDefaultLabels, mapb.Name)
 
 		return metricFamily
 	}

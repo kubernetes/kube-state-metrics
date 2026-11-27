@@ -210,9 +210,7 @@ func wrapSecretFunc(f func(*v1.Secret) *metric.Family) func(any) *metric.Family 
 
 		metricFamily := f(secret)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descSecretLabelsDefaultLabels, []string{secret.Namespace, secret.Name}, m.LabelKeys, m.LabelValues)
-		}
+		metricFamily.SetDefaultLabels(descSecretLabelsDefaultLabels, secret.Namespace, secret.Name)
 
 		return metricFamily
 	}

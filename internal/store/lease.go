@@ -108,9 +108,7 @@ func wrapLeaseFunc(f func(*coordinationv1.Lease) *metric.Family) func(any) *metr
 
 		metricFamily := f(lease)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descLeaseLabelsDefaultLabels, []string{lease.Name}, m.LabelKeys, m.LabelValues)
-		}
+		metricFamily.SetDefaultLabels(descLeaseLabelsDefaultLabels, lease.Name)
 
 		return metricFamily
 	}

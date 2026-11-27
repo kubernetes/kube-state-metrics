@@ -282,9 +282,7 @@ func wrapReplicaSetFunc(f func(*v1.ReplicaSet) *metric.Family) func(any) *metric
 
 		metricFamily := f(replicaSet)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descReplicaSetLabelsDefaultLabels, []string{replicaSet.Namespace, replicaSet.Name}, m.LabelKeys, m.LabelValues)
-		}
+		metricFamily.SetDefaultLabels(descReplicaSetLabelsDefaultLabels, replicaSet.Namespace, replicaSet.Name)
 
 		return metricFamily
 	}

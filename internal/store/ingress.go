@@ -215,9 +215,7 @@ func wrapIngressFunc(f func(*networkingv1.Ingress) *metric.Family) func(any) *me
 
 		metricFamily := f(ingress)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descIngressLabelsDefaultLabels, []string{ingress.Namespace, ingress.Name}, m.LabelKeys, m.LabelValues)
-		}
+		metricFamily.SetDefaultLabels(descIngressLabelsDefaultLabels, ingress.Namespace, ingress.Name)
 
 		return metricFamily
 	}

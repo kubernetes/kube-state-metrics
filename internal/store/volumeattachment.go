@@ -159,9 +159,7 @@ func wrapVolumeAttachmentFunc(f func(*storagev1.VolumeAttachment) *metric.Family
 
 		metricFamily := f(va)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descVolumeAttachmentLabelsDefaultLabels, []string{va.Name}, m.LabelKeys, m.LabelValues)
-		}
+		metricFamily.SetDefaultLabels(descVolumeAttachmentLabelsDefaultLabels, va.Name)
 
 		return metricFamily
 	}

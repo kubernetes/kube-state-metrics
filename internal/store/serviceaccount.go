@@ -227,9 +227,7 @@ func wrapServiceAccountFunc(f func(*v1.ServiceAccount) *metric.Family) func(any)
 
 		metricFamily := f(serviceAccount)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descServiceAccountLabelsDefaultLabels, []string{serviceAccount.Namespace, serviceAccount.Name}, m.LabelKeys, m.LabelValues)
-		}
+		metricFamily.SetDefaultLabels(descServiceAccountLabelsDefaultLabels, serviceAccount.Namespace, serviceAccount.Name)
 
 		return metricFamily
 	}

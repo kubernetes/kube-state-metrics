@@ -101,9 +101,7 @@ func wrapValidatingAdmissionPolicyFunc(f func(*admissionregistrationv1.Validatin
 
 		metricFamily := f(vap)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descValidatingAdmissionPolicyDefaultLabels, []string{vap.Name}, m.LabelKeys, m.LabelValues)
-		}
+		metricFamily.SetDefaultLabels(descValidatingAdmissionPolicyDefaultLabels, vap.Name)
 
 		return metricFamily
 	}

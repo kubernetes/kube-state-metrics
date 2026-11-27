@@ -391,9 +391,7 @@ func wrapPersistentVolumeClaimFunc(f func(*v1.PersistentVolumeClaim) *metric.Fam
 
 		metricFamily := f(persistentVolumeClaim)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descPersistentVolumeClaimLabelsDefaultLabels, []string{persistentVolumeClaim.Namespace, persistentVolumeClaim.Name}, m.LabelKeys, m.LabelValues)
-		}
+		metricFamily.SetDefaultLabels(descPersistentVolumeClaimLabelsDefaultLabels, persistentVolumeClaim.Namespace, persistentVolumeClaim.Name)
 
 		return metricFamily
 	}

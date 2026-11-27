@@ -350,9 +350,7 @@ func wrapStatefulSetFunc(f func(*v1.StatefulSet) *metric.Family) func(any) *metr
 
 		metricFamily := f(statefulSet)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descStatefulSetLabelsDefaultLabels, []string{statefulSet.Namespace, statefulSet.Name}, m.LabelKeys, m.LabelValues)
-		}
+		metricFamily.SetDefaultLabels(descStatefulSetLabelsDefaultLabels, statefulSet.Namespace, statefulSet.Name)
 
 		return metricFamily
 	}

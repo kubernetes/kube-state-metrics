@@ -79,9 +79,7 @@ func wrapHPAFunc(f func(*autoscaling.HorizontalPodAutoscaler) *metric.Family) fu
 
 		metricFamily := f(hpa)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descHorizontalPodAutoscalerLabelsDefaultLabels, []string{hpa.Namespace, hpa.Name}, m.LabelKeys, m.LabelValues)
-		}
+		metricFamily.SetDefaultLabels(descHorizontalPodAutoscalerLabelsDefaultLabels, hpa.Namespace, hpa.Name)
 
 		return metricFamily
 	}

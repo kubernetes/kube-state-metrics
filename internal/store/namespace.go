@@ -168,9 +168,7 @@ func wrapNamespaceFunc(f func(*v1.Namespace) *metric.Family) func(any) *metric.F
 
 		metricFamily := f(namespace)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descNamespaceLabelsDefaultLabels, []string{namespace.Name}, m.LabelKeys, m.LabelValues)
-		}
+		metricFamily.SetDefaultLabels(descNamespaceLabelsDefaultLabels, namespace.Name)
 
 		return metricFamily
 	}

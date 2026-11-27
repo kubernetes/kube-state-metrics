@@ -31,6 +31,53 @@ type Family struct {
 	Name    string
 	Type    Type
 	Metrics []*Metric
+	// DefaultLabels are rendered before each metric's own labels, escaped
+	// once per family. They are not part of the metrics' LabelKeys and
+	// LabelValues; use MetricLabels for a metric's complete label set. A
+	// pointer keeps Family in the 64-byte size class.
+	DefaultLabels *DefaultLabels
+}
+
+// maxInlineDefaultLabels is the number of default label values stored inline
+// in DefaultLabels. The objects of the built-in stores are identified by at
+// most three labels (namespace, name and uid).
+const maxInlineDefaultLabels = 3
+
+// DefaultLabels are labels shared by every metric of a Family.
+type DefaultLabels struct {
+	Keys   []string
+	Values []string
+
+	inline [maxInlineDefaultLabels]string
+}
+
+// NewDefaultLabels returns default labels with the given keys and values. The
+// keys are kept as is, as they are typically shared by all objects of a
+// store, and must not be modified afterwards. The values are copied into the
+// returned struct, so up to three of them cost no allocation of their own.
+func NewDefaultLabels(keys []string, values ...string) *DefaultLabels {
+	d := &DefaultLabels{Keys: keys}
+	d.Values = append(d.inline[:0], values...)
+	return d
+}
+
+// SetDefaultLabels sets the family's default labels, see NewDefaultLabels. It
+// does nothing for a family without metrics, which renders nothing anyway.
+func (f *Family) SetDefaultLabels(keys []string, values ...string) {
+	if len(f.Metrics) > 0 {
+		f.DefaultLabels = NewDefaultLabels(keys, values...)
+	}
+}
+
+// MetricLabels returns the complete label set of m, a metric of the family:
+// the family's default labels followed by the metric's own labels.
+func (f Family) MetricLabels(m *Metric) (keys, values []string) {
+	if f.DefaultLabels == nil {
+		return m.LabelKeys, m.LabelValues
+	}
+	keys = append(append(make([]string, 0, len(f.DefaultLabels.Keys)+len(m.LabelKeys)), f.DefaultLabels.Keys...), m.LabelKeys...)
+	values = append(append(make([]string, 0, len(f.DefaultLabels.Values)+len(m.LabelValues)), f.DefaultLabels.Values...), m.LabelValues...)
+	return keys, values
 }
 
 // Inspect use to inspect the inside of a Family
@@ -55,9 +102,34 @@ func (f Family) AppendBytes(b []byte) []byte {
 
 	buf := bytes.NewBuffer(b)
 	buf.Grow(f.SizeHint())
-	for _, m := range f.Metrics {
-		buf.WriteString(f.Name)
-		m.Write(buf)
+
+	var keys, values []string
+	if d := f.DefaultLabels; d != nil {
+		keys, values = d.Keys, d.Values
+		checkLabels(keys, values)
+	}
+	if len(keys) == 0 {
+		for _, m := range f.Metrics {
+			buf.WriteString(f.Name)
+			m.Write(buf)
+		}
+		return buf.Bytes()
+	}
+
+	// Render the name and the default labels, without the closing brace, once.
+	// Every following metric copies these bytes instead of escaping the values
+	// again. The slice stays valid if buf grows: growing copies the contents to
+	// a new array and leaves the old one untouched.
+	start := buf.Len()
+	buf.WriteString(f.Name)
+	writeLabels(buf, '{', keys, values)
+	prefix := buf.Bytes()[start:]
+
+	for i, m := range f.Metrics {
+		if i > 0 {
+			buf.Write(prefix)
+		}
+		m.writeAfterPrefix(buf)
 	}
 
 	return buf.Bytes()
@@ -71,16 +143,27 @@ const valueSizeHint = 16
 // buffer up front instead of growing (and copying) it repeatedly. It is an
 // estimate, not a bound: the value length is assumed rather than computed.
 func (f Family) SizeHint() int {
+	defaultSize := 0
+	if d := f.DefaultLabels; d != nil {
+		defaultSize = labelsSizeHint(d.Keys, d.Values)
+	}
+
 	size := 0
 	for _, m := range f.Metrics {
 		// name, '{', '}', the value, the space before it and the newline after
-		size += len(f.Name) + 2 + valueSizeHint
-		for i, k := range m.LabelKeys {
-			// key, '=', '"', value, '"' and the separating ',' or '{'
-			size += len(k) + 4
-			if i < len(m.LabelValues) {
-				size += len(m.LabelValues[i])
-			}
+		size += len(f.Name) + 2 + valueSizeHint + defaultSize + labelsSizeHint(m.LabelKeys, m.LabelValues)
+	}
+	return size
+}
+
+// labelsSizeHint returns the rendered size of a label set without its braces.
+func labelsSizeHint(keys, values []string) int {
+	size := 0
+	for i, k := range keys {
+		// key, '=', '"', value, '"' and the separating ',' or '{'
+		size += len(k) + 4
+		if i < len(values) {
+			size += len(values[i])
 		}
 	}
 	return size

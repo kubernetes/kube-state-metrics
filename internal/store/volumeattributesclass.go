@@ -127,9 +127,7 @@ func wrapVolumeAttributesClassFunc(f func(*storagev1.VolumeAttributesClass) *met
 
 		metricFamily := f(volumeAttributesClass)
 
-		for _, m := range metricFamily.Metrics {
-			m.LabelKeys, m.LabelValues = mergeKeyValues(descVolumeAttributesClassLabelsDefaultLabels, []string{volumeAttributesClass.Name}, m.LabelKeys, m.LabelValues)
-		}
+		metricFamily.SetDefaultLabels(descVolumeAttributesClassLabelsDefaultLabels, volumeAttributesClass.Name)
 
 		return metricFamily
 	}

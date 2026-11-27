@@ -2432,12 +2432,8 @@ func TestPodStore(t *testing.T) {
 	}
 }
 
-func BenchmarkPodStore(b *testing.B) {
-	b.ReportAllocs()
-
-	f := generator.ComposeMetricGenFuncs(podMetricFamilies(nil, nil))
-
-	pod := &v1.Pod{
+func benchmarkPod() *v1.Pod {
+	return &v1.Pod{
 		Name:      "pod1",
 		Namespace: "ns1",
 		UID:       "uid1",
@@ -2522,12 +2518,36 @@ func BenchmarkPodStore(b *testing.B) {
 			},
 		},
 	}
+}
+
+func BenchmarkPodStore(b *testing.B) {
+	b.ReportAllocs()
+
+	f := generator.ComposeMetricGenFuncs(podMetricFamilies(nil, nil))
+	pod := benchmarkPod()
 
 	expectedFamilies := 60
 	for n := 0; n < b.N; n++ {
 		families := f(pod)
 		if len(families) != expectedFamilies {
 			b.Fatalf("expected %d but got %v", expectedFamilies, len(families))
+		}
+	}
+}
+
+// BenchmarkPodStoreRender generates and renders the families of a pod, as the
+// store does on every event.
+func BenchmarkPodStoreRender(b *testing.B) {
+	b.ReportAllocs()
+
+	f := generator.ComposeMetricGenFuncs(podMetricFamilies(nil, nil))
+	pod := benchmarkPod()
+
+	var buf []byte
+	for b.Loop() {
+		buf = buf[:0]
+		for _, family := range f(pod) {
+			buf = family.(interface{ AppendBytes([]byte) []byte }).AppendBytes(buf)
 		}
 	}
 }

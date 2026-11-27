@@ -251,10 +251,11 @@ func cronJobMetricFamilies(allowAnnotationsList, allowLabelsList []string) []gen
 
 				// If the cron job is suspended, don't track the next scheduled time
 				nextScheduledTime, err := getNextScheduledTime(j.Spec.Schedule, j.Status.LastScheduleTime, j.CreationTimestamp, j.Spec.TimeZone)
-				// A single CronJob with an unparseable schedule must not crash the
-				// whole exporter. Skip its next-schedule metric and keep going, the
-				// same way the Kubernetes CronJob controller tolerates such schedules.
-				// kube_cronjob_schedule_invalid surfaces the parse failure as a metric.
+				// A single CronJob with an unparseable schedule, or one with no next
+				// occurrence, must not crash the whole exporter. Skip its next-schedule
+				// metric and keep going, the same way the Kubernetes CronJob controller
+				// tolerates such schedules. kube_cronjob_schedule_invalid surfaces only
+				// the parse failure as a metric.
 				if err == nil && (j.Spec.Suspend == nil || !*j.Spec.Suspend) {
 					ms = append(ms, &metric.Metric{
 						LabelKeys:   []string{},
@@ -398,11 +399,19 @@ func getNextScheduledTime(schedule string, lastScheduleTime *metav1.Time, create
 	if err != nil {
 		return time.Time{}, err
 	}
+	from := createdTime.Time
 	if !lastScheduleTime.IsZero() {
-		return sched.Next(lastScheduleTime.Time), nil
+		from = lastScheduleTime.Time
 	}
-	if !createdTime.IsZero() {
-		return sched.Next(createdTime.Time), nil
+	if from.IsZero() {
+		return time.Time{}, errors.New("createdTime and lastScheduleTime are both zero")
 	}
-	return time.Time{}, errors.New("createdTime and lastScheduleTime are both zero")
+	// Next returns the zero time when it finds no occurrence within its bounded
+	// search window, e.g. for a schedule that never fires or a sparse schedule
+	// after an old lastScheduleTime. Skip the metric rather than export year 1.
+	next := sched.Next(from)
+	if next.IsZero() {
+		return time.Time{}, fmt.Errorf("cron job schedule '%s' has no occurrence after %s", schedule, from)
+	}
+	return next, nil
 }

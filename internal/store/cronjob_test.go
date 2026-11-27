@@ -540,6 +540,7 @@ func TestGetNextScheduledTime(t *testing.T) {
 		createdTime      metav1.Time
 		timeZone         string
 		expected         time.Time
+		wantErr          bool
 	}{
 		{
 			schedule:         "0 */6 * * *",
@@ -555,15 +556,25 @@ func TestGetNextScheduledTime(t *testing.T) {
 			timeZone:         TimeZone,
 			expected:         ActiveRunningCronJob1LastScheduleTime.Add(time.Second*4 + time.Minute*25 + time.Hour*5),
 		},
+		{
+			// 2100 is not a leap year, so the next Feb 29 after 2096-03-01 is outside the search window.
+			schedule:         "0 0 29 2 *",
+			lastScheduleTime: metav1.Time{Time: time.Date(2096, time.March, 1, 0, 0, 0, 0, time.UTC)},
+			createdTime:      metav1.Time{Time: time.Date(2096, time.March, 1, 0, 0, 0, 0, time.UTC)},
+			timeZone:         "UTC",
+			wantErr:          true,
+		},
 	}
 
 	for _, test := range testCases {
-		actual, _ := getNextScheduledTime(test.schedule, &test.lastScheduleTime, test.createdTime, &test.timeZone) // #nosec G601
+		actual, err := getNextScheduledTime(test.schedule, &test.lastScheduleTime, test.createdTime, &test.timeZone) // #nosec G601
+		if (err != nil) != test.wantErr {
+			t.Fatalf("%v: got error %v, wantErr %v", test.schedule, err, test.wantErr)
+		}
 		if !actual.Equal(test.expected) {
 			t.Fatalf("%v: expected %v, actual %v", test.schedule, test.expected, actual)
 		}
 	}
-
 }
 
 // TestParseScheduleRobfigCompat verifies that schedules are parsed and
@@ -663,6 +674,22 @@ func TestCronJobStoreScheduleParsing(t *testing.T) {
 				# HELP kube_cronjob_schedule_invalid Emitted with value 1 for cronjobs whose schedule, in its configured timezone, cannot be parsed.
 				# TYPE kube_cronjob_schedule_invalid gauge
 				kube_cronjob_schedule_invalid{cronjob="UnparseableScheduleCronJob",namespace="ns1"} 1
+`,
+			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_schedule_invalid", "kube_cronjob_status_last_schedule_time"},
+		},
+		{
+			// Schedule that parses but never fires (Feb 30): next_schedule_time omitted
+			// rather than exported as year 1, schedule_invalid not emitted as the
+			// schedule is valid.
+			Obj: newCronJob("NeverFiringScheduleCronJob", "0 0 30 2 *"),
+			Want: `
+				# HELP kube_cronjob_next_schedule_time [STABLE] Next time the cronjob should be scheduled. The time after lastScheduleTime, or after the cron job's creation time if it's never been scheduled. Use this to determine if the job is delayed.
+				# TYPE kube_cronjob_next_schedule_time gauge
+				# HELP kube_cronjob_status_last_schedule_time [STABLE] LastScheduleTime keeps information of when was the last time the job was successfully scheduled.
+				# TYPE kube_cronjob_status_last_schedule_time gauge
+				kube_cronjob_status_last_schedule_time{cronjob="NeverFiringScheduleCronJob",namespace="ns1"} 1.520742896e+09
+				# HELP kube_cronjob_schedule_invalid Emitted with value 1 for cronjobs whose schedule, in its configured timezone, cannot be parsed.
+				# TYPE kube_cronjob_schedule_invalid gauge
 `,
 			MetricNames: []string{"kube_cronjob_next_schedule_time", "kube_cronjob_schedule_invalid", "kube_cronjob_status_last_schedule_time"},
 		},

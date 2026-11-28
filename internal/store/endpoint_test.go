@@ -281,3 +281,62 @@ func TestEndpointStoreWithLabels(t *testing.T) {
 		}
 	}
 }
+
+func TestEndpointStoreSubsetsRepeatPortsAndAddresses(t *testing.T) {
+	const metadata = `
+		# HELP kube_endpoint_annotations Kubernetes annotations converted to Prometheus labels.
+		# TYPE kube_endpoint_annotations gauge
+		# HELP kube_endpoint_created [STABLE] Unix creation timestamp
+		# TYPE kube_endpoint_created gauge
+		# HELP kube_endpoint_info [STABLE] Information about endpoint.
+		# TYPE kube_endpoint_info gauge
+		# HELP kube_endpoint_labels [STABLE] Kubernetes labels converted to Prometheus labels.
+		# TYPE kube_endpoint_labels gauge
+		# HELP kube_endpoint_ports [STABLE] (Deprecated since v2.14.0) Information about the Endpoint ports.
+		# TYPE kube_endpoint_ports gauge
+		# HELP kube_endpoint_address [STABLE] Information about Endpoint available and non available addresses.
+		# TYPE kube_endpoint_address gauge
+	`
+	cases := []generateMetricsTestCase{
+		{
+			// Two subsets share the http port, and one address is listed in
+			// both of them. Each series must still be exported only once.
+			Obj: &v1.Endpoints{
+				Name:              "overlapping-endpoint",
+				CreationTimestamp: metav1.Time{Time: time.Unix(1500000000, 0)},
+				Namespace:         "default",
+				Subsets: []v1.EndpointSubset{
+					{
+						Addresses: []v1.EndpointAddress{{IP: "10.0.0.1"}},
+						Ports: []v1.EndpointPort{
+							{Port: 8080, Name: "http", Protocol: v1.ProtocolTCP},
+							{Port: 9090, Name: "metrics", Protocol: v1.ProtocolTCP},
+						},
+					},
+					{
+						Addresses: []v1.EndpointAddress{{IP: "10.0.0.1"}, {IP: "10.0.0.2"}},
+						Ports: []v1.EndpointPort{
+							{Port: 8080, Name: "http", Protocol: v1.ProtocolTCP},
+						},
+					},
+				},
+			},
+			Want: metadata + `
+				kube_endpoint_created{endpoint="overlapping-endpoint",namespace="default"} 1.5e+09
+				kube_endpoint_info{endpoint="overlapping-endpoint",namespace="default"} 1
+				kube_endpoint_address{endpoint="overlapping-endpoint",ip="10.0.0.1",namespace="default",port_name="http",port_number="8080",port_protocol="TCP",ready="true"} 1
+				kube_endpoint_address{endpoint="overlapping-endpoint",ip="10.0.0.1",namespace="default",port_name="metrics",port_number="9090",port_protocol="TCP",ready="true"} 1
+				kube_endpoint_address{endpoint="overlapping-endpoint",ip="10.0.0.2",namespace="default",port_name="http",port_number="8080",port_protocol="TCP",ready="true"} 1
+				kube_endpoint_ports{endpoint="overlapping-endpoint",namespace="default",port_name="http",port_protocol="TCP",port_number="8080"} 1
+				kube_endpoint_ports{endpoint="overlapping-endpoint",namespace="default",port_name="metrics",port_protocol="TCP",port_number="9090"} 1
+			`,
+		},
+	}
+	for i, c := range cases {
+		c.Func = generator.ComposeMetricGenFuncs(endpointMetricFamilies(nil, nil))
+		c.Headers = generator.ExtractMetricFamilyHeaders(endpointMetricFamilies(nil, nil))
+		if err := c.run(); err != nil {
+			t.Errorf("unexpected collecting result in %vth run:\n%s", i, err)
+		}
+	}
+}
